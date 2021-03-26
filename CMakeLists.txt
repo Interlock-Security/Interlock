@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13.0)
 
 # --[ Webinix version ] --------------------------------------------------------------
 
-project(webinix VERSION 1.0.6 DESCRIPTION 
+project(webinix VERSION 1.0.7 DESCRIPTION 
 "Use your web browser as GUI, and bring web technologies to your desktop app.")
 message("-- [ Webinix version ${CMAKE_PROJECT_VERSION} ]")
 
@@ -39,7 +39,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(${webinix_SOURCE_DIR}/src webinix)
 
 # Examples
-add_subdirectory(${webinix_SOURCE_DIR}/examples/helloworld)
+add_subdirectory(${webinix_SOURCE_DIR}/examples)
 
 # PyWebinix Library
 # if(TARGET pywebinix)
