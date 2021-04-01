@@ -55,26 +55,53 @@ void close(webinix::event e){
 
 int main(){
 
-	// This example show how to set
-	// Webinix to use a custom browser
+	// This example show how to make
+	// Webinix use a custom browser of 
+	// our choice.
 
-	webinix::custom_browser_t MyBrowser {
-
+	// Linux - Firefox
+	webinix::custom_browser_t Linux_Firefox {
 		// Firefox on Linux
 		// Command: 'firefox -private -url http://127.0.0.1:1234'
-
 		.app = "firefox",
 		.arg = "-private -url ",
+		.link = true
+	};
+
+	// Linux - Chrome
+	webinix::custom_browser_t Windows_Firefox {
+		// Firefox on Linux
+		// Command: 'start firefox -private -url http://127.0.0.1:1234'
+		.app = "start firefox",
+		.arg = "-private -url ",
+		.link = true
+	};	
+
+	// Linux - Chrome
+	webinix::custom_browser_t Linux_Chrome {
+		// Firefox on Linux
+		// Command: 'chrome -private --app=http://127.0.0.1:1234'
+		.app = "chrome",
+		.arg = "-private --app=",
+		.link = true
+	};
+
+	// Windows - Chrome
+	webinix::custom_browser_t Windows_Chrome {
+		// Firefox on Linux
+		// Command: 'start chrome -private --app=http://127.0.0.1:1234'
+		.app = "start chrome",
+		.arg = "-private --app=",
 		.link = true
 	};
 
 	my_window.bind("MyButtonID1", close);
 
 	// Show window
-	if(!my_window.show(&my_html, &MyBrowser)){
+	if(!my_window.show(&my_html, &Windows_Firefox)){
 
 		// Failed to start our custom web browser
-		std::cout << "Webinix has failed to start the web browser" << std::endl;
+		std::cout << "Webinix has failed to start the web browser\nPlease change settings." << std::endl;
 	}
 
 	// Loop
