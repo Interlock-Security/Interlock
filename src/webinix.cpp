@@ -73,12 +73,12 @@ namespace webinix {
 		// Webinix WebSocket
 		// - - - - - - - - - - -
 
-		// external const _wssport;
-		// external const _wsport;
+		// external const _webinix_websocket_port;
+		// external const _webinix_webserver_port;
 		// external const _webinix_minimum_data;
 
 		// Log & keep window open
-		const webinix_log = false;
+		const _webinix_log = true;
 
 		var _webinix_ws;
 		var _webinix_ws_status = false;
@@ -97,19 +97,22 @@ namespace webinix {
 		
 			if ('WebSocket' in window){
 			
-				_webinix_ws = new WebSocket('ws://127.0.0.1:' + _wssport);
+				_webinix_ws = new WebSocket('ws://127.0.0.1:' + _webinix_websocket_port);
 				_webinix_ws.binaryType = 'blob';
 			
 				_webinix_ws.onopen = function(){
 
 					_webinix_ws.binaryType = 'blob';
-					_webinix_ws_status = true;
+					_webinix_ws_status = true;					
+
+					if(_webinix_log)
+						console.log('Webinix -> Connected');
 				};
 
 				_webinix_ws.onerror = function(){
 
-					if(webinix_log)
-						console.log( '[!] Error WS. ' );
+					if(_webinix_log)
+						console.log('Webinix -> Connection error');
 
 					_webinix_close(0xFF, '');
 				};
@@ -120,8 +123,8 @@ namespace webinix {
 
 					if(_webinix_action8[0] == 0xFC){
 
-						if(webinix_log)
-							console.log( 'WS Close -> Switch URL. ' );
+						if(_webinix_log)
+							console.log('Webinix -> Switch URL');
 
 						// Switch URL
 						window.location.replace(_webinix_action_val);
@@ -132,10 +135,10 @@ namespace webinix {
 						// WS Error.
 						// Window close.
 
-						if(webinix_log)
-							console.log( 'WS Close -> Other. ' );
+						if(_webinix_log)
+							console.log('Webinix -> Connection lost');
 
-						if(!webinix_log)
+						if(!_webinix_log)
 							window.close();
 					}
 				};
@@ -156,22 +159,14 @@ namespace webinix {
 						
 						if(buffer8[0] !== 0xFF){
 
-							if(webinix_log){
-
-								console.log( 'Error flag: ' + buffer8[0] );
-								console.log( 'Error flag: ' + buffer8[1] );
-								console.log( 'Error flag: ' + buffer8[2] );
-							}
+							if(_webinix_log)
+								console.log('Webinix -> Invalid flag -> ' + buffer8[0] + buffer8[1] + buffer8[2]);
 
 							return;
 						}
 
-						if(webinix_log){
-
-							console.log( 'Flag OK: ' + buffer8[0] );
-							console.log( 'Flag OK: ' + buffer8[1] );
-							console.log( 'Flag OK: ' + buffer8[2] );
-						}
+						if(_webinix_log)
+							console.log('Webinix -> Flag -> ' + buffer8[0] + buffer8[1] + buffer8[2]);
 
 						var len = buffer8.length - 3;
 
@@ -191,8 +186,8 @@ namespace webinix {
 						}
 						else if(buffer8[1] === 0xFE){
 
-							if(webinix_log)
-								console.log( 'Run JS: ' + data8utf8 );
+							if(_webinix_log)
+								console.log('Webinix -> JS -> Run -> ' + data8utf8);
 
 							var fun = new Function (data8utf8);
 							var FunReturn;
@@ -201,8 +196,8 @@ namespace webinix {
 							if (FunReturn === undefined)
 								return;
 
-							if(webinix_log)
-								console.log( 'Get JS: ' + FunReturn );
+							if(_webinix_log)
+								console.log('Webinix -> JS -> Return -> ' + FunReturn);
 
 							var FunReturn8 = new TextEncoder("utf-8").encode(FunReturn);
 							var Return8 = new Uint8Array(3 + FunReturn8.length);
@@ -216,24 +211,22 @@ namespace webinix {
 							
 							if(Return8[0] !== 0xFF){
 
-								if(webinix_log){
-
-									console.log( 'Error response: ' + buffer8[0] );
-									console.log( 'Error response: ' + buffer8[1] );
-									console.log( 'Error response: ' + buffer8[2] );
-								}
-
+								if(_webinix_log)
+									console.log('Webinix -> JS -> Invalid respons -> ' + buffer8[0] + buffer8[1] + buffer8[2]);
 								return;
 							}
 
-							if(webinix_log){
-
-								for(i = 0; i < Return8.length; i++)
-									console.log( 'Sending Return8['+ i +']: ' + Return8[i] );
-							}
-
 							if(_webinix_ws_status)
-								_webinix_ws.send(Return8.buffer);
+								_webinix_ws.send(Return8.buffer);							
+
+							if(_webinix_log){
+
+								var buf = '[ ';
+								for(i = 0; i < Return8.length; i++)
+									buf = buf + '0x' + Return8[i] + ' ';
+								buf = buf + ']';
+								console.log('Webinix -> JS -> Send respons -> ' + buf);
+							}
 						}
 					});
 				};
@@ -242,7 +235,7 @@ namespace webinix {
 				
 				alert('Sorry. WebSocket not supported by your Browser.');
 
-				if(!webinix_log)
+				if(!_webinix_log)
 					window.close();
 			}
 		}
@@ -264,15 +257,18 @@ namespace webinix {
 				var p = -1;
 				for(i = 3; i < Name8.length + 3; i++)
 					Event8[i] = Name8[++p];
-
-				if(webinix_log){
-
-					for(i = 0; i < Event8.length; i++)
-						console.log( 'Sending Event8['+ i +']: ' + Event8[i] );
-				}
-
+				
 				if(_webinix_ws_status)
-					_webinix_ws.send(Event8.buffer);
+					_webinix_ws.send(Event8.buffer);				
+
+				if(_webinix_log){
+
+					var buf = '[ ';
+					for(i = 0; i < Event8.length; i++)
+						buf = buf + '0x' + Event8[i] + ' ';
+					buf = buf + ']';
+					console.log('Webinix -> Event -> Send -> ' + buf);
+				}
 			}
 		}
 
@@ -290,8 +286,11 @@ namespace webinix {
 			elems = document.getElementsByTagName("button");
 			for (i = 0; i < elems.length; i++){
 
-				if(webinix_log)
-					console.log( 'Listen to Button: ' + elems[i].id );
+				if(elems[i].id == '')
+					continue;
+
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> Button -> ' + elems[i].id);
 				
 				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
 			}
@@ -299,8 +298,11 @@ namespace webinix {
 			elems = document.getElementsByTagName("div");
 			for (i = 0; i < elems.length; i++){
 
-				if(webinix_log)
-					console.log( 'Listen to Div: ' + elems[i].id );
+				if(elems[i].id == '')
+					continue;
+
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> Div -> ' + elems[i].id);
 				
 				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
 			}
@@ -317,12 +319,34 @@ namespace webinix {
 
 			if(!_webinix_ws_status){
 
-				alert('Webinix failed to find the background app.');
+				//document.body.style.filter = "brightness(1%)";
+				document.body.style.filter = "contrast(1%)";
+				alert('Webinix failed to find the background application.');
 
-				if(!webinix_log)
+				if(!_webinix_log)
 					window.close();
 			}
-		}, 3000);
+		}, 1000);
+
+		// Reload
+		document.addEventListener('keydown', function (e){
+			if (e.keyCode === 116) {
+				e.preventDefault();
+				e.returnValue = false;
+				e.keyCode = 0;
+				return false;
+			}		
+		});
+		// Unload
+		window.addEventListener('beforeunload', function (e) {
+		  e.preventDefault();
+		  e.returnValue = '';
+		});
+		// Right click
+		document.addEventListener('contextmenu', function (e) {
+		  //e.preventDefault();
+		  //e.returnValue = '';
+		});
 
 	)V0G0N");
 }
@@ -344,7 +368,7 @@ namespace webinix{
 									"<h2>[ ! ] Access Denied</h2><p>You can't access this window<br>because it's already served.<br><br>The security policy is set to<br>deny multiple requests.</p>"
 									"<br><a href=\"http://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
 
-	const std::string html_unknow = "<html><head><title>Resource Not Available</title><style>"
+	const std::string html_res_notavailable = "<html><head><title>Resource Not Available</title><style>"
 									"html{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{background-color:#2F2F2F;font-family:sans-serif;margin:20px;color:#00ff00}a{color:#00ff00}</style></head><body>"
 									"<h2>[ ! ] Resource Not Available</h2><p>The requested resource is not available.</p>"
 									"<br><a href=\"http://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
@@ -418,6 +442,8 @@ namespace webinix{
             bool websocket_running = false;
             bool webserver_served = false;
             bool webserver_allow_multi = false;
+            bool webserver_local_files = true;
+            std::string webserver_local_root;
             std::string webserver_port = "0";
             std::string websocket_port = "0";
             const std::string * html = nullptr;
@@ -432,6 +458,7 @@ namespace webinix{
         bool window_show(const std::string * html, unsigned short browser);
         void set_window_icon(const std::string * icon_s, const std::string type_s);
 		void allow_multi_access(bool status);
+		void set_root_folder(std::string local_path);
         std::string new_server(const std::string * html);
         bool window_is_running() const;
         bool any_window_is_running() const;
@@ -443,8 +470,73 @@ namespace webinix{
 namespace BoostWebServer{
 
 	// - - - - - - - - - - - - -
-	// Boost Web Server [small]
+	// Boost Web Server [small] + Async local files servings
 	// - - - - - - - - - - - - -
+
+	// Return a reasonable mime type based on the extension of a file.
+    beast::string_view
+    mime_type(beast::string_view path){
+
+        auto const ext = [&path]{
+
+            auto const pos = path.rfind(".");
+            if(pos == beast::string_view::npos)
+                return beast::string_view{};
+			
+            return path.substr(pos);
+        }();
+
+        if(boost::beast::iequals(ext, ".htm"))  return "text/html";
+        if(boost::beast::iequals(ext, ".html")) return "text/html";
+        if(boost::beast::iequals(ext, ".php"))  return "text/html";
+        if(boost::beast::iequals(ext, ".css"))  return "text/css";
+        if(boost::beast::iequals(ext, ".txt"))  return "text/plain";
+        if(boost::beast::iequals(ext, ".js"))   return "application/javascript";
+        if(boost::beast::iequals(ext, ".json")) return "application/json";
+        if(boost::beast::iequals(ext, ".xml"))  return "application/xml";
+        if(boost::beast::iequals(ext, ".swf"))  return "application/x-shockwave-flash";
+        if(boost::beast::iequals(ext, ".flv"))  return "video/x-flv";
+        if(boost::beast::iequals(ext, ".png"))  return "image/png";
+        if(boost::beast::iequals(ext, ".jpe"))  return "image/jpeg";
+        if(boost::beast::iequals(ext, ".jpeg")) return "image/jpeg";
+        if(boost::beast::iequals(ext, ".jpg"))  return "image/jpeg";
+        if(boost::beast::iequals(ext, ".gif"))  return "image/gif";
+        if(boost::beast::iequals(ext, ".bmp"))  return "image/bmp";
+        if(boost::beast::iequals(ext, ".ico"))  return "image/vnd.microsoft.icon";
+        if(boost::beast::iequals(ext, ".tiff")) return "image/tiff";
+        if(boost::beast::iequals(ext, ".tif"))  return "image/tiff";
+        if(boost::beast::iequals(ext, ".svg"))  return "image/svg+xml";
+        if(boost::beast::iequals(ext, ".svgz")) return "image/svg+xml";
+
+        return "application/text";
+    }
+
+	// Append an HTTP rel-path to a local filesystem path.
+    // The returned path is normalized for the platform.
+    std::string path_cat(beast::string_view base, beast::string_view path){
+
+        if(base.empty())
+            return std::string(path);
+		
+        std::string result(base);
+
+        #ifdef BOOST_MSVC
+			char constexpr path_separator = '\\';
+			if(result.back() == path_separator)
+				result.resize(result.size() - 1);
+			result.append(path.data(), path.size());
+			for(auto& c : result)
+				if(c == '/')
+					c = path_separator;
+        #else
+			char constexpr path_separator = '/';
+			if(result.back() == path_separator)
+				result.resize(result.size() - 1);
+			result.append(path.data(), path.size());
+        #endif
+
+        return result;
+    }
 
 	class http_connection : public std::enable_shared_from_this<http_connection>{
 
@@ -541,7 +633,86 @@ namespace BoostWebServer{
 		void
 		create_response()
 		{
-			if(request_.target() == "/"){
+			auto resource_not_available = [&](){
+
+				// Resource Not Available
+				response_.result(http::status::not_found);
+				response_.set(http::field::content_type, "text/html; charset=utf-8");
+				beast::ostream(response_.body()) << webinix::html_res_notavailable;
+			};
+
+			// Security check - method
+			if(	request_.method() != http::verb::get &&
+            	request_.method() != http::verb::head){
+
+				resource_not_available();
+			}
+
+			// Security check - path
+			if(	request_.target().empty() ||
+            	request_.target()[0] != '/' ||
+            	request_.target().find("..") != boost::beast::string_view::npos){
+
+				resource_not_available();
+			}
+
+			if(this->p_ui->settings.webserver_local_files || this->p_ui->settings.html == nullptr){
+
+				// Serve local files
+
+				if(this->p_ui->settings.webserver_local_root == ""){
+
+					// boost::filesystem::path full_path(boost::filesystem::current_path());
+					auto cwd = boost::filesystem::current_path();
+
+					this->p_ui->settings.webserver_local_root = cwd.string();
+					this->p_ui->settings.webserver_local_root.append(webinix::sep);
+				}
+
+				// Build the path to the requested file
+				std::string path = path_cat(this->p_ui->settings.webserver_local_root, request_.target());
+				if(request_.target().back() == '/')
+					path.append("index.html");
+
+				// Attempt to open the file
+				beast::error_code ec;
+				http::file_body::value_type body;
+				body.open(path.c_str(), beast::file_mode::scan, ec);
+
+				// Handle the case where the file doesn't exist
+				if(ec == beast::errc::no_such_file_or_directory){
+
+					resource_not_available();
+					return;
+				}
+
+				// Handle an unknown error
+        		if(ec)
+					resource_not_available();
+				
+				// Cache the size since we need it after the move
+        		//auto const size = body.size();
+
+				// Get file data
+				std::ifstream file(path);
+  				std::string file_data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+				// Respond
+				response_.set(http::field::content_type, mime_type(path));
+				beast::ostream(response_.body())	<< file_data
+													<< "\n <script type = \"text/javascript\"> \n const _webinix_websocket_port = " 
+													<< this->p_ui->settings.websocket_port
+													<< "; \n "
+													<< " const _webinix_webserver_port = " 
+													<< this->p_ui->settings.webserver_port
+													<< "; \n "
+													<< " const _webinix_minimum_data = " 
+													<< MINIMUM_PACKETS_SIZE
+													<< "; \n "
+													<< webinix::javascriptbridge
+													<< " \n </script>";
+			}
+			else if(request_.target() == "/"){
 
 				if(!this->p_ui->settings.webserver_allow_multi && this->p_ui->settings.webserver_served){
 
@@ -555,10 +726,10 @@ namespace BoostWebServer{
 				// Send main HTML
 				response_.set(http::field::content_type, "text/html; charset=utf-8");
 				beast::ostream(response_.body())	<< *this->p_ui->settings.html
-													<< "\n <script type = \"text/javascript\"> \n const _wssport = " 
+													<< "\n <script type = \"text/javascript\"> \n const _webinix_websocket_port = " 
 													<< this->p_ui->settings.websocket_port
 													<< "; \n "
-													<< " const _wsport = " 
+													<< " const _webinix_webserver_port = " 
 													<< this->p_ui->settings.webserver_port
 													<< "; \n "
 													<< " const _webinix_minimum_data = " 
@@ -585,9 +756,7 @@ namespace BoostWebServer{
 			}
 			else {
 
-				response_.result(http::status::not_found);
-				response_.set(http::field::content_type, "text/html; charset=utf-8");
-				beast::ostream(response_.body()) << webinix::html_unknow;
+				resource_not_available();
 			}
 		}
 
@@ -672,12 +841,13 @@ namespace BoostWebSocket{
 			std::cerr << "[!] Webinix -> Websocket -> Session failed on port " + this->p_ui->settings.websocket_port + " -> " << what << ": " << ec.message() << "\n";
 
 			// Close the WebSocket connection
-			ws_.async_close(websocket::close_code::normal,
-				beast::bind_front_handler(
-					&session::on_close,
-					shared_from_this()
-				)
-			);
+			// ws_.async_close(websocket::close_code::normal,
+			// 	beast::bind_front_handler(
+			// 		&session::on_close,
+			// 		shared_from_this()
+			// 	)
+			// );
+			ws_.close(websocket::close_code::normal);
 		}
 
 		public:
@@ -865,10 +1035,13 @@ namespace BoostWebSocket{
 		// on the I/O objects in this session. Although not strictly necessary
 		// for single-threaded contexts, this example code is written to be
 		// thread-safe by default.
-		boost::asio::dispatch(ws_.get_executor(),
+		boost::asio::dispatch(
+			ws_.get_executor(),
 			beast::bind_front_handler(
 				&session::on_run,
-				shared_from_this()));
+				shared_from_this()
+			)
+		);
 	}
 
 	// Accepts incoming connections 
@@ -1009,12 +1182,6 @@ namespace webinix{
 		#define chromium	(5)
 		#define custom		(99)
 
-		#ifdef _WIN32
-			#define DirSep "\""
-		#else
-			#define DirSep ""
-		#endif
-
 		unsigned short CurrentBrowser = 0;
 		std::string browser_path;
 		std::string frofile_path;
@@ -1065,15 +1232,18 @@ namespace webinix{
 
 			#ifdef _WIN32
 				// Resolve SystemDrive
-				char* buf = nullptr;
-				size_t sz = 0;
-				if (_dupenv_s(&buf, &sz, "SystemDrive") != 0 || buf == nullptr)
-					return false;
-				std::string drive = buf;
-				// char const* p_drive = std::getenv("SystemDrive"); // _dupenv_s
-				// if(p_drive == nullptr)
-				// 	return false;
-				// std::string drive = p_drive;
+				#ifdef _MSC_VER
+					char* buf = nullptr;
+					size_t sz = 0;
+					if (_dupenv_s(&buf, &sz, "SystemDrive") != 0 || buf == nullptr)
+						return false;
+					std::string drive = buf;
+				#else
+					char const* p_drive = std::getenv("SystemDrive"); // _dupenv_s
+					if(p_drive == nullptr)
+						return false;
+					std::string drive = p_drive;
+				#endif
 				std::string programs_folder32 = drive + webinix::sep + "Program Files (x86)";
 				std::string programs_folder64 = drive + webinix::sep + "Program Files";
 			#endif
@@ -1219,15 +1389,19 @@ namespace webinix{
 
 			#ifdef _WIN32
 				// Resolve %USERPROFILE%
-				char* buf = nullptr;
-				size_t sz = 0;
-				if (_dupenv_s(&buf, &sz, "USERPROFILE") != 0 || buf == nullptr)
-					return p.string();
-				std::string WinUserProfile = buf;
-				// char* p_drive = std::getenv("USERPROFILE"); // _dupenv_s
-				// if(p_drive == nullptr)
-				// 	return t.string();
-				// std::string WinUserProfile = p_drive;
+				#ifdef _MSC_VER
+					char* p_drive = nullptr;
+					size_t sz = 0;
+					if (_dupenv_s(&p_drive, &sz, "USERPROFILE") != 0 || p_drive == nullptr)
+						return p.string();
+					std::string WinUserProfile = p_drive;
+				#else
+					char* p_drive = std::getenv("USERPROFILE"); // _dupenv_s
+					if(p_drive == nullptr)
+						return p.string();
+					std::string WinUserProfile = p_drive;
+				#endif
+
 			#endif
 
 			if(browser == chrome){
@@ -1370,7 +1544,7 @@ namespace webinix{
 			if(!create_profile_folder(edge))
 				return false;
 
-			std::string arg = " --user-data-dir=" DirSep + frofile_path + DirSep " --no-proxy-server --app=http://127.0.0.1:";	
+			std::string arg = " --user-data-dir="  + webinix::sep + frofile_path + webinix::sep + " --no-proxy-server --app=http://127.0.0.1:";	
 			std::string s_port = std::to_string(port);
 			std::string full(browser::browser_path);
 			full.append(arg);
@@ -1471,7 +1645,7 @@ namespace webinix{
 			if(!create_profile_folder(chrome))
 				return false;
 			
-			std::string arg = " --user-data-dir=" DirSep + frofile_path + DirSep " --disable-gpu --disable-software-rasterizer --no-proxy-server --app=http://127.0.0.1:";	
+			std::string arg = " --user-data-dir=" + webinix::sep + frofile_path + webinix::sep + " --disable-gpu --disable-software-rasterizer --no-proxy-server --app=http://127.0.0.1:";	
 			std::string s_port = std::to_string(port);
 			std::string full(browser::browser_path);
 			full.append(arg);
@@ -1837,6 +2011,12 @@ namespace webinix{
 			return true;
 		
 		return false;
+	}
+
+	void _window::set_root_folder(std::string local_path){
+
+		this->settings.webserver_local_files = true;
+		this->settings.webserver_local_root = local_path;
 	}
 
 	unsigned short get_nat_id(){
