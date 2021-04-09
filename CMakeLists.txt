@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13.0)
 
 # --[ Webinix version ] --------------------------------------------------------------
 
-project(webinix VERSION 1.0.10 DESCRIPTION 
+project(webinix VERSION 1.0.11 DESCRIPTION 
 "Use your web browser as GUI, and bring web technologies to your desktop app.")
 message("-- [ Webinix version ${CMAKE_PROJECT_VERSION} ]")
 
