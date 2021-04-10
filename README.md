@@ -44,7 +44,7 @@ webinix::window my_window(&html);
 
 - Create your handler function
 ```sh
-void my_handler(){
+void my_handler(webinix::event e){
 
     std::cout << "You clicked on a button!" << std::endl;
 }
@@ -60,7 +60,7 @@ my_window.bind("MyButtonID", my_handler);
 my_window.show();
 ```
 
-- Make infinit loop while window shown
+- Make infinit loop and wait for all windows to close
 ```sh
 std::thread ui(webinix::loop);
 ui.join();
@@ -70,7 +70,7 @@ You can also show the window using a specific web browser
 
 ```sh
 if(!my_window.show(webinix::browser::firefox))    // If Firefox not installed
-    my_window.show();                           // try other web browsers.
+    my_window.show();                           // then try other web browsers.
 ```
 
 ## Python
@@ -105,7 +105,7 @@ Please see examples folder.
 
 ## Features
 
-- C++ 17 
+- C++ 20 
 - Lightweight and fast binary mode communication 
 - One header file 
 - Multiplatform & Multi Browser 
@@ -130,7 +130,6 @@ Please see examples folder.
 - Goto http://webinix.me and download latest release Webinix library.
 
 ## Build from source - Windows
-- [ ! ] Boost for Windows is already embedded with this repository, no action needed.
 - [ ! ] Microsoft Visual Studio 2017 is not supported. 
 - Windows SDK 10x. You can download it from http://microsoft.com 
 - Microsoft Visual Studio 2019.
@@ -156,6 +155,11 @@ cmake .. -G "NMake Makefiles"
 nmake
 ```
 
+Build PyWebinix
+```sh
+nmake pywebinix
+```
+
 ### Using MinGW
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
@@ -166,13 +170,8 @@ cmake .. -G "MinGW Makefiles"
 mingw32-make
 ```
 
-Build PyWebinix
-```sh
-nmake pywebinix
-```
-
 ## Build from source - Linux
-- C++17 compiler (GCC/Clang): ```sudo apt install build-essential```
+- C++20 compiler (GCC/Clang): ```sudo apt install build-essential```
 - Boost lib +1.70.0: ```sudo apt install libboost-all-dev```
 - CMake +3.15.0: ```sudo apt install cmake```
 - Python 3.8 (only if you want PyWebinix).
@@ -187,7 +186,7 @@ make
 sudo make install
 ```
 
-Build PyWebinix
+Build PyWebinix if needed
 ```sh
 make pywebinix
 ```
