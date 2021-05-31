@@ -70,7 +70,7 @@ namespace webinix {
 	const std::string javascriptbridge = (R"V0G0N(
 
 		// - - - - - - - - - - -
-		// Webinix WebSocket
+		// Webinix Bridge
 		// - - - - - - - - - - -
 
 		// external const _webinix_websocket_port;
@@ -405,8 +405,9 @@ namespace webinix{
 
 	struct event{
 	
-		unsigned short id = 0;
-		std::string element = "";
+		unsigned short window_id = 0;
+		unsigned short element_id = 0;
+		std::string element_name = "";
 	};
 
 	struct custom_browser_t {
@@ -475,17 +476,21 @@ namespace webinix{
             const std::string * html = nullptr;
             const std::string * icon = nullptr;
             std::string icon_type;
+			std::array<void(*)(webinix::event e), 1> key_action_all;
+			bool is_bind_all = false;
         } settings;
         void receive(std::vector<std::uint8_t> &packets_v);
         void send(std::vector<std::uint8_t> &packets_v) const;
-        static void event(const std::string& id, const std::string& element);
+        void event(const std::string& id, const std::string& element);
         void websocket_session_clean();
         unsigned short bind(std::string key_id, void(*function_ref)(webinix::event e)) const;
+        void bind_all(void(*function_ref)(webinix::event e));
         bool window_show(const std::string * html, unsigned short browser);
         void set_window_icon(const std::string * icon_s, const std::string type_s);
 		void allow_multi_access(bool status);
 		void set_root_folder(std::string local_path);
         std::string new_server(const std::string * html);
+		unsigned short get_window_number() const;
         bool window_is_running() const;
         bool any_window_is_running() const;
         void destroy();
@@ -2036,6 +2041,11 @@ namespace webinix{
 		this->send(packets_v);
 	}
 
+	unsigned short _window::get_window_number() const{
+
+		return this->settings.number;
+	}
+
 	bool _window::window_is_running() const{
 
 		return this->settings.websocket_running;
@@ -2172,16 +2182,34 @@ namespace webinix{
 
 		int key_id = webinix::getkey(id);
 
+		webinix::event e;
+		e.window_id = this->settings.number;
+		e.element_name = element;	
+
+		if(this->settings.is_bind_all && this->settings.key_action_all[0]){
+
+			e.element_id = 0;
+
+			// Send this event to a general user func
+			// that handel all events.
+			std::thread ta(this->settings.key_action_all[0], e);
+			ta.detach();
+		}
+
 		if(key_id >= 0 && webinix::key_actions[key_id]){
 
-			webinix::event e;
-			e.element = element;
-			e.id = key_id;
+			e.element_id = key_id;
 
 			// webinix::key_actions[key_id](e);
 			std::thread t(webinix::key_actions[key_id], e);
     		t.detach();
 		}
+	}
+
+	void _window::bind_all(void(*function_ref)(webinix::event e)){
+
+		this->settings.key_action_all[0] = function_ref;
+		this->settings.is_bind_all = true;
 	}
 
 	unsigned short _window::bind(std::string key_id, void(*function_ref)(webinix::event e)) const{
