@@ -78,21 +78,28 @@
 </div>
   </body>
   
-	<!-- Webinix Core -->
-	<script type="text/javascript">
-		document.addEventListener('DOMContentLoaded', function(event) {
-			if (typeof _webinix_ws === 'undefined'){
-				let webinix_searchParams = new URLSearchParams(window.location.search);
-				if(webinix_searchParams.has('webinix')){
-					let webinix_url = webinix_searchParams.get('webinix');
-					var webinix_elem = document.createElement("script");
-					webinix_elem.type = "text/javascript";
-					webinix_elem.src = webinix_url;
-					document.getElementsByTagName('head')[0].appendChild(webinix_elem);
-				}
-				else alert('Failed to get the Webinix Core link.');
-			}
-		})
-	</script>
+    <!-- Webinix Core ---------------------------------------------------->
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", function (event) {
+	if (typeof _webinix_ws === "undefined") {
+	  let webinix_searchParams = new URLSearchParams(window.location.search);
+	  if (webinix_searchParams.has("webinix")) {
+	    let webinix_url = webinix_searchParams.get("webinix");
+	    var webinix_elem = document.createElement("script");
+	    webinix_elem.async = true;
+	    webinix_elem.type = "text/javascript";
+	    webinix_elem.src = webinix_url;
+	    document.body.appendChild(webinix_elem);
+	  } else alert("Failed to get the Webinix Core link.");
+	}
+      });
+      // Callbacks
+      function webinix_ready() {
+
+	// Webinix is ready
+	webinix_debug(false);
+      }
+    </script>
+    <!-- ------------------------------------------------------------ -->
 
 </html>
