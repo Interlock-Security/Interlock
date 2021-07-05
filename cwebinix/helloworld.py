@@ -1,6 +1,6 @@
 
 # -------------------------------------------------------------------------------
-# PyWebinix
+# cWebinix
 # - - - -
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -24,26 +24,26 @@ class Webinix:
         webinix_wrapper = None
         try:
             if platform.system() == 'Darwin':
-                self.webinix_lib = ctypes.CDLL('pywebinix.dylib')
+                self.webinix_lib = ctypes.CDLL('cwebinix.dylib')
             elif platform.system() == 'Windows':
                 if sys.version_info.major == 3 and sys.version_info.minor == 8:
                     os.chdir(os.getcwd())
                     os.add_dll_directory(os.getcwd())
-                    self.webinix_lib = ctypes.CDLL('pywebinix.dll')
-                    #self.webinix_lib = cdll.LoadLibrary('pywebinix.dll')
+                    self.webinix_lib = ctypes.CDLL('cwebinix.dll')
+                    #self.webinix_lib = cdll.LoadLibrary('cwebinix.dll')
             elif platform.system() == 'Linux':
                 os.chdir(os.getcwd())
-                self.webinix_lib = ctypes.CDLL(os.getcwd() + '/libpywebinix.so')
-            webinix_wrapper = self.webinix_lib.py_create_window
+                self.webinix_lib = ctypes.CDLL(os.getcwd() + '/libcwebinix.so')
+            webinix_wrapper = self.webinix_lib.c_create_window
             webinix_wrapper.restype = c_void_p
             self.window = c_void_p(webinix_wrapper())
-            self.webinix_lib.py_ini()
+            self.webinix_lib.c_ini()
         except OSError as e:
             print("Webinix Err: %s" % e)
             sys.exit(1)
     def __del__(self):
         if self.window is not None and self.webinix_lib is not None:
-            self.webinix_lib.py_destroy_window(self.window)
+            self.webinix_lib.c_destroy_window(self.window)
     def bind(self, element, func_ref): 
         if self.window is None or self.webinix_lib is None:
             return
@@ -60,14 +60,14 @@ class Webinix:
             ctypes.py_object,   # arg 3
             ctypes.c_void_p     # arg 4
         )
-        fun = prototype(('py_bind_element', self.webinix_lib))
+        fun = prototype(('c_bind_element', self.webinix_lib))
         fun(self.window, element.encode('utf-8'), func_ref, self.cb_fun_list[-1])
     def show(self, html):
         if self.window is not None and self.webinix_lib is not None:
-            self.webinix_lib.py_show_window(self.window, html.encode('utf-8'))
+            self.webinix_lib.c_show_window(self.window, html.encode('utf-8'))
     def loop(self): 
         if self.webinix_lib is not None:
-            self.webinix_lib.py_loop()
+            self.webinix_lib.c_loop()
 # -------------------------------------------------------------------------------
 
 # HTML

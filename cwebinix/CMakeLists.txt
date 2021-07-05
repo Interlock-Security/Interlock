@@ -1,10 +1,10 @@
 
 # Info
-set(Info_Title "PyWebinix")
-set(Info_Source ${webinix_SOURCE_DIR}/src/webinix.cpp "pywebinix.cpp")
-set(Info_App "pywebinix")
+set(Info_Title "cWebinix")
+set(Info_Source ${webinix_SOURCE_DIR}/src/webinix.cpp "cwebinix.cpp")
+set(Info_App ${cwebinix_lib})
 
-# --[ PyWebinix ] -----------------------------------------------------------------
+# --[ cWebinix ] -----------------------------------------------------------------
 
 include_directories(${webinix_SOURCE_DIR}/include)
 link_directories(${webinix_BIN_DIR}/webinix)
@@ -13,29 +13,35 @@ link_directories(${webinix_BIN_DIR}/webinix)
 
 message("[*] Initializing Boost for ${Info_Title}...")
 
+set(Boost_NO_WARN_NEW_VERSIONS ON)
+
 if (WIN32)
 	set(BOOST_ROOT ${Boost_Root})
 	set(Boost_LIBRARY_DIR ${Boost_Lib})
 	message("[*] Using Boost root: ${BOOST_ROOT}")
 	message("[*] Using Boost lib: ${Boost_LIBRARY_DIR}")
 
-	set(Boost_ARCHITECTURE "-x64")
-	# set(Boost_DEBUG					OFF)
-	# set(Boost_USE_STATIC_LIBS			ON)
-	# set(Boost_USE_MULTITHREADED		ON)
-	# set(Boost_USE_STATIC_RUNTIME		ON)
+	set(Boost_ARCHITECTURE 				"-x64")
+	set(Boost_USE_STATIC_LIBS			ON)
+	set(Boost_USE_MULTITHREADED			ON)
+	set(Boost_USE_STATIC_RUNTIME		ON)
+	# set(Boost_COMPILER				"-mgw8")
+
 	# set(Boost_DETAILED_FAILURE_MSG	OFF)
+	# set(Boost_DEBUG					OFF)	
 	# set(Boost_THREADAPI             	"win32")
 	# set(Boost_COMPILER				"-vc142")
+	# add_definitions( -DBOOST_ALL_NO_LIB )
 else()
     # set(Boost_DEBUG 					OFF)
-    set(Boost_USE_STATIC_LIBS       	ON)
-    # set(Boost_USE_MULTITHREADED		ON)
-    # set(Boost_USE_STATIC_RUNTIME		ON)
+    set(Boost_USE_STATIC_LIBS       	OFF)
+    set(Boost_USE_MULTITHREADED			ON)
+    set(Boost_USE_STATIC_RUNTIME		OFF)
     # set(Boost_ARCHITECTURE			"-x64")
     # set(Boost_THREADAPI				"pthread")
     # set(Boost_DETAILED_FAILURE_MSG	ON)
     # set(Boost_COMPILER				"-gcc")
+	add_definitions( -DBOOST_ALL_NO_LIB )
 endif()
 
 message("[*] Searching for Boost libs...")
@@ -134,7 +140,7 @@ endif()
 # --[ Build ] -------------------------------------------------------------------
 
 # Add the static lib Webinix to our shared
-# lib PyWebinix.
+# lib cWebinix.
 #target_link_libraries(${Info_App} webinix)
 
 if(UNIX)
@@ -143,4 +149,4 @@ else()
 	target_link_libraries(${Info_App} PRIVATE ws2_32 wsock32 ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 endif (UNIX)
 
-configure_file(${webinix_SOURCE_DIR}/pywebinix/helloworld.py ${CMAKE_CURRENT_BINARY_DIR}/helloworld.py COPYONLY)
+configure_file(${webinix_SOURCE_DIR}/cwebinix/helloworld.py ${CMAKE_CURRENT_BINARY_DIR}/helloworld.py COPYONLY)

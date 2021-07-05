@@ -13,6 +13,7 @@
 #define TYPE_EVENT 			0xFD	// 253
 #define TYPE_SWITCH 		0xFC	// 252
 #define TYPE_CLOSE 			0xFB	// 251
+#define TYPE_CALL_FUNC		0xFA	// 250
 
 // -- Windows ---------------------------------
 #ifdef _WIN32
@@ -70,7 +71,7 @@ namespace webinix {
 	const std::string javascriptbridge = (R"V0G0N(
 
 		// - - - - - - - - - - -
-		// Webinix Bridge
+		// Webinix Code (Bridge)
 		// - - - - - - - - - - -
 
 		// external const _webinix_websocket_port;
@@ -78,7 +79,7 @@ namespace webinix {
 		// external const _webinix_minimum_data;
 
 		// Log & keep window open
-		const _webinix_log = false;
+		var _webinix_log = false;
 
 		var _webinix_ws;
 		var _webinix_ws_status = false;
@@ -97,17 +98,6 @@ namespace webinix {
 		function _webinix_freez_ui(){
 
 			document.body.style.filter = "contrast(1%)";
-		}
-
-		function webinix_close_window(){
-
-			_webinix_freez_ui();
-			_webinix_allow_close = true;
-
-			if(_webinix_ws_status)
-				_webinix_close(0xFF, '');
-			else
-				window.close();
 		}
 
 		function _webinix_start(){
@@ -207,6 +197,9 @@ namespace webinix {
 						}
 						else if(buffer8[1] === 0xFE){
 
+							data8utf8 = data8utf8.replace(/(?:\r\n|\r|\n)/g, '\\n');
+							//data8utf8 = data8utf8.replace(/'/g, "\\'"); This change also foo('') to foo(\'\')
+
 							if(_webinix_log)
 								console.log('Webinix -> JS -> Run -> ' + data8utf8);
 
@@ -214,8 +207,8 @@ namespace webinix {
 							var FunReturn;
 							FunReturn = String(fun());
 
-							if (FunReturn === undefined)
-								return;
+							if (typeof FunReturn === "undefined" || FunReturn === undefined)
+								FunReturn = 'undefined';
 
 							if(_webinix_log)
 								console.log('Webinix -> JS -> Return -> ' + FunReturn);
@@ -233,7 +226,7 @@ namespace webinix {
 							if(Return8[0] !== 0xFF){
 
 								if(_webinix_log)
-									console.log('Webinix -> JS -> Invalid respons -> 0x' + buffer8[0] + ' 0x' + buffer8[1] + ' 0x' + buffer8[2]);
+									console.log('Webinix -> JS -> Generate response failed -> 0x' + buffer8[0] + ' 0x' + buffer8[1] + ' 0x' + buffer8[2]);
 								return;
 							}
 
@@ -246,7 +239,7 @@ namespace webinix {
 								for(i = 0; i < Return8.length; i++)
 									buf = buf + '0x' + Return8[i] + ' ';
 								buf = buf + ']';
-								console.log('Webinix -> JS -> Send respons -> ' + buf);
+								console.log('Webinix -> JS -> Sent response -> [' + FunReturn + '] (' + buf + ')');
 							}
 						}
 					});
@@ -284,7 +277,7 @@ namespace webinix {
 					for(i = 0; i < Event8.length; i++)
 						buf = buf + '0x' + Event8[i] + ' ';
 					buf = buf + ']';
-					console.log('Webinix -> Event -> Send -> ' + buf);
+					console.log('Webinix -> Event -> Send -> [' + name + '] (' + buf + ')');
 				}
 			}
 		}
@@ -307,7 +300,7 @@ namespace webinix {
 					continue;
 
 				if(_webinix_log)
-					console.log('Webinix -> Listen -> Button -> ' + elems[i].id);
+					console.log('Webinix -> Listen -> <Button> -> ' + elems[i].id);
 				
 				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
 			}
@@ -319,7 +312,19 @@ namespace webinix {
 					continue;
 
 				if(_webinix_log)
-					console.log('Webinix -> Listen -> Div -> ' + elems[i].id);
+					console.log('Webinix -> Listen -> <Div> -> ' + elems[i].id);
+				
+				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("li");
+			for (i = 0; i < elems.length; i++){
+
+				if(elems[i].id == '')
+					continue;
+
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <LI> -> ' + elems[i].id);
 				
 				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
 			}
@@ -364,15 +369,85 @@ namespace webinix {
 			_webinix_close(0xFF, '');
 		});
 
-		// window.onbeforeunload = function (){
-		// 	_webinix_close(0xFF, '');
-		// };
+		window.onbeforeunload = function (){
+			_webinix_close(0xFF, '');
+		};
 
 		// Right click
 		document.addEventListener('contextmenu', function (e) {
 		  //e.preventDefault();
 		  //e.returnValue = '';
 		});
+
+		if (typeof webinix_ready === "function")
+			setTimeout(webinix_ready, 0);
+		
+		// - - - - - - - - - - -
+		// Webinix Public tools
+		// - - - - - - - - - - -
+		
+		function webinix_debug(status){
+
+			if(status){
+
+				console.log('Webinix -> Debug log enabled.');
+				_webinix_log = true;
+			}
+			else {
+
+				console.log('Webinix -> Debug log disabled.');
+				_webinix_log = false;
+			}
+		}
+
+		function webinix_close_window(){
+
+			_webinix_freez_ui();
+			_webinix_allow_close = true;
+
+			if(_webinix_ws_status)
+				_webinix_close(0xFF, '');
+			else
+				window.close();
+		}
+
+		function webinix_event(event_name){
+
+			if(!_webinix_ws_status){
+
+				console.log('Webinix -> Send Event -> Failed because status is disconnected.');
+				return;
+			}
+
+			var event_name8 = new TextEncoder("utf-8").encode(event_name);
+			var SendEvent8 = new Uint8Array(3 + event_name8.length);
+			SendEvent8[0] = 0xFF; // Signature
+			SendEvent8[1] = 0xFA; // Type
+			SendEvent8[2] = 0x00; // Empty
+
+			var p = -1;
+			for(i = 3; i < event_name8.length + 3; i++)
+				SendEvent8[i] = event_name8[++p];
+			
+			if(SendEvent8[0] !== 0xFF){
+
+				if(_webinix_log)
+					console.log('Webinix -> Send Event -> Generate header failed -> 0x' + SendEvent8[0] + ' 0x' + SendEvent8[1] + ' 0x' + SendEvent8[2]);
+				return;
+			}
+
+			if(_webinix_ws_status)
+				_webinix_ws.send(SendEvent8.buffer);							
+
+			if(_webinix_log){
+
+				var buf = '[ ';
+				for(i = 0; i < SendEvent8.length; i++)
+					buf = buf + '0x' + SendEvent8[i] + ' ';
+				buf = buf + ']';
+				console.log('Webinix -> Send Event -> [' + event_name + '] (' + buf + ')');
+			}
+		}
 
 	)V0G0N");
 }
@@ -421,11 +496,12 @@ namespace webinix{
 	std::atomic<bool> waitfor_swindow (false);
 	std::vector<std::string> key_v;
 	std::array<void(*)(webinix::event e), 64> key_actions;
-	unsigned short port_start = 8080;
+	#define WEBUI_MIN_PORT (8080) // Max 65535
 	std::vector<unsigned short> port_v = { 0 };
 	unsigned short winlast = 1;
 	unsigned short startup_timeout = 10; // t = n * 1000 / 500
 	bool use_timeout = true;
+	bool exit_now = false;
 	std::array<std::string *,		64> nat_data;
 	std::array<std::atomic<bool>,	64> nat_data_status;
 	std::vector<unsigned short>			nat_id_v = { 0 };
@@ -454,6 +530,7 @@ namespace webinix{
 	void exit();
 	bool any_is_show();
 	void set_custom_browser(const webinix::custom_browser_t *p);
+	std::string get_current_path();
 
 	// -- Class ----
 	class _window {
@@ -495,6 +572,7 @@ namespace webinix{
         bool any_window_is_running() const;
         void destroy();
         std::string run(std::string js, unsigned short seconds) const;
+		void open_window(std::string link, unsigned short browser);
 	};
 }
 
@@ -538,6 +616,9 @@ namespace BoostWebServer{
         if(boost::beast::iequals(ext, ".tif"))  return "image/tiff";
         if(boost::beast::iequals(ext, ".svg"))  return "image/svg+xml";
         if(boost::beast::iequals(ext, ".svgz")) return "image/svg+xml";
+        if(boost::beast::iequals(ext, ".woff2")) return "font/woff2";
+        if(boost::beast::iequals(ext, ".woff")) return "font/woff";
+        if(boost::beast::iequals(ext, ".ttf")) return "font/ttf";
 
         return "application/text";
     }
@@ -692,7 +773,23 @@ namespace BoostWebServer{
 				resource_not_available();
 			}
 
-			if(this->p_ui->settings.webserver_local_files || this->p_ui->settings.html == nullptr){
+			if(request_.target().substr(0, 13) == "/webinixcore.js"){
+
+				// Send Webinix Core .JS
+				response_.set(http::field::content_type, "application/javascript");
+				beast::ostream(response_.body())	<< "const _webinix_websocket_port = " 
+													<< this->p_ui->settings.websocket_port
+													<< "; \n "
+													<< " const _webinix_webserver_port = " 
+													<< this->p_ui->settings.webserver_port
+													<< "; \n "
+													<< " const _webinix_minimum_data = " 
+													<< MINIMUM_PACKETS_SIZE
+													<< "; \n "
+													<< webinix::javascriptbridge
+													<< " \n ";
+			}
+			else if(this->p_ui->settings.webserver_local_files || this->p_ui->settings.html == nullptr){
 
 				// Serve local files
 
@@ -706,7 +803,7 @@ namespace BoostWebServer{
 				}
 
 				// Build the path to the requested file
-				std::string path = path_cat(this->p_ui->settings.webserver_local_root, request_.target());
+				std::string path = path_cat(this->p_ui->settings.webserver_local_root, request_.target()); // TODO: Support GET parameters like 'file.js?foo=bar' -> 'file.js'
 				if(request_.target().back() == '/')
 					path.append("index.html");
 
@@ -1572,7 +1669,7 @@ namespace webinix{
 			return true;
 		}
 
-		bool start_edge(unsigned short port){
+		bool start_edge(std::string address){
 
 			// -- Edge ----------------------
 
@@ -1585,11 +1682,10 @@ namespace webinix{
 			if(!create_profile_folder(edge))
 				return false;
 
-			std::string arg = " --user-data-dir=\"" + frofile_path + "\" --no-proxy-server --app=http://127.0.0.1:";	
-			std::string s_port = std::to_string(port);
+			std::string arg = " --user-data-dir=\"" + frofile_path + "\" --no-proxy-server --app=";
 			std::string full(browser::browser_path);
 			full.append(arg);
-			full.append(s_port);
+			full.append(address);
 
 			if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0){
 
@@ -1600,7 +1696,7 @@ namespace webinix{
 				return false;
 		}
 
-		bool start_firefox(unsigned short port){
+		bool start_firefox(std::string address){
 
 			// -- Firefox ----------------------
 
@@ -1613,11 +1709,10 @@ namespace webinix{
 			if(!create_profile_folder(firefox))
 				return false;
 
-			std::string arg = " -P Webinix -private -no-remote -new-instance http://127.0.0.1:";	
-			std::string s_port = std::to_string(port);
+			std::string arg = " -P Webinix -private -no-remote -new-instance ";
 			std::string full(browser::browser_path);
 			full.append(arg);
-			full.append(s_port);
+			full.append(address);
 
 			#ifdef _WIN32
 				if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0)
@@ -1633,7 +1728,7 @@ namespace webinix{
 				return false;
 		}
 
-		bool start_custom(unsigned short port){
+		bool start_custom(std::string address){
 
 			// -- Custom Browser ----------------------
 
@@ -1650,10 +1745,11 @@ namespace webinix{
 
 			if(p_custom->link){
 
-				arg.append("http://127.0.0.1:");
+				// arg.append("http://127.0.0.1:");
+				// std::string s_port = std::to_string(port);
+				// arg.append(s_port);
 
-				std::string s_port = std::to_string(port);
-				arg.append(s_port);
+				arg.append(address);
 			}
 
 			std::string full(p_custom->app);
@@ -1665,7 +1761,6 @@ namespace webinix{
 				if(browser::command_browser("sh -c \"" + full + " >>/dev/null 2>>/dev/null\"") == 0)
 			#endif
 			{
-
 				browser::CurrentBrowser = custom;
 				return true;
 			}
@@ -1673,7 +1768,7 @@ namespace webinix{
 				return false;
 		}
 
-		bool start_chrome(unsigned short port){
+		bool start_chrome(std::string address){
 
 			// -- Chrome ----------------------
 
@@ -1686,11 +1781,10 @@ namespace webinix{
 			if(!create_profile_folder(chrome))
 				return false;
 			
-			std::string arg = " --user-data-dir=\"" + frofile_path + "\" --disable-gpu --disable-software-rasterizer --no-proxy-server --app=http://127.0.0.1:";	
-			std::string s_port = std::to_string(port);
+			std::string arg = " --user-data-dir=\"" + frofile_path + "\" --disable-gpu --disable-software-rasterizer --no-proxy-server --app=";
 			std::string full(browser::browser_path);
 			full.append(arg);
-			full.append(s_port);
+			full.append(address);
 
 			#ifdef _WIN32
 				if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0)
@@ -1698,7 +1792,6 @@ namespace webinix{
 				if(browser::command_browser("sh -c \"" + full + " >>/dev/null 2>>/dev/null\"") == 0)
 			#endif
 			{
-
 				browser::CurrentBrowser = chrome;
 				return true;
 			}
@@ -1706,7 +1799,7 @@ namespace webinix{
 				return false;
 		}
 
-		bool start(unsigned short port, unsigned short browser){
+		bool start(std::string address, unsigned short browser){
 
 			// Non existing browser
 			if(browser > 99)
@@ -1716,13 +1809,13 @@ namespace webinix{
 
 				// Specified browser
 				if(browser == chrome)
-					return start_chrome(port);
+					return start_chrome(address);
 				else if(browser == firefox)
-					return start_firefox(port);
+					return start_firefox(address);
 				else if(browser == edge)
-					return start_edge(port);
+					return start_edge(address);
 				else if(browser == custom)
-					return start_custom(port);
+					return start_custom(address);
 				else
 					return false;
 			}
@@ -1730,13 +1823,13 @@ namespace webinix{
 
 				// Already set browser
 				if(CurrentBrowser == chrome)
-					return start_chrome(port);
+					return start_chrome(address);
 				else if(CurrentBrowser == firefox)
-					return start_firefox(port);
+					return start_firefox(address);
 				else if(CurrentBrowser == edge)
-					return start_edge(port);
+					return start_edge(address);
 				else if(CurrentBrowser == custom)
-					return start_custom(port);
+					return start_custom(address);
 				else
 					return false;
 					//webinix::exit();
@@ -1747,26 +1840,26 @@ namespace webinix{
 
 				#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 					// Windows
-					if(!start_chrome(port))
-						if(!start_firefox(port))
-							if(!start_edge(port))
-								if(!start_custom(port))
+					if(!start_chrome(address))
+						if(!start_firefox(address))
+							if(!start_edge(address))
+								if(!start_custom(address))
 									return false;
 									//webinix::exit();
 				#elif __APPLE__
 					// macOS
-					if(!start_chrome(port))
-						if(!start_firefox(port))
-							if(!start_edge(port))
-								if(!start_custom(port))
+					if(!start_chrome(address))
+						if(!start_firefox(address))
+							if(!start_edge(address))
+								if(!start_custom(address))
 									return false;
 									//webinix::exit();
 				#else
 					// Linux
-					if(!start_chrome(port))
-						if(!start_firefox(port))
-							if(!start_edge(port))
-								if(!start_custom(port))
+					if(!start_chrome(address))
+						if(!start_firefox(address))
+							if(!start_edge(paddressort))
+								if(!start_custom(address))
 									return false;
 									//webinix::exit();
 				#endif
@@ -1817,6 +1910,17 @@ namespace webinix{
 	void set_custom_browser(const webinix::custom_browser_t *p){
 
 		p_custom = p;
+	}
+
+	std::string get_current_path(){
+
+		std::string path = "";
+
+		auto cwd = boost::filesystem::current_path();
+		path = cwd.string();
+		path.append(webinix::sep);
+
+		return path;
 	}
 
 	signed short getkey(const std::string& id){
@@ -1887,8 +1991,10 @@ namespace webinix{
 		}
 		else {
 
-			// Wait forever!
-			while(1)
+			// Infinit wait
+			// This is serving a folder, we don't exit if a window is closed
+			// we exit only when exit_now is false.
+			while(!exit_now)
 				std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(100));
 		}
 
@@ -1899,6 +2005,7 @@ namespace webinix{
 
 		webinix::waitfor_swindow = false;
 		webinix::connected_swindow = 0;
+		webinix::exit_now = true;
 	}
 
 	void FreePort(unsigned short p){
@@ -1927,9 +2034,9 @@ namespace webinix{
 
 	unsigned short getport(){
 		
-		unsigned short p = webinix::port_start;
+		unsigned short p = WEBUI_MIN_PORT;
 
-		for(unsigned short i = 1; i <= 65535; i++){
+		for(unsigned short i = WEBUI_MIN_PORT; i <= 65535; i++){
 
 			if(std::find(webinix::port_v.begin(), webinix::port_v.end(), p) != webinix::port_v.end())
 				p++; // Port used by local window
@@ -2171,6 +2278,13 @@ namespace webinix{
 			*webinix::nat_data[id] = data;
 			webinix::nat_data_status[id] = true;
 		}
+		else if (type == TYPE_CALL_FUNC){
+
+			// Call Function (As an event)
+
+			if(!data.empty())
+				this->event(this->settings.number_s + "/" + data, data);
+		}
 	}
 
 	void _window::websocket_session_clean(){
@@ -2266,6 +2380,12 @@ namespace webinix{
 		this->settings.icon_type = type_s;
 	}
 
+	void _window::open_window(std::string link, unsigned short browser){
+
+		// Just open an app-mode window using this link
+		browser::start(link, browser);
+	}
+
 	bool _window::window_show(const std::string * html, unsigned short browser){
 
 		// Initializing
@@ -2304,7 +2424,10 @@ namespace webinix{
 			_start_websocket();
 			//std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1000));
 
-			if(!browser::start(port_web, browser))
+			std::string address = "http://127.0.0.1:";
+			address.append(std::to_string(port_web));
+
+			if(!browser::start(address, browser))
 				return false;
 		}
 		else {

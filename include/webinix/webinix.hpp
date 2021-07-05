@@ -51,6 +51,7 @@ namespace webinix{
 	bool any_is_show();
 	void set_custom_browser(const webinix::custom_browser_t *b);
 	void set_timeout_sec(unsigned short s);
+	std::string get_current_path();
 
 	// -- Class ----
     class _window {
@@ -92,6 +93,7 @@ namespace webinix{
         bool any_window_is_running() const;
         void destroy();
         std::string run(std::string js, unsigned short seconds) const;
+		void open_window(std::string link, unsigned short browser);
 	};
 
 	class window{
@@ -219,6 +221,16 @@ namespace webinix{
 		std::string new_server(){
 
 			return o_win.new_server(nullptr);
+		}
+
+		std::string get_current_path(){
+
+			return webinix::get_current_path();
+		}
+
+		void open_window(std::string link, unsigned short browser){
+
+			o_win.open_window(link, browser);
 		}
 
 		// -- JavaScript ------------------------------------------

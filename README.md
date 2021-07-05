@@ -134,7 +134,7 @@ Please see examples folder.
 - Windows SDK 10x. You can download it from http://microsoft.com 
 - Microsoft Visual Studio 2019.
 - CMake +3.15.0. You can download it from https://cmake.org/download
-- Python 3.8 (only if you want PyWebinix).
+- Python 3.8 (only if you want cWebinix).
 
 ### Using MSVC
 ```sh
@@ -155,9 +155,9 @@ cmake .. -G "NMake Makefiles"
 nmake
 ```
 
-Build PyWebinix
+Build cWebinix
 ```sh
-nmake pywebinix
+nmake cwebinix
 ```
 
 ### Using MinGW
@@ -174,7 +174,7 @@ mingw32-make
 - C++20 compiler (GCC/Clang): ```sudo apt install build-essential```
 - Boost lib +1.70.0: ```sudo apt install libboost-all-dev```
 - CMake +3.15.0: ```sudo apt install cmake```
-- Python 3.8 (only if you want PyWebinix).
+- Python 3.8 (only if you want cWebinix).
 
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
@@ -186,9 +186,9 @@ make
 sudo make install
 ```
 
-Build PyWebinix if needed
+Build cWebinix if needed
 ```sh
-make pywebinix
+make cwebinix
 ```
 
 ## Build from source - macOS

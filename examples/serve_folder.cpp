@@ -31,8 +31,8 @@ int main(){
 	// automaticaly server the current folder.
 	my_window.serve_folder("");
 
-	// Set Webinix to wait forever!
-	// 0: infinit loop
+	// Set Webinix to wait for first request
+	// 0: infinit wait
 	// n: wait for n seconds
 	webinix::set_timeout_sec(0);
 
@@ -51,13 +51,17 @@ int main(){
 
 	std::cout << "Starting Webinix server.." << std::endl;
 	std::cout << "Please goto to this address: " << url << std::endl;
-	std::cout << std::endl << "Wait forever!.." << std::endl;
+	std::cout << std::endl << "Infinite wait.." << std::endl;
 	std::cout << "To stop just press Ctrl + C" << std::endl;
+
+	// Open a window!
+	std::string full_link = webinix::get_current_path() + "index.html?webinix=" + url + "/webinixcore.js";
+	my_window.open_window(full_link, webinix::browser::chrome);
 
 	// Loop
 	std::thread ui(webinix::loop);
 	ui.join();
-	
+
 	return 0;
 }
 
