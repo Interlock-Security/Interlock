@@ -114,6 +114,8 @@ namespace webinix {
 
 					if(_webinix_log)
 						console.log('Webinix -> Connected');
+					
+					_webinix_listener();
 				};
 
 				_webinix_ws.onerror = function(){
@@ -254,7 +256,7 @@ namespace webinix {
 			}
 		}
 
-		function SendEvent(name){
+		function _webinix_SendEvent(name){
 
 			if(_webinix_ws_status && name != ''){
 
@@ -282,56 +284,115 @@ namespace webinix {
 			}
 		}
 
-		window.addEventListener("load",function(){
+		function _webinix_listener_handler(){
 
 			var elems = document.getElementsByTagName("form");
 			for (i = 0; i < elems.length; i++){
-
 				_webinix_ws_status = false;
 				alert('Incompatible HTML.\n\nYour HTML contain <form> elements, wish is not compatible with Webinix. Please remove all those elements.');
-
 				_webinix_close(0xFF, '');
 			}
 		
 			elems = document.getElementsByTagName("button");
 			for (i = 0; i < elems.length; i++){
-
 				if(elems[i].id == '')
 					continue;
-
 				if(_webinix_log)
 					console.log('Webinix -> Listen -> <Button> -> ' + elems[i].id);
-				
-				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
 			}
 			
 			elems = document.getElementsByTagName("div");
 			for (i = 0; i < elems.length; i++){
-
 				if(elems[i].id == '')
 					continue;
-
 				if(_webinix_log)
 					console.log('Webinix -> Listen -> <Div> -> ' + elems[i].id);
-				
-				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
 			}
 
 			elems = document.getElementsByTagName("li");
 			for (i = 0; i < elems.length; i++){
-
 				if(elems[i].id == '')
 					continue;
-
 				if(_webinix_log)
 					console.log('Webinix -> Listen -> <LI> -> ' + elems[i].id);
-				
-				elems[i].addEventListener("click", function(){ SendEvent(this.id) });
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
 			}
-		});	
 
+			elems = document.getElementsByTagName("p");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <P> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("a");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <A> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("p");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <P> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("ul");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <UL> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("footer");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <FOOTER> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("nav");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <NAV> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+
+			elems = document.getElementsByTagName("span");
+			for (i = 0; i < elems.length; i++){
+				if(elems[i].id == '')
+					continue;
+				if(_webinix_log)
+					console.log('Webinix -> Listen -> <SPAN> -> ' + elems[i].id);
+				elems[i].addEventListener("click", function(){ _webinix_SendEvent(this.id) });
+			}
+		}
+
+		function _webinix_listener(){
+
+			window.addEventListener("load", _webinix_listener_handler());
+		}
+
+		// Starting point
 		_webinix_start();
 
+		// Check connection
 		setTimeout(function(){
 
 			if(!_webinix_ws_status){
@@ -368,7 +429,6 @@ namespace webinix {
 			// console.log('Webinix -> CLOSE -> FUNC END');
 			_webinix_close(0xFF, '');
 		});
-
 		window.onbeforeunload = function (){
 			_webinix_close(0xFF, '');
 		};
@@ -379,7 +439,8 @@ namespace webinix {
 		  //e.returnValue = '';
 		});
 
-		if (typeof webinix_ready === "function")
+		// Callback
+		if(typeof webinix_ready === "function")
 			setTimeout(webinix_ready, 0);
 		
 		// - - - - - - - - - - -
