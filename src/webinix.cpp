@@ -1385,10 +1385,8 @@ namespace webinix{
 
 			//boost::process::environment env = ::boost::this_process::environment();
 			//boost::process::child c(cmd, browser::env, boost::process::windows::hide);
-			boost::process::child c(cmd);
-
-			c.wait();
-			return c.exit_code();
+			return boost::process::system(cmd);
+			
 		}
 
 		int command_browser(std::string cmd){
@@ -1626,7 +1624,7 @@ namespace webinix{
 				#ifdef _WIN32
 					return WinUserProfile;
 				#elif __APPLE__
-					char* tmpdir = std::getenv("TMPDIR"); 
+					char* tmpdir = std::getenv("TMPDIR");
 					return tmpdir;
                 #else
 					return "/var/tmp";
@@ -1678,9 +1676,9 @@ namespace webinix{
 			if(!folder_exist(temp + webinix::sep + profile_name)){
 
 				#ifdef _WIN32
-					browser::command("cmd /c \"" + browser::browser_path + " -CreateProfile \"Webinix " + temp + webinix::sep + profile_name + "\" > nul 2>&1");
+			  browser::command(std::string("cmd /c \"") + browser::browser_path + " -CreateProfile \"Webinix " + temp + webinix::sep + profile_name + "\" > nul 2>&1");
 				#else
-					browser::command("sh -c \"" + browser::browser_path + " -CreateProfile \"Webinix " + temp + webinix::sep + profile_name + "\" >>/dev/null 2>>/dev/null\"");
+			  browser::command(std::string("")  + browser::browser_path + " -CreateProfile " + "\"Webinix "+ temp + webinix::sep + profile_name  + "\""); // we can't do escaping to redirect error .. todo 
 				#endif
 				std::string buf;
 
@@ -1776,9 +1774,9 @@ namespace webinix{
 			full.append(address);
 
 			#ifdef _WIN32
-				if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0)
+			if(browser::command_browser(std::string("cmd /c \"") + full + "\" > nul 2>&1") == 0)
 			#else
-				if(browser::command_browser("sh -c \"" + full + " >>/dev/null 2>>/dev/null\"") == 0)
+			  if(browser::command_browser( full + " >>/dev/null 2>>/dev/null") == 0)
 			#endif
 			{
 				browser::CurrentBrowser = firefox;
@@ -1815,10 +1813,11 @@ namespace webinix{
 			std::string full(p_custom->app);
 			full.append(arg);
 
+			
 			#ifdef _WIN32
-				if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0)
+			if(browser::command_browser(std::string("cmd /c \"") + full + "\" > nul 2>&1") == 0)
 			#else
-				if(browser::command_browser("sh -c \"" + full + " >>/dev/null 2>>/dev/null\"") == 0)
+			  if(browser::command_browser(full + " >>/dev/null 2>>/dev/null") == 0)
 			#endif
 			{
 				browser::CurrentBrowser = custom;
@@ -1847,9 +1846,9 @@ namespace webinix{
 			full.append(address);
 
 			#ifdef _WIN32
-				if(browser::command_browser("cmd /c \"" + full + "\" > nul 2>&1") == 0)
+			if(browser::command_browser(std::string("cmd /c \"") + full + "\" > nul 2>&1") == 0)
 			#else
-				if(browser::command_browser("sh -c \"" + full + " >>/dev/null 2>>/dev/null\"") == 0)
+				  if(browser::command_browser( full + " >>/dev/null 2>>/dev/null") == 0)
 			#endif
 			{
 				browser::CurrentBrowser = chrome;
