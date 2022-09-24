@@ -1,6 +1,6 @@
 # Webinix 2
 
-[![N|Solid](https://raw.githubusercontent.com/alifcommunity/webinix/main/screenshot.png)](https://github.com/alifcommunity/webinix)
+![ScreenShot](screenshot.png)
 
 [![Build Status](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master)](https://github.com/alifcommunity/webinix)
 
