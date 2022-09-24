@@ -1,201 +1,165 @@
-# Webinix
+# Webinix 2
 
 [![N|Solid](https://raw.githubusercontent.com/alifcommunity/webinix/main/screenshot.png)](https://github.com/alifcommunity/webinix)
 
 [![Build Status](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master)](https://github.com/alifcommunity/webinix)
 
-Webinix is a free and open source GUI library that use any installed web browser as your user interface. Basically you can transform an basic console app or any Python script to a nice GUI application, in a easy way.
+Bring the power of web browsers with the web technologies into you GUI, using your favorit programming language in the backend, and HTML/JS/CSS in the frontend.
 
 ## Why Webinix?
 
-First, web technologies is everywhere now, and web browsers today have everything a modern UI need, your application will look nicer and multi-platform.
+Web technology is everywhere, and the web browsers have everything a modern UI need. While all other "WebView" based GUI libraries can not provide all features like a real web browser provides, Webinix use any installed web browser to give you the full power of a web browser. Webinix is fully written in C, and the final result library is completely independent an does not need any third-party library.
 
 ## How its work?
 
-Basically this library use latest web server and WebSocket standards to maintaine the communication in binary mode between the web browser (UI) and your application. You receive any click events, and of course you can send data or executing JavaScript code. 
+Webinix use a WebSocket communication in binary mode between the web browser (UI) and your application. Your application will receive click events. And of course you can send/receive data or execute JavaScript from your favorit programming language. 
 
-## How I can use it?
+## Example in C
 
-- Include one header file:
+- **Header** - Include one header file:
 ```sh
-#include <webinix/webinix.hpp>
+#include "webinix.h"
 ```
 
-- Set your HTML code
+- **HTML/CSS** - Set your HTML code
 ```sh
-const std::string html = R"V0G0N(
-<!DOCTYPE html>
-<html>
-	<head>
-		<title>My first Webinix app</title>
-	</head>
-	<body>
-		<h1>Welcome to Webinix!</h1>
-		<button id="MyButtonID">Click on me!</button>
-	</body>
-</html>
-)V0G0N";
+const char* my_html = "<!DOCTYPE html>"
+"<html>"
+"	<head>"
+"		<title>Webinix Application</title>"
+"	</head>"
+"	<body>"
+"		<h1>Welcome to Webinix 2.0</h1>"
+"		<button id=\"MyButtonID\">Click!</button>"
+"	</body>"
+"</html>";
 ```
 
-- Create a window object
+- **Window** - Create a window object
 ```sh
-webinix::window my_window(&html);
+webinix_window_t* my_window;
 ```
 
-- Create your handler function
+- **Handler** - Create your click handler function
 ```sh
-void my_handler(webinix::event e){
+void my_function(const webinix_event_t e) {
 
-    std::cout << "You clicked on a button!" << std::endl;
+    printf("You clicked on a button!");
 }
 ```
 
-- Bind your HTML element with your handler function
+- **Bind** - Bind your HTML element with your function
 ```sh
-my_window.bind("MyButtonID", my_handler);
+webinix_bind(my_window, "MyButtonID", check_the_password);
 ```
 
-- Show the window!
+- **Show** - Show the window
 ```sh
-my_window.show();
+if(!webinix_show(my_window, my_html, webinix.browser.chrome))  // Run the window on Chrome if is available
+	webinix_show(my_window, my_html, webinix.browser.any); // If not, run on any other installed web browser
 ```
 
-- Make infinit loop and wait for all windows to close
+- **Loop** - Wait for all windows to be close
 ```sh
-std::thread ui(webinix::loop);
-ui.join();
+webinix_loop();
 ```
-
-You can also show the window using a specific web browser
-
-```sh
-if(!my_window.show(webinix::browser::firefox))    // If Firefox not installed
-    my_window.show();                           // then try other web browsers.
-```
-
-## Python
-
-```sh
-def my_function():
-    print('You clicked on the first button!')
-
-def my_function_two():
-    print('You clicked on the second button!')
-
-# Create a window object
-MyWindow = Webinix()
-
-# Bind am HTML element ID with a python function
-MyWindow.bind('MyButtonID1', my_function)
-MyWindow.bind('MyButtonID2', my_function_two)
-
-# Show the window
-MyWindow.show(my_html)
-
-# Wait unitil all windows are closed
-MyWindow.loop()
-
-print('Good! All windows are closed now.')
-sys.exit(0)
-```
-
-## Complete examples
-
-Please see examples folder.
 
 ## Features
 
-- C++ 20 
-- Lightweight and fast binary mode communication 
-- One header file 
-- Multiplatform & Multi Browser 
-- Private user browser profiles 
+- Pure C & Independent (Shared/Static)
+- Lightweight and small memory footprint (~117 Kb)
+- Fast binary communication mode
+- One header file
+- Multiplatform & Multi Browser
+- Private browser user-profiles
 - Customized app mode look & feel
 
 ## Status
 
 | OS | Browser  | Status |
 | ------ | ------ | ------ |
-| Windows | Firefox | Supported |
-| Windows | Chrome | Supported |
-| Windows | Edge | Supported |
-| Linux | Firefox | Supported |
-| Linux | Chrome | Supported |
-| macOS | Firefox | Supported |
-| macOS | Chrome | Supported |
-| macOS | Safari | Under development |
+| Windows | Firefox | ✔️ |
+| Windows | Chrome | ✔️ |
+| Windows | Edge | ✔️ |
+| Linux | Firefox | *coming soon* |
+| Linux | Chrome | *coming soon* |
+| macOS | Firefox | *coming soon* |
+| macOS | Chrome | *coming soon* |
+| macOS | Safari | *coming soon* |
 
-## How to use pre-compiled version ?
+| Language | Status |
+| ------ | ------ |
+| C | ✔️ |
+| C++ | *coming soon* |
+| Python | 85% |
+| Go | *coming soon* |
+| Rust | *coming soon* |
+| Java | *coming soon* |
+| Nim | *coming soon* |
+| Perl | *coming soon* |
+| Ruby | *coming soon* |
+| Scala | *coming soon* |
 
-- Goto http://webinix.me and download latest release Webinix library.
+## Build - Windows
 
-## Build from source - Windows
-- [ ! ] Microsoft Visual Studio 2017 is not supported. 
-- Windows SDK 10x. You can download it from http://microsoft.com 
-- Microsoft Visual Studio 2019 (or build tools 2019).
-- CMake +3.13.0. You can download it from https://cmake.org/download
-- Boost +1.76
-- Python 3.8 (only if you want cWebinix).
-
-### Using MSVC
-- First make sure you have Boost +1.76 MSVC version (https://sourceforge.net/projects/boost/files/boost-binaries/1.76.0/boost_1_76_0-msvc-14.2-64.exe/download)
+- **Microsoft Visual Studio**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix
-mkdir build
-cd build
+cd webinix\examples\Windows\MSVC
+nmake static
+nmake static-debug
+nmake dynamic
+nmake dynamic-debug
 ```
 
-Generate Visual Studio 2019 solution
-```sh
-cmake .. -G "Visual Studio 16 2019" -DBOOST_ROOT=C:/local/boost_1_76_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_76_0/lib64-msvc-14.2 -DCMAKE_BUILD_TYPE:STRING=Release
-```
-
-Generate Makefile for Microsoft Visual Studio build tools 2019.
-```sh
-cmake .. -G "NMake Makefiles" -DBOOST_ROOT=C:/local/boost_1_76_0 -DBOOST_LIBRARYDIR=C:/local/boost_1_76_0/lib64-msvc-14.2 -DCMAKE_BUILD_TYPE:STRING=Release
-nmake
-```
-
-Build cWebinix
-```sh
-nmake cwebinix
-```
-
-### Using MinGW
+- **MinGW**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix
-mkdir build
-cd build
-cmake .. -G "MinGW Makefiles"
-mingw32-make
+cd webinix\examples\Windows\GCC
+mingw32-make static
+mingw32-make static-debug
+mingw32-make dynamic
+mingw32-make dynamic-debug
 ```
 
-## Build from source - Linux
-- C++20 compiler (GCC/Clang): ```sudo apt install build-essential```
-- Boost lib +1.70.0: ```sudo apt install libboost-all-dev```
-- CMake +3.15.0: ```sudo apt install cmake```
-- Python 3.8 (only if you want cWebinix).
-
+- **TCC**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
+cd webinix\examples\Windows\GCC
+mingw32-make static
+mingw32-make static-debug
+mingw32-make dynamic
+mingw32-make dynamic-debug
 ```
 
-Build cWebinix if needed
+- **Clang**
 ```sh
-make cwebinix
+coming soon
 ```
 
-## Build from source - macOS
-- Clang
-- [!] Comming soon!
+## Build - Linux
+
+- **GCC**
+```sh
+coming soon
+```
+
+- **TCC**
+```sh
+coming soon
+```
+
+- **Clang**
+```sh
+coming soon
+```
+
+## Build - macOS
+
+- **Clang**
+```sh
+coming soon
+```
 
 ### License
 
