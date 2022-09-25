@@ -90,7 +90,7 @@ webinix_loop();
 | Language | Status |
 | ------ | ------ |
 | C | ✔️ |
-| C++ | *coming soon* |
+| C++ | 90% |
 | Python | 85% |
 | Go | *coming soon* |
 | Rust | *coming soon* |
@@ -99,6 +99,8 @@ webinix_loop();
 | Perl | *coming soon* |
 | Ruby | *coming soon* |
 | Scala | *coming soon* |
+| JavaScript | *coming soon* |
+| TypeScript | *coming soon* |
 
 ## Build - Windows
 
