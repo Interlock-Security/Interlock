@@ -125,7 +125,7 @@ typedef struct webinix_javascript_result_t {
 
 typedef struct webinix_javascript_t {
 
-    char *script;
+    char* script;
     unsigned int timeout;
     webinix_javascript_result_t result;
 
@@ -181,6 +181,7 @@ typedef struct webinix_t {
     webinix_browser_t browser;
     bool initialized;
     void (*cb[WEBUI_MAX_ARRAY]) (webinix_event_t e);
+    void (*cb_py[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*);
 
     // Pointers Tracker
     void *ptr_list[WEBUI_MAX_ARRAY];
@@ -188,6 +189,16 @@ typedef struct webinix_t {
     size_t ptr_size[WEBUI_MAX_ARRAY];
 
 } webinix_t;
+
+typedef struct webinix_javascript_py_t {
+
+    char* script;
+    unsigned int timeout;
+    bool error;
+    unsigned int length;
+    const char* data;
+
+} webinix_javascript_py_t;
 
 // -- Definitions --------------------
 
@@ -208,9 +219,11 @@ EXPORT void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascri
 EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t e));
 EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e));
 EXPORT bool webinix_open(webinix_window_t* win, char* url, unsigned int browser);
+EXPORT void webinix_free_js(webinix_javascript_t* javascript);
 
-// Python wrapper
+// Python Interface
 EXPORT unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*));
+EXPORT void webinix_run_js_py(webinix_window_t* win, webinix_javascript_py_t* js_py);
 
 // Core
 EXPORT void _webinix_ini();

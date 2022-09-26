@@ -15,9 +15,33 @@ import os
 import platform
 import sys
 import ctypes
-from ctypes import cdll, c_void_p, CFUNCTYPE, POINTER
+from ctypes import *
 
-webinix_lib_loader = None
+lib = None
+
+# Event
+class event:
+	element_id = 0
+	window_id = 0
+	element_name = ""
+
+# Webinix C-Struct
+class webinix_javascript_py_t(ctypes.Structure):
+	_fields_ = [
+		("script", c_char_p),
+		("timeout", c_uint),
+		("error", c_bool),
+		("length", c_uint),
+		("data", c_char_p)
+	]
+
+# JavaScript
+class javascript:
+	script = ""
+	timeout = 10
+	error = False
+	length = 0
+	data = ""
 
 class window:
 
@@ -26,17 +50,17 @@ class window:
 	cb_fun_list = [64]
 
 	def __init__(self):
-		global webinix_lib_loader
+		global lib
 		try:
 			# Load Webinix Shared Library
 			load_library()
 			# Check library if correctly loaded
-			if webinix_lib_loader is None:
+			if lib is None:
 				print('Please download the latest library from https://webinix.me')
 				sys.exit(1)
 			# Create new Webinix window
 			webinix_wrapper = None
-			webinix_wrapper = webinix_lib_loader.webinix_new_window
+			webinix_wrapper = lib.webinix_new_window
 			webinix_wrapper.restype = c_void_p
 			self.window = c_void_p(webinix_wrapper())
 			# Initializing events() to be called from Webinix Library
@@ -47,9 +71,9 @@ class window:
 			sys.exit(1)
 	
 	def __del__(self):
-		global webinix_lib_loader
-		if self.window is not None and webinix_lib_loader is not None:
-			webinix_lib_loader.webinix_close(self.window)
+		global lib
+		if self.window is not None and lib is not None:
+			lib.webinix_close(self.window)
 	
 	def events(self, element_id, window_id, element_name):
 		if self.cb_fun_list[int(element_id)] is None:
@@ -62,83 +86,107 @@ class window:
 		self.cb_fun_list[element_id](e)
 
 	def bind(self, element, func):
-		global webinix_lib_loader
+		global lib
 		if self.window is None:
 			err_window_is_none('bind')
 			return
-		if webinix_lib_loader is None:
+		if lib is None:
 			err_library_not_found('bind')
 			return
-		cb_index = int(webinix_lib_loader.webinix_bind_py(self.window, element.encode('utf-8'), self.c_events))
+		cb_index = int(lib.webinix_bind_py(self.window, element.encode('utf-8'), self.c_events))
 		self.cb_fun_list.insert(cb_index, func)
 	
 	def show(self, html):
-		global webinix_lib_loader
+		global lib
 		if self.window is None:
 			err_window_is_none('show')
 			return
-		if webinix_lib_loader is None:
+		if lib is None:
 			err_library_not_found('show')
 			return
-		webinix_lib_loader.webinix_show(self.window, html.encode('utf-8'))
+		lib.webinix_show(self.window, html.encode('utf-8'))
 	
 	def close(self):
-		global webinix_lib_loader
-		if webinix_lib_loader is None:
+		global lib
+		if lib is None:
 			err_library_not_found('close')
 			return
-		webinix_lib_loader.webinix_close(self.window)
+		lib.webinix_close(self.window)
+	
+	def run_js(self, script, timeout = 0) -> javascript:
+		global lib
+		if self.window is None:
+			err_window_is_none('show')
+			return
+		if lib is None:
+			err_library_not_found('show')
+			return
+		# Create Struct
+		js = webinix_javascript_py_t()
+		# Initializing
+		js.script = ctypes.c_char_p(script.encode('utf-8'))
+		js.timeout = ctypes.c_uint(timeout)
+		js.error = ctypes.c_bool(False)
+		js.length = ctypes.c_uint(0)
+		js.data = ctypes.c_char_p("".encode('utf-8'))
+		# Initializing Result
+		res = javascript()
+		res.script = script
+		res.timeout = timeout
+		res.error = True
+		res.length = 7
+		res.data = "UNKNOWN"		
+		# Run JavaScript
+		lib.webinix_run_js_py(self.window, ctypes.byref(js))
+		res.length = int(js.length)
+		res.data = js.data.decode('utf-8')
+		res.error = js.error
+		return res
 
 # Exit app
 def load_library():
-	global webinix_lib_loader
+	global lib
 	if platform.system() == 'Darwin':
-		webinix_lib_loader = ctypes.CDLL('webinix-2-x64.dylib')
-		if webinix_lib_loader is None:
+		lib = ctypes.CDLL('webinix-2-x64.dylib')
+		if lib is None:
 			print("Webinix Error: Failed to load 'webinix-2-x64.dylib' library.")
 	elif platform.system() == 'Windows':
 		if sys.version_info.major == 3 and sys.version_info.minor <= 8:
 			os.chdir(os.getcwd())
 			os.add_dll_directory(os.getcwd())
-			webinix_lib_loader = ctypes.CDLL('webinix-2-x64.dll')
+			lib = ctypes.CDLL('webinix-2-x64.dll')
 		else:
 			os.chdir(os.getcwd())
 			os.add_dll_directory(os.getcwd())
-			webinix_lib_loader = cdll.LoadLibrary('webinix-2-x64.dll')
-		if webinix_lib_loader is None:
+			lib = cdll.LoadLibrary('webinix-2-x64.dll')
+		if lib is None:
 			print("Webinix Error: Failed to load 'webinix-2-x64.dll' library.")
 	elif platform.system() == 'Linux':
 		os.chdir(os.getcwd())
-		webinix_lib_loader = ctypes.CDLL(os.getcwd() + '/webinix-2-x64.so')
-		if webinix_lib_loader is None:
+		lib = ctypes.CDLL(os.getcwd() + '/webinix-2-x64.so')
+		if lib is None:
 			print("Webinix Error: Failed to load 'webinix-2-x64.so' library.")
 	else:
 		print("Webinix Error: Unsupported OS")
 
 # Exit app
 def exit():
-	global webinix_lib_loader
-	if webinix_lib_loader is None:
+	global lib
+	if lib is None:
 		err_library_not_found('exit')
 		return
-	webinix_lib_loader.webinix_exit()
+	lib.webinix_exit()
 
 # Wait until all windows get closed
 def loop():
-	global webinix_lib_loader
-	if webinix_lib_loader is None:
+	global lib
+	if lib is None:
 		err_library_not_found('loop')
 		return
-	webinix_lib_loader.webinix_loop()
+	lib.webinix_loop()
 
 def err_library_not_found(f):
 	print('Webinix ' + f + '(): Library Not Found.')
 
 def err_window_is_none(f):
 	print('Webinix ' + f + '(): Window is None.')
-
-# Event
-class event:
-	element_id = 0
-	window_id = 0
-	element_name = ""

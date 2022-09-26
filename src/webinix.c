@@ -1087,12 +1087,12 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
         sprintf(buf, "%s%s%s", temp, webinix_sep, profile_name);
 
         // Wait 10 second while slow PC create the folder..
-        for(unsigned int n = 0; n <= (webinix.startup_timeout * 2); n++) {
+        for(unsigned int n = 0; n <= (webinix.startup_timeout * 4); n++) {
 
             if(_webinix_browser_folder_exist(buf))
                 break;
             
-            _webinix_sleep(500);
+            _webinix_sleep(250);
         }
 
         if(!_webinix_browser_folder_exist(buf))
@@ -1667,6 +1667,13 @@ void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browse
     _webinix_browser_start(win, link, browser);
 }
 
+void webinix_free_js(webinix_javascript_t* javascript) {
+
+    _webinix_free_mem((void *) &javascript->result.data);
+    _webinix_free_mem((void *) &javascript->script);
+    memset(javascript, 0x00, sizeof(webinix_javascript_t));
+}
+
 void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
 
     #ifdef WEBUI_LOG
@@ -1717,17 +1724,17 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
             if(webinix.run_done[run_id])
                 break;
             
-            _webinix_sleep(10);
+            _webinix_sleep(1);
         }
     }
     else {
 
-        for(unsigned int n = 0; n <= (javascript->timeout * 100); n++) {
+        for(unsigned int n = 0; n <= (javascript->timeout * 1000); n++) {
 
             if(webinix.run_done[run_id])
                 break;
             
-            _webinix_sleep(10);
+            _webinix_sleep(1);
         }
     }
 
@@ -1820,12 +1827,12 @@ const char* webinix_new_server(webinix_window_t* win, const char* html) {
     webinix_show(win, html, 100);
 
     // Wait for server to start
-    for(unsigned int n = 0; n < 10; n++) {
+    for(unsigned int n = 0; n < 2000; n++) {
 
         if(win->core.server_running)
             break;
         
-        _webinix_sleep(100);
+        _webinix_sleep(1);
     }
 
     return (const char*) win->core.url;
@@ -2255,12 +2262,12 @@ void _webinix_wait_for_startup() {
         return;
 
     // Wait for a specific time
-    for(unsigned int n = 0; n <= (webinix.startup_timeout * 2); n++) {
+    for(unsigned int n = 0; n <= (webinix.startup_timeout * 1000); n++) {
 
         if(webinix.connections > 0)
             break;
         
-        _webinix_sleep(500);
+        _webinix_sleep(1);
     }
 }
 
@@ -2393,20 +2400,32 @@ unsigned int _webinix_set_cb_index(char* element_id) {
 
 // --[Python Wrapper]---------------
 
-void (*cb_py[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*);
-
 void webinix_bind_py_handler(const webinix_event_t e) {
 
     unsigned int cb_index = e.element_id;
 
-    if(cb_index > 0 && cb_py[cb_index] != NULL)
-        cb_py[cb_index](e.element_id, e.window_id, e.element_name);
+    if(cb_index > 0 && webinix.cb_py[cb_index] != NULL)
+        webinix.cb_py[cb_index](e.element_id, e.window_id, e.element_name);
 }
 
 unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*)) {
 
     unsigned int cb_index = webinix_bind(win, element, webinix_bind_py_handler);
-    cb_py[cb_index] = func;
+    webinix.cb_py[cb_index] = func;
 
     return cb_index;
+}
+
+void webinix_run_js_py(webinix_window_t* win, webinix_javascript_py_t* js_py) {
+
+    webinix_javascript_t js = {
+		.script = js_py->script,
+		.timeout = js_py->timeout
+	};
+
+    webinix_run_js(win, &js);
+    
+    js_py->data = js.result.data;
+    js_py->error = js.result.error;
+    js_py->length = js.result.length;
 }
