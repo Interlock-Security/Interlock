@@ -91,7 +91,7 @@ webinix_loop();
 | ------ | ------ |
 | C | ✔️ |
 | C++ | 90% |
-| Python | 85% |
+| Python | ✔️ |
 | Go | *coming soon* |
 | Rust | *coming soon* |
 | Java | *coming soon* |
