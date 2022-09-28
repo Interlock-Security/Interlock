@@ -56,6 +56,8 @@
     #include <tchar.h>
     #define WEBUI_GET_CURRENT_DIR _getcwd
     #define WEBUI_FILE_EXIST _access
+    #define WEBUI_POPEN _popen
+    #define WEBUI_PCLOSE _pclose
 #endif
 
 // -- Linux -----------------------------------
@@ -64,6 +66,8 @@
     #include <unistd.h>
     #define WEBUI_GET_CURRENT_DIR getcwd
     #define WEBUI_FILE_EXIST _access
+    #define WEBUI_POPEN popen
+    #define WEBUI_PCLOSE pclose
 #endif
 
 // -- macOS -----------------------------------
@@ -105,6 +109,8 @@ typedef struct webinix_window_core_t {
     char* browser_path;
     char* profile_path;
     unsigned int connections;
+
+    unsigned int runtime;
 
 } webinix_window_core_t;
 
@@ -159,6 +165,14 @@ typedef struct webinix_browser_t {
 
 } webinix_browser_t;
 
+typedef struct webinix_runtime_t {
+
+    unsigned int none;      // 0
+    unsigned int deno;      // 1
+    unsigned int nodejs;    // 2
+
+} webinix_runtime_t;
+
 typedef struct webinix_t {
 
     unsigned int servers;
@@ -179,9 +193,11 @@ typedef struct webinix_t {
     struct mg_mgr* mg_mgrs[WEBUI_MAX_ARRAY];
     struct mg_connection* mg_connections[WEBUI_MAX_ARRAY];
     webinix_browser_t browser;
+    webinix_runtime_t runtime;
     bool initialized;
     void (*cb[WEBUI_MAX_ARRAY]) (webinix_event_t e);
     void (*cb_py[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*);
+    char* executable_path;
 
     // Pointers Tracker
     void *ptr_list[WEBUI_MAX_ARRAY];
@@ -212,14 +228,15 @@ EXPORT bool webinix_show(webinix_window_t* win, const char* html, unsigned int b
 EXPORT void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* type_s);
 EXPORT void webinix_allow_multi_access(webinix_window_t* win, bool status);
 EXPORT bool webinix_set_root_folder(webinix_window_t* win, const char* path);
-EXPORT const char* webinix_new_server(webinix_window_t* win, const char* html);
+EXPORT const char* webinix_new_server(webinix_window_t* win, const char* path, const char* index_html);
 EXPORT void webinix_close(webinix_window_t* win);
 EXPORT bool webinix_is_show(webinix_window_t* win);
 EXPORT void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript);
 EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t e));
 EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e));
-EXPORT bool webinix_open(webinix_window_t* win, char* url, unsigned int browser);
+EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_free_js(webinix_javascript_t* javascript);
+EXPORT void webinix_runtime(webinix_window_t* win, unsigned int runtime, bool status);
 
 // Python Interface
 EXPORT unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*));
@@ -247,11 +264,11 @@ EXPORT bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser);
 EXPORT char* _webinix_browser_get_temp_path(unsigned int browser);
 EXPORT bool _webinix_browser_folder_exist(char* folder);
 EXPORT bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int browser);
-EXPORT bool _webinix_browser_start_edge(webinix_window_t* win, char* address);
-EXPORT bool _webinix_browser_start_firefox(webinix_window_t* win, char* address);
-EXPORT bool _webinix_browser_start_custom(webinix_window_t* win, char* address);
-EXPORT bool _webinix_browser_start_chrome(webinix_window_t* win, char* address);
-EXPORT bool _webinix_browser_start(webinix_window_t* win, char* address, unsigned int browser);
+EXPORT bool _webinix_browser_start_edge(webinix_window_t* win, const char* address);
+EXPORT bool _webinix_browser_start_firefox(webinix_window_t* win, const char* address);
+EXPORT bool _webinix_browser_start_custom(webinix_window_t* win, const char* address);
+EXPORT bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address);
+EXPORT bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned int browser);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
 #else
