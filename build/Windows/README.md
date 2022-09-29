@@ -1,6 +1,6 @@
-# Build Webinix 2 - Windows
+# Build Webinix Library - Windows
 
-- **Build Tools for Microsoft Visual Studio**
+- **Microsoft Visual Studio Build Tools**
 
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
