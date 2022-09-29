@@ -17,13 +17,16 @@ int main() {
 	webinix_window_t* my_window;
 	my_window = webinix_new_window();
 
-	// Chose your preferable runtime for .js/.ts files
+	// Chose your preferable runtime for .js files
 	// Deno: webinix.runtime.deno
 	// Node.js: webinix.runtime.nodejs
-	webinix_runtime(my_window, webinix.runtime.deno, true);
+	webinix_runtime(my_window, webinix.runtime.deno);
 
 	// Create a new web server using Webinix
 	const char* url = webinix_new_server(my_window, "", NULL);
+
+	// Stop when the browser process get closed.
+	webinix_detect_process_close(my_window, true);
 
     // Show the window
 	if(!webinix_open(my_window, url, webinix.browser.chrome))	// Run the window on Chrome

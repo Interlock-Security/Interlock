@@ -1704,23 +1704,69 @@ void _webinix_browser_clean() {
     // future run.
 }
 
-int _webinix_cmd_async(char* cmd) {
+#ifdef _WIN32
+    DWORD WINAPI _webinix_cmd_async_browser_detect_proc_task(LPVOID _arg)
+#else
+    void _webinix_cmd_async_browser_detect_proc_task(void* _arg)
+#endif
+{
+    webinix_cmd_async_t* arg = (webinix_cmd_async_t*) _arg;
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_cmd_async([%s])... \n", cmd);
+        printf("[%d] _webinix_cmd_async_browser_detect_proc_task()... \n", arg->win->core.window_number);
     #endif
 
-    // ASync Command (Background running)
-    #ifdef _WIN32
-        // char _cmd[1024];
-        // sprintf(_cmd, "START \"\" %s", cmd);
-        WinExec(cmd, SW_HIDE);
-    #else
-        if(!fork()) {
-            system(cmd);
-            return 0;
-        }
+    // Run command
+    system(arg->cmd);
+
+    // Free memory
+    _webinix_free_mem((void *) &arg->cmd);
+
+    // Close app
+    webinix_exit();
+
+    return 0;
+}
+
+int _webinix_cmd_async_browser(webinix_window_t* win, char* cmd) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] _webinix_cmd_async_browser([%s])... \n", win->core.window_number, cmd);
     #endif
+
+    if(win->core.detect_process_close) {
+
+        // ASync Command (Background running)
+        // and free window connection if process (browser) stop
+
+        webinix_cmd_async_t* arg = (webinix_cmd_async_t*) _webinix_malloc(sizeof(webinix_cmd_async_t));
+        arg->win = win;
+        arg->cmd = (char*) _webinix_malloc(strlen(cmd) + 1);
+        strcpy(arg->cmd, cmd);
+
+        #ifdef _WIN32
+            HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cmd_async_browser_detect_proc_task, (void *) arg, 0, NULL);
+            CloseHandle(user_fun_thread); 
+        #else
+            // Create posix thread ...
+        #endif
+    }
+    else {
+
+        // ASync Command (Background running)
+        
+        #ifdef _WIN32
+            // char _cmd[1024];
+            // sprintf(_cmd, "START \"\" %s", cmd);
+            // system(_cmd);
+            WinExec(cmd, SW_HIDE);
+        #else
+            if(!fork()) {
+                system(cmd);
+                return 0;
+            }
+        #endif
+    }
 
     return 0;
 }
@@ -1760,11 +1806,11 @@ bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address) {
     #ifdef _WIN32
         char parm[1024];
         sprintf(parm, "cmd /c \"%s\" > nul 2>&1", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #else
         char parm[1024];
         sprintf(parm, "%s >>/dev/null 2>>/dev/null", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #endif
     {
         win->core.CurrentBrowser = webinix.browser.chrome;
@@ -1800,11 +1846,11 @@ bool _webinix_browser_start_custom(webinix_window_t* win, const char* address) {
     #ifdef _WIN32
         char parm[1024];
         sprintf(parm, "cmd /c \"%s\" > nul 2>&1", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #else
         char parm[1024];
         sprintf(parm, "%s >>/dev/null 2>>/dev/null", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #endif
     {
         win->core.CurrentBrowser = webinix.browser.custom;
@@ -1837,11 +1883,11 @@ bool _webinix_browser_start_firefox(webinix_window_t* win, const char* address) 
     #ifdef _WIN32
         char parm[1024];
         sprintf(parm, "cmd /c \"%s\" > nul 2>&1", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #else
         char parm[1024];
         sprintf(parm, "%s >>/dev/null 2>>/dev/null", full);
-        if(_webinix_cmd_async(parm) == 0)
+        if(_webinix_cmd_async_browser(win, parm) == 0)
     #endif
     {
         win->core.CurrentBrowser = webinix.browser.firefox;
@@ -1873,7 +1919,7 @@ bool _webinix_browser_start_edge(webinix_window_t* win, const char* address) {
 
     char parm[1024];
     sprintf(parm, "cmd /c \"%s\" > nul 2>&1", full);
-    if(_webinix_cmd_async(parm) == 0) {
+    if(_webinix_cmd_async_browser(win, parm) == 0) {
 
         win->core.CurrentBrowser = webinix.browser.edge;
         return true;
@@ -2080,16 +2126,19 @@ void webinix_close(webinix_window_t* win) {
         printf("[%d] webinix_close()... \n", win->core.window_number);
     #endif
 
-    // Prepare packets
-    char* packet = (char*) _webinix_malloc(4);
-    packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
-    packet[1] = WEBUI_HEADER_CLOSE;     // Type
-    packet[2] = 0;                      // ID
-    packet[3] = 0;                      // Data
+    if(win->core.connected) {
 
-    // Send packets
-    _webinix_window_send(win, packet, 4);
-    _webinix_free_mem((void *) &packet);
+        // Prepare packets
+        char* packet = (char*) _webinix_malloc(4);
+        packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+        packet[1] = WEBUI_HEADER_CLOSE;     // Type
+        packet[2] = 0;                      // ID
+        packet[3] = 0;                      // Data
+
+        // Send packets
+        _webinix_window_send(win, packet, 4);
+        _webinix_free_mem((void *) &packet);
+    }
 }
 
 bool webinix_is_show(webinix_window_t* win) {
@@ -2473,11 +2522,21 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
 bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[0] webinix_open()... \n");
+        printf("[%d] webinix_open()... \n", win->core.window_number);
     #endif
 
     // Just open an app-mode window using the link
+    webinix_set_timeout(0);
     return _webinix_browser_start(win, url, browser);
+}
+
+void webinix_detect_process_close(webinix_window_t* win, bool status) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_detect_process_close()... \n", win->core.window_number);
+    #endif
+
+    win->core.detect_process_close = status;
 }
 
 char* _webinix_get_current_path() {
@@ -2647,7 +2706,7 @@ unsigned int _webinix_get_free_port() {
     return port;
 }
 
-void webinix_runtime(webinix_window_t* win, unsigned int runtime, bool status) {
+void webinix_runtime(webinix_window_t* win, unsigned int runtime) {
 
     if(runtime != webinix.runtime.deno && runtime != webinix.runtime.nodejs)
         win->core.runtime = webinix.runtime.none;

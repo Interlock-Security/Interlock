@@ -93,24 +93,20 @@ typedef struct webinix_window_core_t {
     bool is_bind_all;
     char* url;
     void (*cb_all[1]) (webinix_event_t e);
-
-    #ifdef _WIN32
-        HANDLE server_thread;
-    #else
-        unsigned int server_thread;
-    #endif
-
-    // Pointing to external user data
     const char* html;
     const char* icon;
     const char* icon_type;
-
     unsigned int CurrentBrowser;
     char* browser_path;
     char* profile_path;
     unsigned int connections;
-
     unsigned int runtime;
+    bool detect_process_close;
+    #ifdef _WIN32
+        HANDLE server_thread;
+    #else
+        unsigned int server_thread;
+    #endif    
 
 } webinix_window_core_t;
 
@@ -144,6 +140,13 @@ typedef struct webinix_cb_t {
     char* element_name;
 
 } webinix_cb_t;
+
+typedef struct webinix_cmd_async_t {
+
+    webinix_window_t* win;
+    char* cmd;
+
+} webinix_cmd_async_t;
 
 typedef struct webinix_custom_browser_t {
 
@@ -236,7 +239,8 @@ EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, voi
 EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e));
 EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_free_js(webinix_javascript_t* javascript);
-EXPORT void webinix_runtime(webinix_window_t* win, unsigned int runtime, bool status);
+EXPORT void webinix_runtime(webinix_window_t* win, unsigned int runtime);
+EXPORT void webinix_detect_process_close(webinix_window_t* win, bool status);
 
 // Python Interface
 EXPORT unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*));
@@ -258,7 +262,7 @@ EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char*
 EXPORT unsigned int _webinix_window_get_window_number(webinix_window_t* win);
 EXPORT void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browser);
 EXPORT int _webinix_cmd_sync(char* cmd);
-EXPORT int _webinix_cmd_async(char* cmd);
+EXPORT int _webinix_cmd_async_browser(webinix_window_t* win, char* cmd);
 EXPORT void _webinix_browser_clean();
 EXPORT bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser);
 EXPORT char* _webinix_browser_get_temp_path(unsigned int browser);
@@ -271,8 +275,10 @@ EXPORT bool _webinix_browser_start_chrome(webinix_window_t* win, const char* add
 EXPORT bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned int browser);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
+    EXPORT DWORD WINAPI _webinix_cmd_async_browser_task(LPVOID _arg);
 #else
     EXPORT void _webinix_cb(void* _arg);
+    EXPORT void _webinix_cmd_async_browser_task(void* _arg);
 #endif
 
 #endif /* _WEBUI_H */
