@@ -1,4 +1,4 @@
-# Webinix 2
+# Webinix 2.x
 
 ![ScreenShot](screenshot.png)
 
