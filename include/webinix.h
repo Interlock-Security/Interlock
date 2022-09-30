@@ -262,11 +262,12 @@ EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char*
 EXPORT unsigned int _webinix_window_get_window_number(webinix_window_t* win);
 EXPORT void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browser);
 EXPORT int _webinix_cmd_sync(char* cmd);
-EXPORT int _webinix_cmd_async_browser(webinix_window_t* win, char* cmd);
+EXPORT int _webinix_cmd_async(char* cmd);
+EXPORT int _webinix_run_browser(webinix_window_t* win, char* cmd);
 EXPORT void _webinix_browser_clean();
 EXPORT bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser);
 EXPORT char* _webinix_browser_get_temp_path(unsigned int browser);
-EXPORT bool _webinix_browser_folder_exist(char* folder);
+EXPORT bool _webinix_folder_exist(char* folder);
 EXPORT bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int browser);
 EXPORT bool _webinix_browser_start_edge(webinix_window_t* win, const char* address);
 EXPORT bool _webinix_browser_start_firefox(webinix_window_t* win, const char* address);
@@ -275,10 +276,10 @@ EXPORT bool _webinix_browser_start_chrome(webinix_window_t* win, const char* add
 EXPORT bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned int browser);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
-    EXPORT DWORD WINAPI _webinix_cmd_async_browser_task(LPVOID _arg);
+    EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
 #else
     EXPORT void _webinix_cb(void* _arg);
-    EXPORT void _webinix_cmd_async_browser_task(void* _arg);
+    EXPORT void _webinix_run_browser_task(void* _arg);
 #endif
 
 #endif /* _WEBUI_H */
