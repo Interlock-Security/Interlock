@@ -45,3 +45,8 @@ func ini() {
 
 	defer syscall.FreeLibrary(dll_webinix)
 }
+
+func webinix_test() (res int) {
+
+	return 0
+}
