@@ -1,4 +1,6 @@
-# Webinix Library 2.0.0
+
+# Webinix Library 2.x
+# Python Example
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -6,19 +8,21 @@
 # Licensed under GNU General Public License v3.0.
 # Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
 
-# [!] IMPORTANT
-# Please build a dynamic version of Webinix library using
-# your favorite C compiler, then copy file 'webinix-2-x64'
-# into this folder.
+import webinix
 
-import webinix # Importing 'webinix.py' file
+# Set the Webinix dynamic library location (Optional)
+# Default is the same folder, otherwise use this option
+webinix.set_library_path("../../build/Windows/MSVC")
+
+# Create a global window object
+MyWindow = webinix.window()
 
 # HTML
 my_html = """
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Webinix 2.0 Example</title>
+		<title>Webinix 2 - Python Example</title>
 		<style>
 			body{
 				color: white;
@@ -32,10 +36,11 @@ my_html = """
 		</style>
 	</head>
 	<body>
-		<h1>Webinix 2.0 Example</h1>
+		<h1>Webinix 2 - Python Example</h1>
 		<br>
 		<input type="password" id="MyInput">
-		<br><br>
+		<br>
+		<br>
 		<button id="MyButton1">Check Password</button> - <button id="MyButton2">Exit</button>
 	</body>
 </html>
@@ -68,17 +73,19 @@ def check_the_password(e : webinix.event):
 def close_the_application(e : webinix.event):
 	webinix.exit()
 
-# Create a window object
-MyWindow = webinix.window()
+def main():
 
-# Bind am HTML element ID with a python function
-MyWindow.bind('MyButton1', check_the_password)
-MyWindow.bind('MyButton2', close_the_application)
+	# Bind am HTML element ID with a python function
+	MyWindow.bind('MyButton1', check_the_password)
+	MyWindow.bind('MyButton2', close_the_application)
 
-# Show the window
-MyWindow.show(my_html)
+	# Show the window
+	MyWindow.show(my_html)
 
-# Wait until all windows are closed
-webinix.loop()
+	# Wait until all windows are closed
+	webinix.loop()
 
-print('Bye.')
+	print('Bye.')
+
+if __name__ == "__main__":
+    main()

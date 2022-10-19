@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.0
+    Webinix Library 2.0.1
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -14,13 +14,15 @@
 // -- Webinix ---------------------------
 #include "webinix.h"
 
+// -- Log -----------------------------
+// #define WEBUI_LOG
+
 // -- Heap ----------------------------
-#define WEBUI_LOG
 webinix_t webinix;
 
 // -- JavaScript Bridge ---------------
-// Uncompressed version to allow debugging
-// in the browser using the builtin dev-tools
+// This is a uncompressed version to make the debugging
+// more easy in the browser using the builtin dev-tools
 static const char* webinix_javascript_bridge = 
 "var _webinix_log = false; \n"
 "var _webinix_ws; \n"
@@ -305,6 +307,7 @@ static const char* webinix_def_icon = "<?xml version=\"1.0\" ?><svg height=\"24\
 static const char* webinix_def_icon_type = "image/svg+xml";
 static const char* webinix_js_empty = "WEBUI_JS_EMPTY";
 static const char* webinix_js_timeout = "WEBUI_JS_TIMEOUT";
+static const char* webinix_empty_string = ""; // .text
 
 #ifdef _WIN32
     static const char* webinix_sep = "\\";
@@ -485,12 +488,12 @@ bool _webinix_file_exist(char* file) {
 const char* _webinix_get_extension(const char *f) {
 
     if(f == NULL)
-        return "";
+        return webinix_empty_string;
 
     const char *ext = strrchr(f, '.');
 
     if(ext == NULL || !ext || ext == f)
-        return "";
+        return webinix_empty_string;
     return ext + 1;
 }
 
@@ -1081,6 +1084,8 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
                     // Send main HTML
 
+                    
+
                     #ifdef WEBUI_LOG
                         printf("[%d] _webinix_server_event_handler()... HTML Main\n", win->core.window_number);
                     #endif
@@ -1353,7 +1358,7 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
         return true;
     }
 
-    char* temp = _webinix_browser_get_temp_path(browser);
+    const char* temp = _webinix_browser_get_temp_path(browser);
 
     // Chrome
     // No need to create a folder
@@ -1464,7 +1469,7 @@ bool _webinix_folder_exist(char* folder) {
     return false;
 }
 
-char* _webinix_browser_get_temp_path(unsigned int browser) {
+const char* _webinix_browser_get_temp_path(unsigned int browser) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_browser_get_temp_path([%d])... \n", browser);
@@ -1476,11 +1481,11 @@ char* _webinix_browser_get_temp_path(unsigned int browser) {
             char* WinUserProfile = NULL;
             size_t sz = 0;
             if(_dupenv_s(&WinUserProfile, &sz, "USERPROFILE") != 0 || WinUserProfile == NULL)
-                return "";
+                return webinix_empty_string;
         #else
             char* WinUserProfile = getenv("USERPROFILE"); // _dupenv_s
             if(WinUserProfile == NULL)
-                return "";
+                return webinix_empty_string;
         #endif
     #endif
 
@@ -1519,7 +1524,7 @@ char* _webinix_browser_get_temp_path(unsigned int browser) {
     }
     
     _webinix_panic();
-    return "";
+    return webinix_empty_string;
 }
 
 bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
@@ -2179,10 +2184,10 @@ bool webinix_any_window_is_open() {
     return false;
 }
 
-unsigned int _webinix_window_get_window_number(webinix_window_t* win) {
+unsigned int _webinix_window_get_number(webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] _webinix_window_get_window_number()... \n", win->core.window_number);
+        printf("[%d] _webinix_window_get_number()... \n", win->core.window_number);
     #endif
     
     return win->core.window_number;
@@ -2257,6 +2262,8 @@ void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* typ
 
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
 
+    
+
     #ifdef WEBUI_LOG
         printf("[%d] webinix_show([%.*s..], [%d])... \n", win->core.window_number, 3, html, browser);
     #endif
@@ -2283,7 +2290,6 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
         CloseHandle(thread);
 
         // Run browser
-        
         if(!_webinix_browser_start(win, win->core.url, browser))
             return false;
     }
@@ -2308,7 +2314,28 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
     return true;
 }
 
-void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e)) {
+bool webinix_copy_show(webinix_window_t* win, const char* html, unsigned int browser) {
+
+    // Copy HTML, And show the window
+
+    // Free
+    if(win->core.html_cpy != NULL)
+        _webinix_free_mem((void *) &win->core.html_cpy);
+    
+    // Allocate
+    char* cpy = (char*) webinix_empty_string;
+    size_t len = strlen(html);
+    if(len > 1) {
+
+        char* cpy = _webinix_malloc(len + 1);
+        memcpy(cpy, html, len);
+    }
+    
+    // Show window
+    return webinix_show(win, cpy, browser);
+}
+
+void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_bind_all([*])... \n", win->core.window_number);
@@ -2318,10 +2345,10 @@ void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e)) {
     win->core.is_bind_all = true;
 }
 
-unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t e)) {
+unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_bind([%s], [*])... \n", win->core.window_number, element);
+        printf("[%d] webinix_bind([%s], [%p])... \n", win->core.window_number, element, func);
     #endif
 
     char* element_id = _webinix_malloc(strlen(element));
@@ -2365,6 +2392,7 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     webinix_event_t e;
     e.window_id = arg->win->core.window_number;
     e.element_name = arg->element_name;
+    e.window = arg->win;
 
     unsigned int cb_index = _webinix_get_cb_index(arg->element_id);
 
@@ -2373,14 +2401,14 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 
         // User cb
         e.element_id = cb_index;
-        webinix.cb[cb_index](e);        
+        webinix.cb[cb_index](&e);
     }
 
     // General user cb
     if(arg->win->core.is_bind_all && arg->win->core.cb_all[0] != NULL) {
 
         e.element_id = 0;
-        arg->win->core.cb_all[0](e);
+        arg->win->core.cb_all[0](&e);
     }
 
     #ifdef WEBUI_LOG
@@ -2444,7 +2472,21 @@ bool _webinix_get_data(const char* packet, size_t packet_len, unsigned int pos, 
         printf("[0] _webinix_get_data()... \n");
     #endif
 
+    if((pos + 1) > packet_len) {
+
+        *data = NULL;
+        data_len = 0;
+        return false;
+    }
+
     *data = (char*) _webinix_malloc((packet_len - pos) + 1);
+
+    // Check mem
+    if(*data == NULL) {
+
+        data_len = 0;
+        return false;
+    }
 
     // Copy data part
     char* p = *data;
@@ -2459,6 +2501,8 @@ bool _webinix_get_data(const char* packet, size_t packet_len, unsigned int pos, 
     if(*data_len < 1) {
 
         _webinix_free_mem((void *) data);
+        *data = NULL;
+        data_len = 0;
         return false;
     }
 
@@ -2507,31 +2551,44 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
         // 3: [Error]
         // 4: [Data]
 
-        // Get data part
-        char* data;
-        size_t data_len;
-        if(!_webinix_get_data(packet, len, 4, &data_len, &data))
-            return;
-
         // Get pipe id
         unsigned char run_id = packet[2];
         if(run_id < 0x01) {
 
-            _webinix_free_mem((void *) &data);
+            // Fatal.
+            // The pipe ID is not valid
+            // we can't send the ready signal to webinix_run_js()
             return;
         }
+
+        // Get data part
+        char* data;
+        size_t data_len;
+        bool data_status = _webinix_get_data(packet, len, 4, &data_len, &data);
 
         // Get js-error
         bool error = true;
         if((unsigned char) packet[3] == 0x00)
             error = false;
 
-        // Set pipe
+        // Initialize pipe
         _webinix_free_mem((void *) &webinix.run_responses[run_id]);
-        webinix.run_error[run_id] = error;
-        webinix.run_responses[run_id] = data;
 
-        // Ready signal
+        // Set pipe
+        if(data_status && data_len > 0) {
+
+            webinix.run_error[run_id] = error;
+            webinix.run_responses[run_id] = data;
+        }
+        else {
+
+            // Empty Result
+
+            webinix.run_error[run_id] = error;
+            webinix.run_responses[run_id] = webinix_empty_string;
+        }
+
+        // Send ready signal to webinix_run_js()
         webinix.run_done[run_id] = true;
     }
 }
@@ -2544,6 +2601,7 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
 
     // Just open an app-mode window using the link
     webinix_set_timeout(0);
+    webinix_detect_process_close(win, true);
     return _webinix_browser_start(win, url, browser);
 }
 
@@ -2821,14 +2879,14 @@ unsigned int _webinix_set_cb_index(char* element_id) {
     return 0;
 }
 
-// --[Python Wrapper]---------------
+// --[Python Interface]---------------
 
-void webinix_bind_py_handler(const webinix_event_t e) {
+void webinix_bind_py_handler(webinix_event_t* e) {
 
-    unsigned int cb_index = e.element_id;
+    unsigned int cb_index = e->element_id;
 
     if(cb_index > 0 && webinix.cb_py[cb_index] != NULL)
-        webinix.cb_py[cb_index](e.element_id, e.window_id, e.element_name);
+        webinix.cb_py[cb_index](e->element_id, e->window_id, e->element_name);
 }
 
 unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*)) {

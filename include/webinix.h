@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.0
+    Webinix Library 2.0.1
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -26,7 +26,7 @@
 #define WEBUI_MAX_ARRAY         (32)        // Max thread, servers, windows..
 #define WEBUI_MIN_PORT          (8080)      // Minimum socket port
 #define WEBUI_MAX_PORT          (8335)      // Should be less than 65535
-#define WEBUI_MAX_BUF           (512000)    // 512 Kb max dynamic memory
+#define WEBUI_MAX_BUF           (512000)    // 512 Kb max dynamic memory allocation
 #define WEBUI_DEFAULT_PATH      "."         // Default root path
 
 // -- C STD -----------------------------------
@@ -73,11 +73,14 @@
 // -- macOS -----------------------------------
 // ...
 
+struct webinix_window_t;
+
 typedef struct webinix_event_t {
 
     unsigned int window_id;
     unsigned int element_id;
     char* element_name;
+    struct webinix_window_t* window;
 
 } webinix_event_t;
 
@@ -92,8 +95,9 @@ typedef struct webinix_window_core_t {
     unsigned int server_port;
     bool is_bind_all;
     char* url;
-    void (*cb_all[1]) (webinix_event_t e);
+    void (*cb_all[1]) (webinix_event_t* e);
     const char* html;
+    const char* html_cpy;
     const char* icon;
     const char* icon_type;
     unsigned int CurrentBrowser;
@@ -189,7 +193,7 @@ typedef struct webinix_t {
     bool use_timeout;
     bool timeout_extra;
     bool exit_now;
-    char* run_responses[WEBUI_MAX_ARRAY];
+    const char* run_responses[WEBUI_MAX_ARRAY];
     bool run_done[WEBUI_MAX_ARRAY];
     bool run_error[WEBUI_MAX_ARRAY];
     unsigned int run_last_id;
@@ -198,7 +202,7 @@ typedef struct webinix_t {
     webinix_browser_t browser;
     webinix_runtime_t runtime;
     bool initialized;
-    void (*cb[WEBUI_MAX_ARRAY]) (webinix_event_t e);
+    void (*cb[WEBUI_MAX_ARRAY]) (webinix_event_t* e);
     void (*cb_py[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*);
     char* executable_path;
 
@@ -228,6 +232,7 @@ EXPORT bool webinix_any_window_is_open();
 EXPORT void webinix_set_timeout(unsigned int second);
 EXPORT webinix_window_t* webinix_new_window();
 EXPORT bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser);
+EXPORT bool webinix_copy_show(webinix_window_t* win, const char* html, unsigned int browser);
 EXPORT void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* type_s);
 EXPORT void webinix_allow_multi_access(webinix_window_t* win, bool status);
 EXPORT bool webinix_set_root_folder(webinix_window_t* win, const char* path);
@@ -235,8 +240,8 @@ EXPORT const char* webinix_new_server(webinix_window_t* win, const char* path, c
 EXPORT void webinix_close(webinix_window_t* win);
 EXPORT bool webinix_is_show(webinix_window_t* win);
 EXPORT void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript);
-EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t e));
-EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t e));
+EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t* e));
+EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t* e));
 EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_free_js(webinix_javascript_t* javascript);
 EXPORT void webinix_runtime(webinix_window_t* win, unsigned int runtime);
@@ -259,14 +264,14 @@ EXPORT char* _webinix_get_current_path();
 EXPORT void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t len);
 EXPORT void _webinix_window_send(webinix_window_t* win, char* packet, size_t packets_size);
 EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char* element);
-EXPORT unsigned int _webinix_window_get_window_number(webinix_window_t* win);
+EXPORT unsigned int _webinix_window_get_number(webinix_window_t* win);
 EXPORT void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browser);
 EXPORT int _webinix_cmd_sync(char* cmd);
 EXPORT int _webinix_cmd_async(char* cmd);
 EXPORT int _webinix_run_browser(webinix_window_t* win, char* cmd);
 EXPORT void _webinix_browser_clean();
 EXPORT bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser);
-EXPORT char* _webinix_browser_get_temp_path(unsigned int browser);
+EXPORT const char* _webinix_browser_get_temp_path(unsigned int browser);
 EXPORT bool _webinix_folder_exist(char* folder);
 EXPORT bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int browser);
 EXPORT bool _webinix_browser_start_edge(webinix_window_t* win, const char* address);

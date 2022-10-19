@@ -4,32 +4,39 @@
 SHELL=CMD
 SOURCE=../../../src
 INCLUDE=../../../include
-EXAMPLES=../../../examples
 
 all: release
 
 debug:
-	@echo Build Webinix (Debug Static)...
-	@gcc -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
+#	Static with Debug info
+	@echo Build Webinix Library (Debug Static)...
+	@gcc -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
 	@gcc -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
 	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
 	@ranlib libwebinix-2-static-x64.a
-	@echo Build Webinix (Debug Dynamic)...
-	@gcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
+#	Dynamic with Debug info
+	@echo Build Webinix Library (Debug Dynamic)...
+	@gcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
 	@gcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
 	@gcc -g -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32
+#	Clean
+	@- del *.o >nul 2>&1
 	@echo Done.
 
 release:
-	@echo Build Webinix (Release Static)...
-	@gcc -Os -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
+#	Static Release
+	@echo Build Webinix Library (Release Static)...
+	@gcc -Os -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
 	@gcc -Os -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
 	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
 	@ranlib libwebinix-2-static-x64.a
-	@echo Build Webinix (Release Dynamic)...
-	@gcc -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
+#	Dynamic Release
+	@echo Build Webinix Library (Release Dynamic)...
+	@gcc -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
 	@gcc -O3 -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
 	@gcc -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32
+#	Clean
+	@- del *.o >nul 2>&1
 	@echo Done.
 
 clean:
