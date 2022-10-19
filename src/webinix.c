@@ -451,14 +451,16 @@ void _webinix_sleep(long unsigned int ms) {
     #endif
 }
 
-void _webinix_print_hex(const char* data, size_t len) {
+#ifdef WEBUI_LOG
+    void _webinix_print_hex(const char* data, size_t len) {
 
-    for(size_t i = 0; i < len; i++) {
+        for(size_t i = 0; i < len; i++) {
 
-        printf("0x%02X ", (unsigned char) *data);
-        data++;
+            printf("0x%02X ", (unsigned char) *data);
+            data++;
+        }
     }
-}
+#endif
 
 bool _webinix_is_empty(const char* s) {
 
@@ -1083,8 +1085,6 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 else {
 
                     // Send main HTML
-
-                    
 
                     #ifdef WEBUI_LOG
                         printf("[%d] _webinix_server_event_handler()... HTML Main\n", win->core.window_number);
@@ -2262,8 +2262,6 @@ void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* typ
 
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
 
-    
-
     #ifdef WEBUI_LOG
         printf("[%d] webinix_show([%.*s..], [%d])... \n", win->core.window_number, 3, html, browser);
     #endif
@@ -2327,7 +2325,7 @@ bool webinix_copy_show(webinix_window_t* win, const char* html, unsigned int bro
     size_t len = strlen(html);
     if(len > 1) {
 
-        char* cpy = _webinix_malloc(len + 1);
+        cpy = _webinix_malloc(len + 1);
         memcpy(cpy, html, len);
     }
     
@@ -2879,34 +2877,56 @@ unsigned int _webinix_set_cb_index(char* element_id) {
     return 0;
 }
 
-// --[Python Interface]---------------
+// --[Interface]---------------
 
-void webinix_bind_py_handler(webinix_event_t* e) {
+void webinix_bind_int_handler(webinix_event_t* e) {
 
     unsigned int cb_index = e->element_id;
 
-    if(cb_index > 0 && webinix.cb_py[cb_index] != NULL)
-        webinix.cb_py[cb_index](e->element_id, e->window_id, e->element_name);
+    if(cb_index > 0 && webinix.cb_int[cb_index] != NULL)
+        webinix.cb_int[cb_index](e->element_id, e->window_id, e->element_name);
 }
 
-unsigned int webinix_bind_py(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*)) {
+unsigned int webinix_bind_int(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*)) {
 
-    unsigned int cb_index = webinix_bind(win, element, webinix_bind_py_handler);
-    webinix.cb_py[cb_index] = func;
+    unsigned int cb_index = webinix_bind(win, element, webinix_bind_int_handler);
+    webinix.cb_int[cb_index] = func;
 
     return cb_index;
 }
 
-void webinix_run_js_py(webinix_window_t* win, webinix_javascript_py_t* js_py) {
+void webinix_run_js_int(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_run_js_int()... \n", win->core.window_number);
+    #endif
 
     webinix_javascript_t js = {
-		.script = js_py->script,
-		.timeout = js_py->timeout
+		.script = script,
+		.timeout = timeout
 	};
 
     webinix_run_js(win, &js);
     
-    js_py->data = js.result.data;
-    js_py->error = js.result.error;
-    js_py->length = js.result.length;
+    data = (char*) js.result.data;
+    *error = js.result.error;
+    *length = js.result.length;
+}
+
+void webinix_run_js_int_struct(webinix_window_t* win, webinix_javascript_int_t* js_int) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_run_js_int_struct()... \n", win->core.window_number);
+    #endif
+
+    webinix_javascript_t js = {
+		.script = js_int->script,
+		.timeout = js_int->timeout
+	};
+
+    webinix_run_js(win, &js);
+    
+    js_int->data = js.result.data;
+    js_int->error = js.result.error;
+    js_int->length = js.result.length;
 }

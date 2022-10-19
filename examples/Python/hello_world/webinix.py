@@ -23,7 +23,7 @@ class event:
 	element_name = ""
 
 # Webinix C-Struct
-class webinix_javascript_py_t(ctypes.Structure):
+class webinix_javascript_int_t(ctypes.Structure):
 	_fields_ = [
 		("script", c_char_p),
 		("timeout", c_uint),
@@ -90,7 +90,7 @@ class window:
 		if Webinix is None:
 			err_library_not_found('bind')
 			return
-		cb_index = int(Webinix.webinix_bind_py(self.window, element.encode('utf-8'), self.c_events))
+		cb_index = int(Webinix.webinix_bind_int(self.window, element.encode('utf-8'), self.c_events))
 		self.cb_fun_list.insert(cb_index, func)
 	
 	def show(self, html):
@@ -119,7 +119,7 @@ class window:
 			err_library_not_found('show')
 			return
 		# Create Struct
-		js = webinix_javascript_py_t()
+		js = webinix_javascript_int_t()
 		# Initializing
 		js.script = ctypes.c_char_p(script.encode('utf-8'))
 		js.timeout = ctypes.c_uint(timeout)
@@ -134,7 +134,7 @@ class window:
 		res.length = 7
 		res.data = "UNKNOWN"		
 		# Run JavaScript
-		Webinix.webinix_run_js_py(self.window, ctypes.byref(js))
+		Webinix.webinix_run_js_int_struct(self.window, ctypes.byref(js))
 		res.length = int(js.length)
 		res.data = js.data.decode('utf-8')
 		res.error = js.error
@@ -214,7 +214,7 @@ def loop():
 		return
 	Webinix.webinix_loop()
 	try:
-		shutil.rmtree(os.getcwd() + '/__pycache__/')
+		shutil.rmtree(os.getcwd() + '/__intcache__/')
 	except OSError:
 		pass
 

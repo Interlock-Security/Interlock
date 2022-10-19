@@ -9,10 +9,10 @@ package webinix
 // Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
 
 /*
-#cgo CFLAGS: -I ./ -I ../../../include
-#cgo windows LDFLAGS: -L ./ -L ../../../build/Windows/GCC/ -lwebinix-2-static-x64 -lws2_32
-#cgo darwin LDFLAGS: -L ./ -L ../../../build/macOS/Clang/ -lwebinix-2-static-x64
-#cgo linux LDFLAGS: -L ./ -L ../../../build/Linux/GCC/ -lwebinix-2-static-x64
+#cgo CFLAGS: -I ./ -I ../../../../include
+#cgo windows LDFLAGS: -L ./ -L ../../../../build/Windows/GCC/ -lwebinix-2-static-x64 -lws2_32
+#cgo darwin LDFLAGS: -L ./ -L ../../../../build/macOS/Clang/ -lwebinix-2-static-x64
+#cgo linux LDFLAGS: -L ./ -L ../../../../build/Linux/GCC/ -lwebinix-2-static-x64
 #include <webinix.h>
 extern void webinix_go_handler(webinix_window_t* _window, unsigned int _element_id, unsigned int _window_id, char* _element_name);
 static void webinix_bind_go_handler(webinix_event_t* e) {
@@ -25,6 +25,14 @@ static unsigned int webinix_bind_go(webinix_window_t* win, const char* element) 
 import (
 	"C"
 )
+
+const AnyBrowser uint = 0
+const Chrome uint = 1
+const Firefox uint = 2
+const Edge uint = 3
+const Safari uint = 4
+const Chromium uint = 5
+const Custom uint = 99
 
 // Event Struct
 type Event struct {
@@ -66,7 +74,8 @@ func webinix_go_handler(_window *C.webinix_window_t, _element_id C.uint, _window
 
 func RunJavaScript(window *C.webinix_window_t, js *JavaScript) {
 
-	c_js := C.webinix_javascript_py_t{
+	// Interface
+	c_js := C.webinix_javascript_int_t{
 		script:  C.CString(js.Script),
 		timeout: 30, // uint(js.Timeout),
 		error:   C.bool(false),
@@ -74,7 +83,7 @@ func RunJavaScript(window *C.webinix_window_t, js *JavaScript) {
 		// data:    C.CString(nil),
 	}
 
-	C.webinix_run_js_py(window, &c_js)
+	C.webinix_run_js_int_struct(window, &c_js)
 
 	js.Error = bool(c_js.error)
 	js.Data = C.GoString(c_js.data)
