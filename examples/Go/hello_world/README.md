@@ -1,6 +1,7 @@
-# Webinix Examples - Go
+# Webinix Examples - Golang
 
 ```sh
-cd examples\Go\hello_world
+git clone https://github.com/alifcommunity/webinix.git
+cd webinix\examples\Go\hello_world
 go build
 ```
