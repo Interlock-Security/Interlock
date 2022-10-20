@@ -1,5 +1,5 @@
 # Build Webinix Library
 
-To build Webinix you will need a `C` compiler, and no need for any third-party library.
+To build the Webinix you will need a `C99` compiler. No dependencies is needed.
 
 [Windows](https://github.com/alifcommunity/webinix/tree/main/build/Windows)
