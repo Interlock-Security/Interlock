@@ -13,7 +13,7 @@ debug:
 	@echo Build Webinix Library (Debug Dynamic)...
 	@cl /Zi /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
 	@cl /Zi /Fowebinix.obj /c /EHsc "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
-	@link /DLL /OUT:webinix-2-x64.dll webinix.obj mongoose.obj 1>NUL 2>&1
+	@link /DLL /OUT:webinix-2-x64.dll webinix.obj mongoose.obj user32.lib 1>NUL 2>&1
 #	Clean
 	@- del *.obj >nul 2>&1
 	@echo Done.
@@ -28,7 +28,7 @@ release:
 	@echo Build Webinix Library (Release Dynamic)...
 	@cl /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
 	@cl /Fowebinix.obj /c /EHsc "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
-	@link /DLL /OUT:webinix-2-x64.dll webinix.obj mongoose.obj 1>NUL 2>&1
+	@link /DLL /OUT:webinix-2-x64.dll webinix.obj mongoose.obj user32.lib 1>NUL 2>&1
 #	Clean
 	@- del *.obj >nul 2>&1
 	@- del *.ilk >nul 2>&1

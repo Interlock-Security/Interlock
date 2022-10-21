@@ -206,7 +206,7 @@ typedef struct webinix_t {
     void (*cb_int[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*);
     char* executable_path;
     void *ptr_list[WEBUI_MAX_ARRAY];
-    size_t ptr_position;
+    unsigned int ptr_position;
     size_t ptr_size[WEBUI_MAX_ARRAY];
 
 } webinix_t;
@@ -267,8 +267,8 @@ EXPORT void _webinix_window_send(webinix_window_t* win, char* packet, size_t pac
 EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char* element);
 EXPORT unsigned int _webinix_window_get_number(webinix_window_t* win);
 EXPORT void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browser);
-EXPORT int _webinix_cmd_sync(char* cmd);
-EXPORT int _webinix_cmd_async(char* cmd);
+EXPORT int _webinix_cmd_sync(char* cmd, bool show);
+EXPORT int _webinix_cmd_async(char* cmd, bool show);
 EXPORT int _webinix_run_browser(webinix_window_t* win, char* cmd);
 EXPORT void _webinix_browser_clean();
 EXPORT bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser);
@@ -283,6 +283,7 @@ EXPORT bool _webinix_browser_start(webinix_window_t* win, const char* address, u
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
+    EXPORT int _webinix_system_win32(char* cmd, bool show);
 #else
     EXPORT void _webinix_cb(void* _arg);
     EXPORT void _webinix_run_browser_task(void* _arg);
