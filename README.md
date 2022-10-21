@@ -1,8 +1,6 @@
 # Webinix
 
-[![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
-
-<img src="https://img.shields.io/circleci/project/github/badges/shields/master"> [![Build Status](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master)](https://github.com/alifcommunity/webinix/issues)
+[![Website](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://webinix.me/) [![Website](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://webinix.me/) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
 
 Use any web browser as GUI, with your preferred language in the backend, and HTML/JS/TS/CSS in the frontend.
 
