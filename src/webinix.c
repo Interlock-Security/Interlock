@@ -2097,7 +2097,7 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
 
         _webinix_free_mem((void *) &javascript->result.data);
         javascript->result.data = webinix_js_empty;
-        javascript->result.length = strlen(webinix_js_empty);
+        javascript->result.length = (unsigned int) strlen(webinix_js_empty);
         javascript->result.error = true;
         return;
     }
@@ -2105,7 +2105,7 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
     // Initializing js result
     _webinix_free_mem((void *) &javascript->result.data);
     javascript->result.data = webinix_js_timeout;
-    javascript->result.length = strlen(webinix_js_timeout);
+    javascript->result.length = (unsigned int) strlen(webinix_js_timeout);
     javascript->result.error = true;
     
     // Initializing pipe
@@ -2152,7 +2152,7 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
     if(webinix.run_responses[run_id] != NULL) {
 
         javascript->result.data = webinix.run_responses[run_id];
-        javascript->result.length = strlen(webinix.run_responses[run_id]);
+        javascript->result.length = (unsigned int) strlen(webinix.run_responses[run_id]);
         javascript->result.error = webinix.run_error[run_id];
     }
 }

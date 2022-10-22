@@ -74,7 +74,6 @@ void close_the_application(webinix_event_t* e) {
 	webinix_exit();
 }
 
-// Debug
 int main() {
 
 	// Create a window
@@ -94,7 +93,6 @@ int main() {
 	return 0;
 }
 
-// Release
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow) {
 
 	main();

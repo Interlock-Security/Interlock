@@ -8,11 +8,9 @@
 # Licensed under GNU General Public License v3.0.
 # Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
 
-import webinix
-
-# Set the Webinix dynamic library location (Optional)
-# Default is the same folder, otherwise use this option
-webinix.set_library_path("../../../build/Windows/MSVC")
+# Install Webinix 2
+# pip install --upgrade webinix2
+from webinix import webinix
 
 # Create a global window object
 MyWindow = webinix.window()

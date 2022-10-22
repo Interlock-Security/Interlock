@@ -14,7 +14,7 @@ from ctypes import *
 import shutil
 
 Webinix = None
-Webinix_Path = os.getcwd()
+Webinix_Path = os.path.dirname(__file__)
 
 # Event
 class event:
@@ -40,6 +40,7 @@ class javascript:
 	length = 0
 	data = ""
 
+# The window class
 class window:
 
 	window = None
@@ -53,7 +54,7 @@ class window:
 			load_library()
 			# Check library if correctly loaded
 			if Webinix is None:
-				print('Please download the latest library from https://webinix.me')
+				print('Please download the latest Webinix dynamic library from https://webinix.me')
 				sys.exit(1)
 			# Create new Webinix window
 			webinix_wrapper = None
