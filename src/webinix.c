@@ -39,59 +39,59 @@ static const char* webinix_javascript_bridge =
 "    document.body.style.filter = \"contrast(1%)\"; \n"
 "} \n"
 "function _webinix_start() { \n"
-"    if (\"WebSocket\" in window) { \n"
+"    if(\"WebSocket\" in window) { \n"
 "        _webinix_ws = new WebSocket(\"ws://localhost:\" + _webinix_port + \"/_ws\"); \n"
 "        _webinix_ws.binaryType = \"arraybuffer\"; \n"
 "        _webinix_ws.onopen = function () { \n"
 "            _webinix_ws.binaryType = \"arraybuffer\"; \n"
 "            _webinix_ws_status = true; \n"
-"            if (_webinix_log) console.log(\"Webinix -> Connected\"); \n"
+"            if(_webinix_log) console.log(\"Webinix -> Connected\"); \n"
 "            _webinix_listener(); \n"
 "        }; \n"
 "        _webinix_ws.onerror = function () { \n"
-"            if (_webinix_log) console.log(\"Webinix -> Connection error\"); \n"
+"            if(_webinix_log) console.log(\"Webinix -> Connection error\"); \n"
 "            _webinix_close(255, \"\"); \n"
 "        }; \n"
 "        _webinix_ws.onclose = function (evt) { \n"
 "            _webinix_ws_status = false; \n"
-"            if (_webinix_action8[0] == 252) { \n"
-"                if (_webinix_log) console.log(\"Webinix -> Switch URL\"); \n"
+"            if(_webinix_action8[0] == 252) { \n"
+"                if(_webinix_log) console.log(\"Webinix -> Switch URL\"); \n"
 "                window.location.replace(_webinix_action_val); \n"
 "            } else { \n"
-"                if (_webinix_log) console.log(\"Webinix -> Connection lost [\" + evt.code + \"][\" + evt.reason + \"]\"); \n"
-"                if (!_webinix_log) window.close(); \n"
+"                if(_webinix_log) console.log(\"Webinix -> Connection lost [\" + evt.code + \"][\" + evt.reason + \"]\"); \n"
+"                if(!_webinix_log) window.close(); \n"
 "                else _webinix_freez_ui(); \n"
 "            } \n"
 "        }; \n"
 "        _webinix_ws.onmessage = function (evt) { \n"
 "                const buffer8 = new Uint8Array(evt.data); \n"
-"                if (buffer8.length < 4) return; \n"
-"                if (buffer8[0] !== 255) { \n"
-"                    if (_webinix_log) console.log(\"Webinix -> Invalid flag -> 0x\" + buffer8[0] + \n"
+"                if(buffer8.length < 4) return; \n"
+"                if(buffer8[0] !== 255) { \n"
+"                    if(_webinix_log) console.log(\"Webinix -> Invalid flag -> 0x\" + buffer8[0] + \n"
 "                                   \" 0x\" + buffer8[1] + \" 0x\" + buffer8[2]); \n"
 "                    return; \n"
 "                } \n"
-"                if (_webinix_log) console.log(\"Webinix -> Flag -> 0x\" + buffer8[0] + \" 0x\" + \n"
+"                if(_webinix_log) console.log(\"Webinix -> Flag -> 0x\" + buffer8[0] + \" 0x\" + \n"
 "                                               buffer8[1] + \" 0x\" + buffer8[2]); \n"
 "                var len = buffer8.length - 3; \n"
-"                if (buffer8[buffer8.length - 1] === 0) \n"
+"                if(buffer8[buffer8.length - 1] === 0) \n"
 "                   len--; // Null terminated byte can break eval() \n"
 "                data8 = new Uint8Array(len); \n"
 "                for (i = 0; i < len; i++) data8[i] = buffer8[i + 3]; \n"
 "                var data8utf8 = new TextDecoder(\"utf-8\").decode(data8); \n"
-"                if (buffer8[1] === 252) { \n"
+"                if(buffer8[1] === 252) { \n"
 "                    _webinix_close(252, data8utf8); \n"
-"                } else if (buffer8[1] === 251) { \n"
+"                } else if(buffer8[1] === 251) { \n"
 "                    _webinix_close(251, \"\"); \n"
-"                } else if (buffer8[1] === 254) { \n"
+"                } else if(buffer8[1] === 254) { \n"
 "                    data8utf8 = data8utf8.replace(/(?:\\r\\n|\\r|\\n)/g, \"\\\\n\"); \n"
-"                    if (_webinix_log) console.log(\"Webinix -> JS -> Run -> \" + data8utf8); \n"
+"                    if(_webinix_log) console.log(\"Webinix -> JS -> Run -> \" + data8utf8); \n"
 "                    var FunReturn = \"undefined\"; \n"
 "                    var FunError = false; \n"
 "                    try { FunReturn = eval('(() => {' + data8utf8 + '})()'); } catch (e) { FunError = true; FunReturn = e.message } \n"
-"                    if (typeof FunReturn === \"undefined\" || FunReturn === undefined) FunReturn = \"undefined\"; \n"
-"                    if (_webinix_log && !FunError) console.log(\"Webinix -> JS -> Return -> \" + FunReturn); \n"
-"                    if (_webinix_log && FunError) console.log(\"Webinix -> JS -> Return Error -> \" + FunReturn); \n"
+"                    if(typeof FunReturn === \"undefined\" || FunReturn === undefined) FunReturn = \"undefined\"; \n"
+"                    if(_webinix_log && !FunError) console.log(\"Webinix -> JS -> Return -> \" + FunReturn); \n"
+"                    if(_webinix_log && FunError) console.log(\"Webinix -> JS -> Return Error -> \" + FunReturn); \n"
 "                    var FunReturn8 = new TextEncoder(\"utf-8\").encode(FunReturn); \n"
 "                    var Return8 = new Uint8Array(4 + FunReturn8.length); \n"
 "                    Return8[0] = 255; \n"
@@ -101,13 +101,13 @@ static const char* webinix_javascript_bridge =
 "                    else Return8[3] = 0; \n"
 "                    var p = -1; \n"
 "                    for (i = 4; i < FunReturn8.length + 4; i++) Return8[i] = FunReturn8[++p]; \n"
-"                    if (Return8[0] !== 255) { \n"
-"                        if (_webinix_log) console.log(\"Webinix -> JS -> Generate response failed -> 0x\" + buffer8[0] + \" 0x\" +  \n"
+"                    if(Return8[0] !== 255) { \n"
+"                        if(_webinix_log) console.log(\"Webinix -> JS -> Generate response failed -> 0x\" + buffer8[0] + \" 0x\" +  \n"
 "                                                       buffer8[1] + \" 0x\" + buffer8[2]); \n"
 "                        return; \n"
 "                    } \n"
-"                    if (_webinix_ws_status) _webinix_ws.send(Return8.buffer); \n"
-"                    if (_webinix_log) { \n"
+"                    if(_webinix_ws_status) _webinix_ws.send(Return8.buffer); \n"
+"                    if(_webinix_log) { \n"
 "                        var buf = \"[ \"; \n"
 "                        for (i = 0; i < Return8.length; i++) buf = buf + \"0x\" + Return8[i] + \" \"; \n"
 "                        buf = buf + \"]\"; \n"
@@ -117,11 +117,11 @@ static const char* webinix_javascript_bridge =
 "        }; \n"
 "    } else { \n"
 "        alert(\"Sorry. WebSocket not supported by your Browser.\"); \n"
-"        if (!_webinix_log) webinix_close_window(); \n"
+"        if(!_webinix_log) webinix_close_window(); \n"
 "    } \n"
 "} \n"
 "function _webinix_SendEvent(name) { \n"
-"    if (_webinix_ws_status && name != \"\") { \n"
+"    if(_webinix_ws_status && name != \"\") { \n"
 "        var Name8 = new TextEncoder(\"utf-8\").encode(name); \n"
 "        var Event8 = new Uint8Array(3 + Name8.length); \n"
 "        Event8[0] = 255; \n"
@@ -129,8 +129,8 @@ static const char* webinix_javascript_bridge =
 "        Event8[2] = 0; \n"
 "        var p = -1; \n"
 "        for (i = 3; i < Name8.length + 3; i++) Event8[i] = Name8[++p]; \n"
-"        if (_webinix_ws_status) _webinix_ws.send(Event8.buffer); \n"
-"        if (_webinix_log) { \n"
+"        if(_webinix_ws_status) _webinix_ws.send(Event8.buffer); \n"
+"        if(_webinix_log) { \n"
 "            var buf = \"[ \"; \n"
 "            for (i = 0; i < Event8.length; i++) buf = buf + \"0x\" + Event8[i] + \" \"; \n"
 "            buf = buf + \"]\"; \n"
@@ -147,80 +147,80 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "    elems = document.getElementsByTagName(\"button\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <Button> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <Button> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"div\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <Div> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <Div> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"li\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <LI> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <LI> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"p\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"a\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <A> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <A> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"p\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"ul\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <UL> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <UL> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"footer\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <FOOTER> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <FOOTER> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"nav\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <NAV> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <NAV> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
 "    } \n"
 "    elems = document.getElementsByTagName(\"span\"); \n"
 "    for (i = 0; i < elems.length; i++) { \n"
-"        if (elems[i].id == \"\") continue; \n"
-"        if (_webinix_log) console.log(\"Webinix -> Listen -> <SPAN> -> \" + elems[i].id); \n"
+"        if(elems[i].id == \"\") continue; \n"
+"        if(_webinix_log) console.log(\"Webinix -> Listen -> <SPAN> -> \" + elems[i].id); \n"
 "        elems[i].addEventListener(\"click\", function () { \n"
 "            _webinix_SendEvent(this.id); \n"
 "        }); \n"
@@ -231,14 +231,14 @@ static const char* webinix_javascript_bridge =
 "} \n"
 "_webinix_start(); \n"
 "setTimeout(function () { \n"
-"    if (!_webinix_ws_status) { \n"
+"    if(!_webinix_ws_status) { \n"
 "        document.body.style.filter = \"contrast(1%)\"; \n"
 "        alert(\"Webinix failed to connect to the background application.\"); \n"
-"        if (!_webinix_log) webinix_close_window(); \n"
+"        if(!_webinix_log) webinix_close_window(); \n"
 "    } \n"
 "}, 1e3); \n"
 "document.addEventListener(\"keydown\", function (e) { \n"
-"    if (e.keyCode === 116) { \n"
+"    if(e.keyCode === 116) { \n"
 "        e.preventDefault(); \n"
 "        e.returnValue = false; \n"
 "        e.keyCode = 0; \n"
@@ -252,9 +252,9 @@ static const char* webinix_javascript_bridge =
 "    _webinix_close(255, \"\"); \n"
 "}; \n"
 "document.addEventListener(\"contextmenu\", function (e) {}); \n"
-"if (typeof webinix_ready === \"function\") setTimeout(webinix_ready, 1); \n"
+"if(typeof webinix_ready === \"function\") setTimeout(webinix_ready, 1); \n"
 "function webinix_debug(status) { \n"
-"    if (status) { \n"
+"    if(status) { \n"
 "        console.log(\"Webinix -> Debug log enabled.\"); \n"
 "        _webinix_log = true; \n"
 "    } else { \n"
@@ -264,11 +264,11 @@ static const char* webinix_javascript_bridge =
 "} \n"
 "function webinix_close_window() { \n"
 "    _webinix_freez_ui(); \n"
-"    if (_webinix_ws_status) _webinix_close(255, \"\"); \n"
+"    if(_webinix_ws_status) _webinix_close(255, \"\"); \n"
 "    else window.close(); \n"
 "} \n"
 "function webinix_event(event_name) { \n"
-"    if (!_webinix_ws_status) { \n"
+"    if(!_webinix_ws_status) { \n"
 "        console.log(\"Webinix -> Send Event -> Failed because status is disconnected.\"); \n"
 "        return; \n"
 "    } \n"
@@ -279,12 +279,12 @@ static const char* webinix_javascript_bridge =
 "    SendEvent8[2] = 0; \n"
 "    var p = -1; \n"
 "    for (i = 3; i < event_name8.length + 3; i++) SendEvent8[i] = event_name8[++p]; \n"
-"    if (SendEvent8[0] !== 255) { \n"
-"        if (_webinix_log) console.log(\"Webinix -> Send Event -> Generate header failed -> 0x\" + SendEvent8[0] + \" 0x\" + SendEvent8[1] + \" 0x\" + SendEvent8[2]); \n"
+"    if(SendEvent8[0] !== 255) { \n"
+"        if(_webinix_log) console.log(\"Webinix -> Send Event -> Generate header failed -> 0x\" + SendEvent8[0] + \" 0x\" + SendEvent8[1] + \" 0x\" + SendEvent8[2]); \n"
 "        return; \n"
 "    } \n"
-"    if (_webinix_ws_status) _webinix_ws.send(SendEvent8.buffer); \n"
-"    if (_webinix_log) { \n"
+"    if(_webinix_ws_status) _webinix_ws.send(SendEvent8.buffer); \n"
+"    if(_webinix_log) { \n"
 "        var buf = \"[ \"; \n"
 "        for (i = 0; i < SendEvent8.length; i++) buf = buf + \"0x\" + SendEvent8[i] + \" \"; \n"
 "        buf = buf + \"]\"; \n"
@@ -441,7 +441,7 @@ void _webinix_sleep(long unsigned int ms) {
     #ifdef _WIN32
         Sleep(ms);
     #else
-        sleep(ms);
+        usleep(ms);
     #endif
 }
 
@@ -462,7 +462,7 @@ bool _webinix_is_empty(const char* s) {
         // printf("[0] _webinix_is_empty()... \n");
     #endif
 
-    if ((s != NULL) && (s[0] != '\0'))
+    if((s != NULL) && (s[0] != '\0'))
         return false;
     return true;
 }
@@ -502,36 +502,144 @@ unsigned int _webinix_get_run_id() {
     return ++webinix.run_last_id;
 }
 
-bool _webinix_socket_test_connect_mg(unsigned int port_num) {
+#ifdef __linux__
+    bool _webinix_socket_test_connect_mg(unsigned int port_num) {
 
-    struct mg_mgr mgr;
-    struct mg_connection *c;
-    mg_mgr_init(&mgr);
+        struct mg_mgr mgr;
+        struct mg_connection *c;
+        mg_mgr_init(&mgr);
 
-    char url[32];
-    sprintf(url, "localhost:%d", port_num);
+        char url[32];
+        sprintf(url, "localhost:%d", port_num);
 
-    c = mg_connect(&mgr, url, NULL, NULL);
-    if (c == NULL) {
+        c = mg_connect(&mgr, url, NULL, NULL);
+        if(c == NULL) {
 
+            mg_close_conn(c);
+            mg_mgr_free(&mgr);
+            return false;
+        }
+        
+        // Cleaning
         mg_close_conn(c);
         mg_mgr_free(&mgr);
-        return false;
-    }
-    
-    // Cleaning
-    mg_close_conn(c);
-    mg_mgr_free(&mgr);
 
-    // Connection Success
-    return true;
-}
+        // Connection Success
+        return true;
+    }
+
+    int connect_ms(int sockfd, const struct sockaddr *addr, socklen_t addrlen, unsigned int timeout_ms) {
+
+        #ifdef WEBUI_LOG
+            printf("[0] connect_ms([%d] ms)... \n", timeout_ms);
+        #endif
+
+        int rc = 0;
+        int sockfd_flags_before = 0;
+
+        if((sockfd_flags_before = fcntl(sockfd, F_GETFL, 0) < 0))
+            return -1;
+        
+        if(fcntl(sockfd, F_SETFL, sockfd_flags_before | O_NONBLOCK) < 0)
+            return -1;
+        
+        // Start connecting (asynchronously)
+        do {
+
+            if (connect(sockfd, addr, addrlen)<0) {
+
+                // Did connect return an error? If so, we'll fail.
+                if ((errno != EWOULDBLOCK) && (errno != EINPROGRESS))
+                    rc = -1;
+                else {
+
+                    // Otherwise, we'll wait for it to complete.
+                    // Set a deadline timestamp 'timeout' ms from now (needed b/c poll can be interrupted)
+
+                    struct timespec now;
+                    if(clock_gettime(CLOCK_MONOTONIC, &now) < 0) {
+                        rc = -1;
+                        break;
+                    }
+
+                    struct timespec deadline = {
+                        .tv_sec = now.tv_sec,
+                        .tv_nsec = now.tv_nsec + timeout_ms * 1000000l
+                    };
+
+                    // Wait for the connection to complete.
+                    do {
+
+                        // Calculate how long until the deadline
+                        if(clock_gettime(CLOCK_MONOTONIC, &now) < 0) {
+
+                            rc = -1;
+                            break;
+                        }
+
+                        int ms_until_deadline = (int)((deadline.tv_sec  - now.tv_sec)*1000l + (deadline.tv_nsec - now.tv_nsec)/1000000l);
+
+                        if(ms_until_deadline<0) {
+                            
+                            rc = 0;
+                            break;
+                        }
+
+                        // Wait for connect to complete (or for the timeout deadline)
+                        struct pollfd pfds[] = {
+                            {
+                                .fd = sockfd,
+                                .events = POLLOUT
+                            }
+                        };
+
+                        rc = poll(pfds, 1, ms_until_deadline);
+
+                        // If poll 'succeeded', make sure it *really* succeeded
+                        if( rc > 0) {
+
+                            int error = 0;
+                            socklen_t len = sizeof(error);
+                            int retval = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+
+                            if(retval==0)
+                                errno = error;
+
+                            if(error!=0)
+                                rc = -1;
+                        }
+                    }
+
+                    // If poll was interrupted, try again.
+                    while(rc == -1 && errno == EINTR);
+
+                    // Did poll timeout? If so, fail.
+                    if(rc == 0) {
+
+                        errno = ETIMEDOUT;
+                        rc = -1;
+                    }
+                }
+            }
+        } while(0);
+
+        // Restore original O_NONBLOCK state
+        if(fcntl(sockfd, F_SETFL, sockfd_flags_before) < 0)
+            return -1;
+        
+        // Success
+        return rc;
+    }
+#endif
 
 bool _webinix_socket_test_connect(unsigned int port_num) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_socket_test_connect([%d])... \n", port_num);
     #endif
+
+    // TODO: Detect if port is failed to connect but it's used
+    // We should tray to bind() to make sure.
 
     #ifdef _WIN32
         // -- Win32 ---------------------
@@ -568,16 +676,34 @@ bool _webinix_socket_test_connect(unsigned int port_num) {
             WSACleanup();
             return false;
         }
-        
         // Cleaning
         closesocket(ConnectSocket);
         freeaddrinfo(result);
         WSACleanup();
-
         // Connection Success
         return true;
     #else
-        // ...
+        int sockfd;
+        struct sockaddr_in serv_addr;
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            // Opening socket failed
+            return false;
+        }
+        bzero((char *) &serv_addr, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        // Leave [serv_addr.sin_addr.s_addr] empty to use localhost
+        serv_addr.sin_port = htons(port_num);
+        if(connect_ms(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr), 100) != 0) {
+            // Connection Failed
+            close(sockfd);
+            return false;
+        }
+        else {
+            // Connection Success
+            close(sockfd);
+            return true;
+        }
     #endif
 }
 
@@ -628,16 +754,34 @@ bool _webinix_socket_test_listen(unsigned int port_num) {
             WSACleanup();
             return false;
         }
-
         // Clean
         freeaddrinfo(result);
         closesocket(ListenSocket);
         WSACleanup();
-        
         // Listening Success
         return true;
     #else
-        // ...
+        int sockfd, connfd, len;
+        struct sockaddr_in servaddr, cli;
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if(sockfd < 0) {
+            return false;
+        }
+        bzero(&servaddr, sizeof(servaddr));
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        servaddr.sin_port = htons(port_num);
+        if((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) {
+            close(sockfd);
+            return false;
+        }
+        if((listen(sockfd, 5)) != 0) {
+            close(sockfd);
+            return false;
+        }
+        // Listening Success
+        return true;
+        close(sockfd);
     #endif
 }
 
@@ -665,7 +809,17 @@ bool _webinix_port_is_used(unsigned int port_num) {
         // Port is not in use
         return false;
     #else
-        // ...
+        // Connect test
+        // if(_webinix_socket_test_connect(port_num))
+        //    return true;
+        
+        // Connect test MG
+        // if(_webinix_socket_test_connect_mg(port_num))
+        //    return true;
+
+        // Listener test
+        if(!_webinix_socket_test_listen(port_num))
+            return true; // Port is busy
     #endif
 }
 
@@ -1333,7 +1487,11 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
     webinix.mg_connections[win->core.window_number] = NULL;
     _webinix_free_port(win->core.server_port);
 
-    return 0;
+    #ifdef _WIN32
+        return 0;
+    #elif __linux__
+        pthread_exit(NULL);
+    #endif
 }
 
 bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int browser) {
@@ -1378,20 +1536,15 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
 
         char firefox_profile_path[1024];
         sprintf(firefox_profile_path, "%s%s.Webinix%s%s", temp, webinix_sep, webinix_sep, profile_name);
-
-        char buf[1024];
         
-        if(!_webinix_folder_exist(buf)) {
+        if(!_webinix_folder_exist(firefox_profile_path)) {
 
-            #ifdef _WIN32
-                sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->core.browser_path, firefox_profile_path);
-                _webinix_cmd_sync(buf, false);
-            #else
-                sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->core.browser_path, firefox_profile_path);
-                _webinix_cmd_sync(buf, false);
-            #endif
+            char buf[2048];
 
-            // Wait 10 second while slow PC create the folder..
+            sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->core.browser_path, firefox_profile_path);
+            _webinix_cmd_sync(buf, false);
+
+            // Wait 10 seconds while slow PCs finish creating the folder...
             for(unsigned int n = 0; n <= (webinix.startup_timeout * 4); n++) {
 
                 if(_webinix_folder_exist(firefox_profile_path))
@@ -1455,9 +1608,11 @@ bool _webinix_folder_exist(char* folder) {
     #else
         DIR* dir = opendir(folder);
         if(dir) {
+            printf("[0] _webinix_folder_exist([%s])... TTTTTTTTTTTTTTT \n", folder);
             closedir(dir);
             return true;
         }
+        printf("[0] _webinix_folder_exist([%s])... NOOOOOOOOOOOOOOOOO \n", folder);
     #endif
 
     return false;
@@ -1728,7 +1883,7 @@ void _webinix_browser_clean() {
         ZeroMemory(&si, sizeof(si));
         si.cb = sizeof(si);
         ZeroMemory(&pi, sizeof(pi));
-        if (!CreateProcessA(
+        if(!CreateProcessA(
             NULL,               // No module name (use command line)
             cmd,                // Command line
             NULL,               // Process handle not inheritable
@@ -1750,7 +1905,7 @@ void _webinix_browser_clean() {
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
-        if (Return == 0)
+        if(Return == 0)
             return 0;
         else
             return -1;
@@ -1773,7 +1928,9 @@ int _webinix_cmd_sync(char* cmd, bool show) {
         return _webinix_system_win32(buf, show);
     #else
         sprintf(buf, "%s >>/dev/null 2>>/dev/null ", cmd);
-        return system(buf);
+        int r =  system(buf);
+        r = (r != -1 && r != 127 && WIFEXITED(r)) ? WEXITSTATUS(r) : -1;
+        return r;
     #endif
 }
 
@@ -1789,18 +1946,13 @@ int _webinix_cmd_async(char* cmd, bool show) {
     char buf[1024];
     int res = 0;
 
+    // Asynchronous command
     #ifdef _WIN32
-        // Make command async
         sprintf(buf, "START \"\" %s", cmd);
         res = _webinix_cmd_sync(buf, show);
     #else
-        // Make command async
-        if(fork() >= 0) {
-            _webinix_cmd_sync(cmd, show);
-            return 0;
-        }
-        else
-            res = 1;
+        sprintf(buf, "%s > /dev/null 2>&1 &", cmd);
+        res = _webinix_cmd_sync(buf, show);
     #endif
 
     return res;
@@ -1809,7 +1961,7 @@ int _webinix_cmd_async(char* cmd, bool show) {
 #ifdef _WIN32
     DWORD WINAPI _webinix_run_browser_detect_proc_task(LPVOID _arg)
 #else
-    void _webinix_run_browser_detect_proc_task(void* _arg)
+    void* _webinix_run_browser_detect_proc_task(void* _arg)
 #endif
 {
     webinix_cmd_async_t* arg = (webinix_cmd_async_t*) _arg;
@@ -1827,7 +1979,11 @@ int _webinix_cmd_async(char* cmd, bool show) {
     // Close app
     webinix_exit();
 
-    return 0;
+    #ifdef _WIN32
+        return 0;
+    #elif __linux__
+        pthread_exit(NULL);
+    #endif
 }
 
 int _webinix_run_browser(webinix_window_t* win, char* cmd) {
@@ -1852,7 +2008,9 @@ int _webinix_run_browser(webinix_window_t* win, char* cmd) {
             HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_run_browser_detect_proc_task, (void *) arg, 0, NULL);
             CloseHandle(user_fun_thread); 
         #else
-            // Create posix thread ...
+            pthread_t thread;
+            pthread_create(&thread, NULL, &_webinix_run_browser_detect_proc_task, (void *) arg);
+            pthread_detach(thread);
         #endif
 
         // TODO: We need to set 'res = -1' when _webinix_run_browser_detect_proc_task() fails. 
@@ -1998,12 +2156,7 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
     if(browser > 10)
         return false;
     
-    #ifdef __linux__
-        if(address[0] == '/') {
-
-            address = "file://" + address;
-        }
-    #endif
+    // TODO: Convert address from [/...] to [file://...]
 
     if(browser != 0) {
 
@@ -2048,18 +2201,18 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
                             //webinix::exit();
         #elif __APPLE__
             // macOS
-            if(!_webinix_browser_start_chrome(address))
-                if(!_webinix_browser_start_firefox(address))
-                    if(!_webinix_browser_start_edge(address))
-                        if(!_webinix_browser_start_custom(address))
+            if(!_webinix_browser_start_chrome(win, address))
+                if(!_webinix_browser_start_firefox(win, address))
+                    if(!_webinix_browser_start_edge(win, address))
+                        if(!_webinix_browser_start_custom(win, address))
                             return false;
                             //webinix::exit();
         #else
             // Linux
-            if(!_webinix_browser_start_chrome(address))
-                if(!_webinix_browser_start_firefox(address))
-                    if(!_webinix_browser_start_edge(address))
-                        if(!_webinix_browser_start_custom(address))
+            if(!_webinix_browser_start_chrome(win, address))
+                if(!_webinix_browser_start_firefox(win, address))
+                    if(!_webinix_browser_start_edge(win, address))
+                        if(!_webinix_browser_start_custom(win, address))
                             return false;
                             //webinix::exit();
         #endif
@@ -2171,7 +2324,7 @@ webinix_window_t* webinix_new_window() {
     win->core.window_number = _webinix_get_new_window_number();
     win->core.browser_path = (char*) _webinix_malloc(1024);
     win->core.profile_path = (char*) _webinix_malloc(1024);
-    win->path = (char*) _webinix_malloc(MAX_PATH);
+    win->path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
 
     #ifdef WEBUI_LOG
         printf("[0] webinix_new_window() -> New window @ %p\n", win);
@@ -2264,7 +2417,7 @@ bool webinix_set_root_folder(webinix_window_t* win, const char* path) {
         printf("[%d] webinix_set_root_folder([%s])... \n", win->core.window_number, path);
     #endif
 
-    if(strlen(path) > MAX_PATH)
+    if(strlen(path) > WEBUI_MAX_PATH)
         return false;
 
     win->core.server_root = true;
@@ -2317,17 +2470,28 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
         unsigned int port = _webinix_get_free_port();
         win->core.server_port = port;
         _webinix_free_mem((void *) &win->core.url);
-        win->core.url = (char*) _webinix_malloc(128);
+        win->core.url = (char*) _webinix_malloc(256);
         sprintf(win->core.url, "http://localhost:%d", port);
 
-        // New Server
-        HANDLE thread = CreateThread(NULL, 0, webinix_server_start, (void *) win, 0, NULL);
-        win->core.server_thread = thread;
-        CloseHandle(thread);
-
         // Run browser
-        if(!_webinix_browser_start(win, win->core.url, browser))
+        if(!_webinix_browser_start(win, win->core.url, browser)) {
+
+            // Browser not available
+            _webinix_free_port(win->core.server_port);
             return false;
+        }
+        
+        // New Server Thread
+        #ifdef _WIN32
+            HANDLE thread = CreateThread(NULL, 0, webinix_server_start, (void *) win, 0, NULL);
+            win->core.server_thread = thread;
+            CloseHandle(thread);  
+        #elif __linux__
+            pthread_t thread;
+            pthread_create(&thread, NULL, &webinix_server_start, (void *) win);
+            pthread_detach(thread);
+            win->core.server_thread = thread;
+        #endif
     }
     else {
 
@@ -2416,7 +2580,7 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 #ifdef _WIN32
     DWORD WINAPI _webinix_cb(LPVOID _arg)
 #else
-    void _webinix_cb(void* _arg)
+    void* _webinix_cb(void* _arg)
 #endif
 {
     webinix_cb_t* arg = (webinix_cb_t*) _arg;
@@ -2456,7 +2620,11 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     _webinix_free_mem((void *) &arg->element_name);
     _webinix_free_mem((void *) &arg);
 
-    return 0;
+    #ifdef _WIN32
+        return 0;
+    #elif __linux__
+        pthread_exit(NULL);
+    #endif
 }
 
 void _webinix_window_event(webinix_window_t* win, char* element_id, char* element) {
@@ -2475,7 +2643,9 @@ void _webinix_window_event(webinix_window_t* win, char* element_id, char* elemen
         HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
         CloseHandle(user_fun_thread); 
     #else
-        // Create posix thread ...
+        pthread_t thread;
+        pthread_create(&thread, NULL, &_webinix_cb, (void *) arg);
+        pthread_detach(thread);
     #endif
 }
 
@@ -2656,8 +2826,9 @@ char* _webinix_get_current_path() {
         printf("[0] _webinix_get_current_path()... \n");
     #endif
 
-    char* path = (char*) _webinix_malloc(MAX_PATH);
-    WEBUI_GET_CURRENT_DIR(path, MAX_PATH);
+    char* path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
+    if(WEBUI_GET_CURRENT_DIR (path, WEBUI_MAX_PATH) == NULL)
+        path[0] = 0x00;
 
     return path;
 }
