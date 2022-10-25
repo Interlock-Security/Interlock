@@ -1,4 +1,4 @@
-# Webinix Library 2.0.1
+# Webinix Library 2.0.2
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -102,7 +102,7 @@ class window:
 		if Webinix is None:
 			err_library_not_found('show')
 			return
-		Webinix.webinix_show(self.window, html.encode('utf-8'))
+		Webinix.webinix_show(self.window, html.encode('utf-8'), 0)
 	
 	def close(self):
 		global Webinix

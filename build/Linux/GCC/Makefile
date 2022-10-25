@@ -1,0 +1,44 @@
+# Webinix Library
+# Linux - GCC
+
+SOURCE=../../../src
+INCLUDE=../../../include
+
+all: release
+
+debug:
+#	Static with Debug info
+	@echo "Build Webinix Library (Debug Static)..."
+	@gcc -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ranlib libwebinix-2-static-x64.a
+#	Dynamic with Debug info
+	@echo "Build Webinix Library (Debug Dynamic)..."
+	@gcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@gcc -g -shared -o webinix-2-x64.so webinix.o mongoose.o
+#	Clean
+	@- rm -f *.o
+	@echo "Done."
+
+release:
+#	Static Release
+	@echo "Build Webinix Library (Release Static)..."
+	@gcc -Os -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -Os -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ranlib libwebinix-2-static-x64.a
+#	Dynamic Release
+	@echo "Build Webinix Library (Release Dynamic)..."
+	@gcc -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -O3 -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@gcc -shared -o webinix-2-x64.so webinix.o mongoose.o
+#	Clean
+	@- rm -f *.o
+	@echo "Done."
+
+clean:
+	- rm -f *.o
+	- rm -f *.so
+	- rm -f *.a

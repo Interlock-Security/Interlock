@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.1
+    Webinix Library 2.0.2
     
     http://webinix.me
     https://github.com/alifcommunity/webinix

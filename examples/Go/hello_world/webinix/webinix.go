@@ -1,6 +1,6 @@
 package webinix
 
-// Webinix Library 2.0.1
+// Webinix Library 2.0.2
 //
 // http://webinix.me
 // https://github.com/alifcommunity/webinix
@@ -9,10 +9,11 @@ package webinix
 // Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
 
 /*
+// [?] Change the library path as you need
 #cgo CFLAGS: -I ./ -I ../../../../include
-#cgo windows LDFLAGS: -L ./ -L ../../../../build/Windows/GCC/ -lwebinix-2-static-x64 -lws2_32
-#cgo darwin LDFLAGS: -L ./ -L ../../../../build/macOS/Clang/ -lwebinix-2-static-x64
-#cgo linux LDFLAGS: -L ./ -L ../../../../build/Linux/GCC/ -lwebinix-2-static-x64
+#cgo windows LDFLAGS: -L ./ -L ../../../../build/Windows/GCC/ -L ../../../../build/Windows/MSVC/ -lwebinix-2-static-x64 -lws2_32
+#cgo darwin LDFLAGS: -L ./ -L ../../../../build/macOS/GCC/ -L ../../../../build/macOS/Clang/ -lwebinix-2-static-x64 -lpthread
+#cgo linux LDFLAGS: -L ./ -L ../../../../build/Linux/GCC/ -L ../../../../build/Linux/Clang/ -lwebinix-2-static-x64 -lpthread
 #include <webinix.h>
 extern void webinix_go_handler(webinix_window_t* _window, unsigned int _element_id, unsigned int _window_id, char* _element_name);
 static void webinix_bind_go_handler(webinix_event_t* e) {

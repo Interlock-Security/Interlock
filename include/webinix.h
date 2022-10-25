@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.1
+    Webinix Library 2.0.2
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -60,7 +60,6 @@
     #define WEBUI_PCLOSE _pclose
     #define WEBUI_MAX_PATH MAX_PATH
 #endif
-
 // -- Linux ---------------------------
 #ifdef __linux__
     #include <pthread.h> // POSIX threading
@@ -76,11 +75,16 @@
     #define WEBUI_PCLOSE pclose
     #define WEBUI_MAX_PATH PATH_MAX
 #endif
-
 // -- macOS ---------------------------
 // ...
 
 struct webinix_window_t;
+
+typedef struct webinix_timer_t {
+
+    struct timespec start;
+    struct timespec now;
+} webinix_timer_t;
 
 typedef struct webinix_event_t {
 
@@ -88,7 +92,6 @@ typedef struct webinix_event_t {
     unsigned int element_id;
     char* element_name;
     struct webinix_window_t* window;
-
 } webinix_event_t;
 
 typedef struct webinix_window_core_t {
@@ -117,15 +120,13 @@ typedef struct webinix_window_core_t {
         HANDLE server_thread;
     #else
         pthread_t server_thread;
-    #endif    
-
+    #endif
 } webinix_window_core_t;
 
 typedef struct webinix_window_t {
 
     webinix_window_core_t core;
     char* path;
-
 } webinix_window_t;
 
 typedef struct webinix_javascript_result_t {
@@ -133,7 +134,6 @@ typedef struct webinix_javascript_result_t {
     bool error;
     unsigned int length;
     const char* data;
-
 } webinix_javascript_result_t;
 
 typedef struct webinix_javascript_t {
@@ -141,7 +141,6 @@ typedef struct webinix_javascript_t {
     const char* script;
     unsigned int timeout;
     webinix_javascript_result_t result;
-
 } webinix_javascript_t;
 
 typedef struct webinix_cb_t {
@@ -149,14 +148,12 @@ typedef struct webinix_cb_t {
     webinix_window_t* win;
     char* element_id;
     char* element_name;
-
 } webinix_cb_t;
 
 typedef struct webinix_cmd_async_t {
 
     webinix_window_t* win;
     char* cmd;
-
 } webinix_cmd_async_t;
 
 typedef struct webinix_custom_browser_t {
@@ -164,7 +161,6 @@ typedef struct webinix_custom_browser_t {
     char* app;
     char* arg;
     bool auto_link;
-
 } webinix_custom_browser_t;
 
 typedef struct webinix_browser_t {
@@ -176,7 +172,6 @@ typedef struct webinix_browser_t {
     unsigned int safari;    // 4
     unsigned int chromium;  // 5
     unsigned int custom;    // 99
-
 } webinix_browser_t;
 
 typedef struct webinix_runtime_t {
@@ -184,7 +179,6 @@ typedef struct webinix_runtime_t {
     unsigned int none;      // 0
     unsigned int deno;      // 1
     unsigned int nodejs;    // 2
-
 } webinix_runtime_t;
 
 typedef struct webinix_t {
@@ -215,7 +209,6 @@ typedef struct webinix_t {
     void *ptr_list[WEBUI_MAX_ARRAY];
     unsigned int ptr_position;
     size_t ptr_size[WEBUI_MAX_ARRAY];
-
 } webinix_t;
 
 // -- Definitions ---------------------
@@ -244,7 +237,6 @@ EXPORT void webinix_detect_process_close(webinix_window_t* win, bool status);
 
 // -- Interface -----------------------
 // To help other languages to use Webinix
-
 typedef struct webinix_javascript_int_t {
 
     char* script;
@@ -252,9 +244,7 @@ typedef struct webinix_javascript_int_t {
     bool error;
     unsigned int length;
     const char* data;
-
 } webinix_javascript_int_t;
-
 EXPORT unsigned int webinix_bind_int(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*));
 EXPORT void webinix_run_js_int(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data);
 EXPORT void webinix_run_js_int_struct(webinix_window_t* win, webinix_javascript_int_t* js_int);
@@ -287,6 +277,10 @@ EXPORT bool _webinix_browser_start_firefox(webinix_window_t* win, const char* ad
 EXPORT bool _webinix_browser_start_custom(webinix_window_t* win, const char* address);
 EXPORT bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address);
 EXPORT bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned int browser);
+EXPORT long _webinix_timer_diff(struct timespec *start, struct timespec *end);
+EXPORT void _webinix_timer_start(webinix_timer_t* t);
+EXPORT bool _webinix_timer_is_end(webinix_timer_t* t, unsigned int ms);
+EXPORT void _webinix_timer_clock_gettime(struct timespec *spec);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
