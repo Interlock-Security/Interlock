@@ -25,14 +25,14 @@ int main(int argc, char* argv[]) {
 	my_window = webinix_new_window();
 
 	// Stop when the browser process get closed.
-	webinix_detect_process_close(my_window, true);
+	webinix_wait_process(my_window, true);
 
     // Show the window
 	if(!webinix_open(my_window, url, webinix.browser.chrome))	// Run the window on Chrome
 		webinix_open(my_window, url, webinix.browser.any);		// If not, run on any other installed web browser
 
     // Wait until all windows get closed
-	webinix_loop();
+	webinix_wait();
 
     return 0;
 }

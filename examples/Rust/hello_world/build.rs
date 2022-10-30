@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.2
+    Webinix Library 2.0.3
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -18,4 +18,5 @@ fn main() {
     
     // Webinix static library name
     println!("cargo:rustc-link-lib=webinix-2-static-x64");
+    println!("cargo:rustc-link-lib=user32");
 }

@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.2
+    Webinix Library 2.0.3
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -24,7 +24,7 @@ webinix_t webinix;
 // This is a uncompressed version to make the debugging
 // more easy in the browser using the builtin dev-tools
 static const char* webinix_javascript_bridge = 
-"const _webinix_log = false; \n"
+"var _webinix_log = false; \n"
 "var _webinix_ws; \n"
 "var _webinix_ws_status = false; \n"
 "var _webinix_action8 = new Uint8Array(1); \n"
@@ -75,7 +75,7 @@ static const char* webinix_javascript_bridge =
 "                                               buffer8[1] + \" 0x\" + buffer8[2]); \n"
 "                var len = buffer8.length - 3; \n"
 "                if(buffer8[buffer8.length - 1] === 0) \n"
-"                   len--; // Null terminated byte can break eval() \n"
+"                   len--; // Null byte (0x00) can break eval() \n"
 "                data8 = new Uint8Array(len); \n"
 "                for (i = 0; i < len; i++) data8[i] = buffer8[i + 3]; \n"
 "                var data8utf8 = new TextDecoder(\"utf-8\").decode(data8); \n"
@@ -1711,7 +1711,7 @@ void _webinix_browser_clean() {
     int _webinix_system_win32(char* cmd, bool show) {
 
         #ifdef WEBUI_LOG
-            printf("[0] _webinix_system_win32([%s], [%d])... \n", cmd, show);
+            printf("[0] _webinix_system_win32()... \n");
         #endif
 
         DWORD Return = 0;
@@ -1757,7 +1757,7 @@ void _webinix_browser_clean() {
 int _webinix_cmd_sync(char* cmd, bool show) {
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_cmd_sync([%s], [%d])... \n", cmd, show);
+        printf("[0] _webinix_cmd_sync()... \n");
     #endif
 
     // Run sync command and
@@ -1767,9 +1767,15 @@ int _webinix_cmd_sync(char* cmd, bool show) {
 
     #ifdef _WIN32
         sprintf(buf, "cmd /c \"%s\" > nul 2>&1 ", cmd);
+        #ifdef WEBUI_LOG
+            printf("[0] _webinix_cmd_sync() -> Running [%s] \n", buf);
+        #endif
         return _webinix_system_win32(buf, show);
     #else
         sprintf(buf, "%s >>/dev/null 2>>/dev/null ", cmd);
+        #ifdef WEBUI_LOG
+            printf("[0] _webinix_cmd_sync() -> Running [%s] \n", buf);
+        #endif
         int r =  system(buf);
         r = (r != -1 && r != 127 && WIFEXITED(r)) ? WEXITSTATUS(r) : -1;
         return r;
@@ -1779,7 +1785,7 @@ int _webinix_cmd_sync(char* cmd, bool show) {
 int _webinix_cmd_async(char* cmd, bool show) {
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_cmd_async([%s])... \n", cmd);
+        printf("[0] _webinix_cmd_async()... \n");
     #endif
 
     // Run a async command
@@ -1831,7 +1837,7 @@ int _webinix_cmd_async(char* cmd, bool show) {
 int _webinix_run_browser(webinix_window_t* win, char* cmd) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] _webinix_run_browser([%s])... \n", win->core.window_number, cmd);
+        printf("[%d] _webinix_run_browser()... \n", win->core.window_number);
     #endif
 
     int res = 0;
@@ -2073,35 +2079,35 @@ void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browse
     _webinix_browser_start(win, link, browser);
 }
 
-void webinix_free_js(webinix_javascript_t* javascript) {
+void webinix_free_script(webinix_script_t* script) {
 
-    _webinix_free_mem((void *) &javascript->result.data);
-    _webinix_free_mem((void *) &javascript->script);
-    memset(javascript, 0x00, sizeof(webinix_javascript_t));
+    _webinix_free_mem((void *) &script->result.data);
+    _webinix_free_mem((void *) &script->script);
+    memset(script, 0x00, sizeof(webinix_script_t));
 }
 
-void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
+void webinix_script(webinix_window_t* win, webinix_script_t* script) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_run_js([%s])... \n", win->core.window_number, javascript->script);
+        printf("[%d] webinix_script([%s])... \n", win->core.window_number, script->script);
     #endif
 
-    size_t js_len = strlen(javascript->script);
+    size_t js_len = strlen(script->script);
 
     if(js_len < 1) {
 
-        _webinix_free_mem((void *) &javascript->result.data);
-        javascript->result.data = webinix_js_empty;
-        javascript->result.length = (unsigned int) strlen(webinix_js_empty);
-        javascript->result.error = true;
+        _webinix_free_mem((void *) &script->result.data);
+        script->result.data = webinix_js_empty;
+        script->result.length = (unsigned int) strlen(webinix_js_empty);
+        script->result.error = true;
         return;
     }
 
     // Initializing js result
-    _webinix_free_mem((void *) &javascript->result.data);
-    javascript->result.data = webinix_js_timeout;
-    javascript->result.length = (unsigned int) strlen(webinix_js_timeout);
-    javascript->result.error = true;
+    _webinix_free_mem((void *) &script->result.data);
+    script->result.data = webinix_js_timeout;
+    script->result.length = (unsigned int) strlen(webinix_js_timeout);
+    script->result.error = true;
     
     // Initializing pipe
     unsigned int run_id = _webinix_get_run_id();
@@ -2116,14 +2122,14 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
     packet[1] = WEBUI_HEADER_JS;        // Type
     packet[2] = run_id;                 // ID
     for(unsigned int i = 0; i < js_len; i++)     // Data
-        packet[i + 3] = javascript->script[i];
+        packet[i + 3] = script->script[i];
     
     // Send packets
     _webinix_window_send(win, packet, packet_len);
     _webinix_free_mem((void *) &packet);
 
     // Wait for UI response
-    if(javascript->timeout < 1 || javascript->timeout > 86400) {
+    if(script->timeout < 1 || script->timeout > 86400) {
 
         for(;;) {
 
@@ -2135,7 +2141,7 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
     }
     else {
 
-        for(unsigned int n = 0; n <= (javascript->timeout * 1000); n++) {
+        for(unsigned int n = 0; n <= (script->timeout * 1000); n++) {
 
             if(webinix.run_done[run_id])
                 break;
@@ -2146,9 +2152,9 @@ void webinix_run_js(webinix_window_t* win, webinix_javascript_t* javascript) {
 
     if(webinix.run_responses[run_id] != NULL) {
 
-        javascript->result.data = webinix.run_responses[run_id];
-        javascript->result.length = (unsigned int) strlen(webinix.run_responses[run_id]);
-        javascript->result.error = webinix.run_error[run_id];
+        script->result.data = webinix.run_responses[run_id];
+        script->result.length = (unsigned int) strlen(webinix.run_responses[run_id]);
+        script->result.error = webinix.run_error[run_id];
     }
 }
 
@@ -2205,10 +2211,10 @@ bool webinix_is_show(webinix_window_t* win) {
     return win->core.connected;
 }
 
-bool webinix_any_window_is_open() {
+bool webinix_is_any_window_running() {
 
     #ifdef WEBUI_LOG
-        printf("[0] webinix_any_window_is_open()... \n");
+        printf("[0] webinix_is_any_window_running()... \n");
     #endif
     
     if(webinix.connections > 0)
@@ -2296,7 +2302,7 @@ void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* typ
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_show([%.*s..], [%d])... \n", win->core.window_number, 3, html, browser);
+        printf("[%d] webinix_show([%.*s...], [%d])... \n", win->core.window_number, 4, html, browser);
     #endif
 
     // Initializing
@@ -2356,7 +2362,7 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
     return true;
 }
 
-bool webinix_copy_show(webinix_window_t* win, const char* html, unsigned int browser) {
+bool webinix_show_cpy(webinix_window_t* win, const char* html, unsigned int browser) {
 
     // Copy HTML, And show the window
 
@@ -2605,7 +2611,7 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
 
             // Fatal.
             // The pipe ID is not valid
-            // we can't send the ready signal to webinix_run_js()
+            // we can't send the ready signal to webinix_script()
             return;
         }
 
@@ -2636,7 +2642,7 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
             webinix.run_responses[run_id] = webinix_empty_string;
         }
 
-        // Send ready signal to webinix_run_js()
+        // Send ready signal to webinix_script()
         webinix.run_done[run_id] = true;
     }
 }
@@ -2649,14 +2655,14 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
 
     // Just open an app-mode window using the link
     webinix_set_timeout(0);
-    webinix_detect_process_close(win, true);
+    webinix_wait_process(win, true);
     return _webinix_browser_start(win, url, browser);
 }
 
-void webinix_detect_process_close(webinix_window_t* win, bool status) {
+void webinix_wait_process(webinix_window_t* win, bool status) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_detect_process_close()... \n", win->core.window_number);
+        printf("[%d] webinix_wait_process()... \n", win->core.window_number);
     #endif
 
     win->core.detect_process_close = status;
@@ -2695,16 +2701,37 @@ void webinix_exit() {
     webinix.exit_now = true;
 }
 
-void webinix_loop() {
+bool webinix_is_app_running() {
 
     #ifdef WEBUI_LOG
-        printf("[L] webinix_loop()... \n");
+        printf("[0] webinix_app_exit()... \n");
+    #endif
+    
+    if(webinix.use_timeout) {
+        if(webinix.wait_for_socket_window) {
+            if(webinix.servers > 0)
+                return true;
+            return false;
+        }
+    }
+    else {
+        if(!webinix.exit_now)
+            return true;
+        return false;
+    }
+    return false;
+}
+
+void webinix_wait() {
+
+    #ifdef WEBUI_LOG
+        printf("[L] webinix_wait()... \n");
     #endif
 
     if(webinix.use_timeout) {
 
         #ifdef WEBUI_LOG
-            printf("[L] webinix_loop() -> Using timeout %d second\n", webinix.startup_timeout);
+            printf("[L] webinix_wait() -> Using timeout %d second\n", webinix.startup_timeout);
         #endif
 
         // TODO: Loop trough all win
@@ -2717,7 +2744,7 @@ void webinix_loop() {
         if(webinix.wait_for_socket_window) {
 
             #ifdef WEBUI_LOG
-                printf("[L] webinix_loop() -> Wait for connected socket window...\n");
+                printf("[L] webinix_wait() -> Wait for connected socket window...\n");
             #endif
 
             while(webinix.servers > 0) {
@@ -2729,14 +2756,14 @@ void webinix_loop() {
         else {
 
             #ifdef WEBUI_LOG
-                printf("[L] webinix_loop() -> Ignore connected socket window.\n");
+                printf("[L] webinix_wait() -> Ignore connected socket window.\n");
             #endif
         }
     }
     else {
 
         #ifdef WEBUI_LOG
-            printf("[L] webinix_loop() -> Infinite loop...\n");
+            printf("[L] webinix_wait() -> Infinite loop...\n");
         #endif
 
         // Infinite wait
@@ -2745,7 +2772,7 @@ void webinix_loop() {
     }
 
     #ifdef WEBUI_LOG
-        printf("[L] webinix_loop() -> Loop finished.\n");
+        printf("[L] webinix_wait() -> Loop finished.\n");
     #endif
 
     _webinix_browser_clean();
@@ -2855,7 +2882,7 @@ unsigned int _webinix_get_free_port() {
     return port;
 }
 
-void webinix_runtime(webinix_window_t* win, unsigned int runtime) {
+void webinix_script_runtime(webinix_window_t* win, unsigned int runtime) {
 
     if(runtime != webinix.runtime.deno && runtime != webinix.runtime.nodejs)
         win->core.runtime = webinix.runtime.none;
@@ -2935,10 +2962,10 @@ void webinix_bind_int_handler(webinix_event_t* e) {
     unsigned int cb_index = e->element_id;
 
     if(cb_index > 0 && webinix.cb_int[cb_index] != NULL)
-        webinix.cb_int[cb_index](e->element_id, e->window_id, e->element_name);
+        webinix.cb_int[cb_index](e->element_id, e->window_id, e->element_name, e->window);
 }
 
-unsigned int webinix_bind_int(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*)) {
+unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*)) {
 
     unsigned int cb_index = webinix_bind(win, element, webinix_bind_int_handler);
     webinix.cb_int[cb_index] = func;
@@ -2946,36 +2973,36 @@ unsigned int webinix_bind_int(webinix_window_t* win, const char* element, void (
     return cb_index;
 }
 
-void webinix_run_js_int(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data) {
+void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_run_js_int()... \n", win->core.window_number);
+        printf("[%d] webinix_script_interface()... \n", win->core.window_number);
     #endif
 
-    webinix_javascript_t js = {
+    webinix_script_t js = {
         .script = script,
         .timeout = timeout
     };
 
-    webinix_run_js(win, &js);
+    webinix_script(win, &js);
     
     data = (char*) js.result.data;
     *error = js.result.error;
     *length = js.result.length;
 }
 
-void webinix_run_js_int_struct(webinix_window_t* win, webinix_javascript_int_t* js_int) {
+void webinix_script_interface_struct(webinix_window_t* win, webinix_script_interface_t* js_int) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_run_js_int_struct()... \n", win->core.window_number);
+        printf("[%d] webinix_script_interface_struct()... \n", win->core.window_number);
     #endif
 
-    webinix_javascript_t js = {
+    webinix_script_t js = {
         .script = js_int->script,
         .timeout = js_int->timeout
     };
 
-    webinix_run_js(win, &js);
+    webinix_script(win, &js);
     
     js_int->data = js.result.data;
     js_int->error = js.result.error;

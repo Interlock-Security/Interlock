@@ -61,7 +61,7 @@ webinix_show(my_window, my_html, webinix.browser.any);
 
 ### Loop
 
-It's very important to call `webinix_loop()` at the end of your main function after you created/shows all your windows.
+It's very important to call `webinix_wait()` at the end of your main function after you created/shows all your windows.
 
 ```c
 int main() {
@@ -71,7 +71,7 @@ int main() {
     // Show the windows...
 
     // Wait until all windows get closed
-	webinix_loop();
+	webinix_wait();
 
     return 0;
 }

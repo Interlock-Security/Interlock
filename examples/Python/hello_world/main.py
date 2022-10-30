@@ -10,7 +10,9 @@
 
 # Install Webinix 2
 # pip install --upgrade webinix2
-from webinix import webinix
+# from webinix import webinix
+
+import webinix
 
 # Create a global window object
 MyWindow = webinix.window()
@@ -108,7 +110,7 @@ def main():
 	MyWindow.show(login_html)
 
 	# Wait until all windows are closed
-	webinix.loop()
+	webinix.wait()
 
 	print('Bye.')
 
