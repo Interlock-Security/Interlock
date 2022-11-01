@@ -71,10 +71,10 @@ MyWindow.show(my_html)
 
 ### Loop
 
-It's very important to call `webinix.loop()` at the end of your main function after you created/shows all your windows.
+It's very important to call `webinix.wait()` at the end of your main function after you created/shows all your windows.
 
 ```python
-webinix.loop()
+webinix.wait()
 ```
 
 ### Event

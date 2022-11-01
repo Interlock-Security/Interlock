@@ -7,7 +7,7 @@ from webinix import webinix
 MyWindow = webinix.window()
 MyWindow.bind('MyID', my_function)
 MyWindow.show("MyHTML")
-webinix.loop()
+webinix.wait()
 ```
 
 ```sh
