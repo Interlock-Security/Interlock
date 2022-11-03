@@ -1,5 +1,3 @@
-- **Get Started**
-  - [Get Started](/readme)
+  - [Home](/readme)
 - **API**
-  - [C](/c_api)
-  - [Python](/python_api)
+  - [Webinix C APIs](/c_api)

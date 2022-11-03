@@ -195,10 +195,10 @@ extern "C" {
     );
 }
 extern "C" {
-    pub fn webinix_allow_multi_access(win: *mut webinix_window_t, status: bool);
+    pub fn webinix_multi_access(win: *mut webinix_window_t, status: bool);
 }
 extern "C" {
-    pub fn webinix_set_root_folder(
+    pub fn _webinix_set_root_folder(
         win: *mut webinix_window_t,
         path: *const ::std::os::raw::c_char,
     ) -> bool;
@@ -207,14 +207,13 @@ extern "C" {
     pub fn webinix_new_server(
         win: *mut webinix_window_t,
         path: *const ::std::os::raw::c_char,
-        index_html: *const ::std::os::raw::c_char,
     ) -> *const ::std::os::raw::c_char;
 }
 extern "C" {
     pub fn webinix_close(win: *mut webinix_window_t);
 }
 extern "C" {
-    pub fn webinix_is_show(win: *mut webinix_window_t) -> bool;
+    pub fn webinix_is_shown(win: *mut webinix_window_t) -> bool;
 }
 extern "C" {
     pub fn webinix_script(
@@ -257,7 +256,7 @@ extern "C" {
     );
 }
 extern "C" {
-    pub fn webinix_wait_process(win: *mut webinix_window_t, status: bool);
+    pub fn _webinix_wait_process(win: *mut webinix_window_t, status: bool);
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

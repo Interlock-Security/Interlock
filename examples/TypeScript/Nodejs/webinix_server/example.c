@@ -23,10 +23,7 @@ int main() {
 	webinix_script_runtime(my_window, webinix.runtime.nodejs);
 
 	// Create a new web server using Webinix
-	const char* url = webinix_new_server(my_window, "", NULL);
-
-	// Stop when the browser process get closed.
-	webinix_wait_process(my_window, true);
+	const char* url = webinix_new_server(my_window, "");
 
     // Show the window
 	if(!webinix_open(my_window, url, webinix.browser.chrome))	// Run the window on Chrome

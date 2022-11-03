@@ -2184,10 +2184,10 @@ void webinix_close(webinix_window_t* win) {
     }
 }
 
-bool webinix_is_show(webinix_window_t* win) {
+bool webinix_is_shown(webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_is_show()... \n", win->core.window_number);
+        printf("[%d] webinix_is_shown()... \n", win->core.window_number);
     #endif
 
     return win->core.connected;
@@ -2214,20 +2214,21 @@ unsigned int _webinix_window_get_number(webinix_window_t* win) {
     return win->core.window_number;
 }
 
-const char* webinix_new_server(webinix_window_t* win, const char* path, const char* index_html) {
+const char* webinix_new_server(webinix_window_t* win, const char* path) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_new_server()... \n", win->core.window_number);
     #endif
 
     // Root folder to serve
-    webinix_set_root_folder(win, path);
+    if(!_webinix_set_root_folder(win, path))
+        return webinix_empty_string;
     
     // 99 is a non-existing browser
     // this is to prevent any browser 
     // from running. We want only to
     // run a web-server right now.
-    webinix_show(win, index_html, 99);
+    webinix_show(win, NULL, 99);
 
     // Wait for server to start
     for(unsigned int n = 0; n < 2000; n++) {
@@ -2241,13 +2242,13 @@ const char* webinix_new_server(webinix_window_t* win, const char* path, const ch
     return (const char*) win->core.url;
 }
 
-bool webinix_set_root_folder(webinix_window_t* win, const char* path) {
+bool _webinix_set_root_folder(webinix_window_t* win, const char* path) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_set_root_folder([%s])... \n", win->core.window_number, path);
+        printf("[%d] _webinix_set_root_folder([%s])... \n", win->core.window_number, path);
     #endif
 
-    if(strlen(path) > WEBUI_MAX_PATH)
+    if(path != NULL & strlen(path) > WEBUI_MAX_PATH)
         return false;
 
     win->core.server_root = true;
@@ -2257,15 +2258,15 @@ bool webinix_set_root_folder(webinix_window_t* win, const char* path) {
     else
         sprintf(win->path, "%s", path);
     
-    webinix_allow_multi_access(win, true);
+    webinix_multi_access(win, true);
 
     return true;
 }
 
-void webinix_allow_multi_access(webinix_window_t* win, bool status) {
+void webinix_multi_access(webinix_window_t* win, bool status) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_allow_multi_access([%d])... \n", win->core.window_number, status);
+        printf("[%d] webinix_multi_access([%d])... \n", win->core.window_number, status);
     #endif
 
     win->core.multi_access = status;
@@ -2281,6 +2282,11 @@ void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* typ
     win->core.icon_type = type_s;
 }
 
+bool webinix_refresh(webinix_window_t* win, const char* html) {
+
+    return webinix_show(win, html, 0);
+}
+
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
 
     #ifdef WEBUI_LOG
@@ -2288,11 +2294,11 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
     #endif
 
     // Initializing
-    win->core.html = html;
+    win->core.html = html == NULL ? webinix_empty_string : html;
     win->core.server_handled = false;
     webinix.wait_for_socket_window = true;
 
-    if(!webinix_is_show(win)) {
+    if(!webinix_is_shown(win)) {
 
         // Start a new window
 
@@ -2637,14 +2643,14 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
 
     // Just open an app-mode window using the link
     webinix_set_timeout(0);
-    webinix_wait_process(win, true);
+    _webinix_wait_process(win, true);
     return _webinix_browser_start(win, url, browser);
 }
 
-void webinix_wait_process(webinix_window_t* win, bool status) {
+void _webinix_wait_process(webinix_window_t* win, bool status) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_wait_process()... \n", win->core.window_number);
+        printf("[%d] _webinix_wait_process()... \n", win->core.window_number);
     #endif
 
     win->core.detect_process_close = status;

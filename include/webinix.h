@@ -196,20 +196,19 @@ EXPORT bool webinix_is_app_running();
 EXPORT void webinix_set_timeout(unsigned int second);
 EXPORT webinix_window_t* webinix_new_window();
 EXPORT bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser);
+EXPORT bool webinix_refresh(webinix_window_t* win, const char* html);
 EXPORT bool webinix_show_cpy(webinix_window_t* win, const char* html, unsigned int browser);
 EXPORT void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* type_s);
-EXPORT void webinix_allow_multi_access(webinix_window_t* win, bool status);
-EXPORT bool webinix_set_root_folder(webinix_window_t* win, const char* path);
-EXPORT const char* webinix_new_server(webinix_window_t* win, const char* path, const char* index_html);
+EXPORT void webinix_multi_access(webinix_window_t* win, bool status);
+EXPORT const char* webinix_new_server(webinix_window_t* win, const char* path);
 EXPORT void webinix_close(webinix_window_t* win);
-EXPORT bool webinix_is_show(webinix_window_t* win);
+EXPORT bool webinix_is_shown(webinix_window_t* win);
 EXPORT void webinix_script(webinix_window_t* win, webinix_script_t* script);
 EXPORT unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t* e));
 EXPORT void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t* e));
 EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_free_script(webinix_script_t* script);
 EXPORT void webinix_script_runtime(webinix_window_t* win, unsigned int runtime);
-EXPORT void webinix_wait_process(webinix_window_t* win, bool status);
 
 // -- Interface -----------------------
 // Used by other languages to create Webinix wrappers
@@ -256,6 +255,8 @@ EXPORT long _webinix_timer_diff(struct timespec *start, struct timespec *end);
 EXPORT void _webinix_timer_start(webinix_timer_t* t);
 EXPORT bool _webinix_timer_is_end(webinix_timer_t* t, unsigned int ms);
 EXPORT void _webinix_timer_clock_gettime(struct timespec *spec);
+EXPORT bool _webinix_set_root_folder(webinix_window_t* win, const char* path);
+EXPORT void _webinix_wait_process(webinix_window_t* win, bool status);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
