@@ -278,6 +278,8 @@ void _webinix_ptr_add(void *p, size_t size) {
         webinix.ptr_list[webinix.ptr_position] = p;
         webinix.ptr_size[webinix.ptr_position] = size;
         webinix.ptr_position++;
+        if (webinix.ptr_position >= WEBUI_MAX_ARRAY)
+            webinix.ptr_position = (WEBUI_MAX_ARRAY - 1);
     }
 }
 
@@ -302,7 +304,7 @@ void _webinix_free_mem(void **p) {
         }
     }
 
-    for(unsigned int i = webinix.ptr_position; i >= 0; i--) {
+    for(int i = webinix.ptr_position; i >= 0; i--) {
 
         if(webinix.ptr_list[i] == NULL) {
 
