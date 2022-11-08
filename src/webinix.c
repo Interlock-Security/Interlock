@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.3
+    Webinix Library 2.0.4
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -20,7 +20,7 @@
 // -- Heap ----------------------------
 webinix_t webinix;
 
-// -- JavaScript Bridge ---------------
+// -- Webinix JS-Bridge ---------
 // This is a uncompressed version to make the debugging
 // more easy in the browser using the builtin dev-tools
 static const char* webinix_javascript_bridge = 
@@ -50,7 +50,7 @@ static const char* webinix_javascript_bridge =
 "        }; \n"
 "        _webinix_ws.onerror = function () { \n"
 "            if(_webinix_log) console.log(\"Webinix -> Connection error\"); \n"
-"            _webinix_close(255, \"\"); \n"
+"            _webinix_close(255, ''); \n"
 "        }; \n"
 "        _webinix_ws.onclose = function (evt) { \n"
 "            _webinix_ws_status = false; \n"
@@ -82,7 +82,7 @@ static const char* webinix_javascript_bridge =
 "                if(buffer8[1] === 252) { \n"
 "                    _webinix_close(252, data8utf8); \n"
 "                } else if(buffer8[1] === 251) { \n"
-"                    _webinix_close(251, \"\"); \n"
+"                    _webinix_close(251, ''); \n"
 "                } else if(buffer8[1] === 254) { \n"
 "                    data8utf8 = data8utf8.replace(/(?:\\r\\n|\\r|\\n)/g, \"\\\\n\"); \n"
 "                    if(_webinix_log) console.log(\"Webinix -> JS -> Run -> \" + data8utf8); \n"
@@ -121,7 +121,7 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "} \n"
 "function _webinix_SendEvent(name) { \n"
-"    if(_webinix_ws_status && name != \"\") { \n"
+"    if(_webinix_ws_status && name != '') { \n"
 "        var Name8 = new TextEncoder(\"utf-8\").encode(name); \n"
 "        var Event8 = new Uint8Array(3 + Name8.length); \n"
 "        Event8[0] = 255; \n"
@@ -136,94 +136,6 @@ static const char* webinix_javascript_bridge =
 "            buf = buf + \"]\"; \n"
 "            console.log(\"Webinix -> Event -> Send -> [\" + name + \"] (\" + buf + \")\"); \n"
 "        } \n"
-"    } \n"
-"} \n"
-"function _webinix_listener_handler() { \n"
-"    var elems = document.getElementsByTagName(\"form\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        _webinix_ws_status = false; \n"
-"        alert(\"Incompatible HTML.\\n\\nYour HTML contain <form> elements, wish is not compatible with Webinix. Please remove all those elements.\"); \n"
-"        _webinix_close(255, \"\"); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"button\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <Button> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"div\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <Div> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"li\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <LI> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"p\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"a\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <A> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"p\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <P> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"ul\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <UL> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"footer\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <FOOTER> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"nav\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <NAV> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
-"    } \n"
-"    elems = document.getElementsByTagName(\"span\"); \n"
-"    for (i = 0; i < elems.length; i++) { \n"
-"        if(elems[i].id == \"\") continue; \n"
-"        if(_webinix_log) console.log(\"Webinix -> Listen -> <SPAN> -> \" + elems[i].id); \n"
-"        elems[i].addEventListener(\"click\", function () { \n"
-"            _webinix_SendEvent(this.id); \n"
-"        }); \n"
 "    } \n"
 "} \n"
 "function _webinix_listener() { \n"
@@ -246,10 +158,10 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "}); \n"
 "window.addEventListener(\"beforeunload\", function (e) { \n"
-"    _webinix_close(255, \"\"); \n"
+"    _webinix_close(255, ''); \n"
 "}); \n"
 "window.onbeforeunload = function () { \n"
-"    _webinix_close(255, \"\"); \n"
+"    _webinix_close(255, ''); \n"
 "}; \n"
 "document.addEventListener(\"contextmenu\", function (e) {}); \n"
 "if(typeof webinix_ready === \"function\") setTimeout(webinix_ready, 1); \n"
@@ -264,7 +176,7 @@ static const char* webinix_javascript_bridge =
 "} \n"
 "function webinix_close_window() { \n"
 "    _webinix_freez_ui(); \n"
-"    if(_webinix_ws_status) _webinix_close(255, \"\"); \n"
+"    if(_webinix_ws_status) _webinix_close(255, ''); \n"
 "    else window.close(); \n"
 "} \n"
 "function webinix_event(event_name) { \n"
@@ -290,13 +202,25 @@ static const char* webinix_javascript_bridge =
 "        buf = buf + \"]\"; \n"
 "        console.log(\"Webinix -> Send Event -> [\" + event_name + \"] (\" + buf + \")\"); \n"
 "    } \n"
-"}";
+"} \n"
+"function _webinix_listener_handler() { \n"
+"    Object.keys(window).forEach(key=>{ \n"
+"        if(/^on(click)/.test(key)) { \n"
+"            window.addEventListener(key.slice(2),event=>{ \n"
+"                if(event.target.id !== '') { \n"
+"                    if(_webinix_bind_all || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
+"                        _webinix_SendEvent(event.target.id); \n"
+"                } \n"
+"            }); \n"
+"        } \n"
+"    }); \n"
+"} \n";
 
 // -- Heap ----------------------------
-static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this window<br>because it's already served.<br><br>The security policy is set to<br>deny multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
-static const char* webinix_html_res_not_available = "<html><head><title>Resource Not Available</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Resource Not Available</h2><p>The requested resource is not available.</p><br><a href=\"https://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
-static const char* webinix_deno_not_found = "<html><head><title>Deno Not Found</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Deno Not Found</h2><p>Deno not found on your system.<br>Please download it from <a href=\"https://github.com/denoland/deno/releases\">https://github.com/denoland/deno/releases</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
-static const char* webinix_nodejs_not_found = "<html><head><title>Node.js Not Found</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Node.js Not Found</h2><p>Node.js not found on your system.<br>Please download it from <a href=\"https://nodejs.org/en/download/\">https://nodejs.org/en/download/</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix Library<small></a></body></html>";
+static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
+static const char* webinix_html_res_not_available = "<html><head><title>Resource Not Available</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Resource Not Available</h2><p>The requested resource is not available.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
+static const char* webinix_deno_not_found = "<html><head><title>Deno Not Found</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Deno Not Found</h2><p>Deno is not found on this system.<br>Please download it from <a href=\"https://github.com/denoland/deno/releases\">https://github.com/denoland/deno/releases</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
+static const char* webinix_nodejs_not_found = "<html><head><title>Node.js Not Found</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Node.js Not Found</h2><p>Node.js is not found on this system.<br>Please download it from <a href=\"https://nodejs.org/en/download/\">https://nodejs.org/en/download/</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
 static const char* webinix_def_icon = "<?xml version=\"1.0\" ?><svg height=\"24\" version=\"1.1\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:cc=\"http://creativecommons.org/ns#\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><g transform=\"translate(0 -1028.4)\"><path d=\"m3 1030.4c-1.1046 0-2 0.9-2 2v7 2 7c0 1.1 0.8954 2 2 2h9 9c1.105 0 2-0.9 2-2v-7-2-7c0-1.1-0.895-2-2-2h-9-9z\" fill=\"#2c3e50\"/><path d=\"m3 2c-1.1046 0-2 0.8954-2 2v3 3 1 1 1 3 3c0 1.105 0.8954 2 2 2h9 9c1.105 0 2-0.895 2-2v-3-4-2-3-3c0-1.1046-0.895-2-2-2h-9-9z\" fill=\"#34495e\" transform=\"translate(0 1028.4)\"/><path d=\"m4 5.125v1.125l3 1.75-3 1.75v1.125l5-2.875-5-2.875zm5 4.875v1h5v-1h-5z\" fill=\"#ecf0f1\" transform=\"translate(0 1028.4)\"/></g></svg>";
 static const char* webinix_def_icon_type = "image/svg+xml";
 static const char* webinix_js_empty = "WEBUI_JS_EMPTY";
@@ -309,9 +233,11 @@ static const char* webinix_empty_string = ""; // .text
     static const char* webinix_sep = "/";
 #endif
 
+#define WEBUI_NON_EXIST_BROWSER (100)
+
 // -- Functions -----------------------
 bool _webinix_ptr_exist(void *p) {
-
+    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_ptr_exist()... \n");
     #endif
@@ -329,7 +255,7 @@ bool _webinix_ptr_exist(void *p) {
 }
 
 void _webinix_ptr_add(void *p, size_t size) {
-
+    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_ptr_add()... \n");
     #endif
@@ -356,7 +282,7 @@ void _webinix_ptr_add(void *p, size_t size) {
 }
 
 void _webinix_free_mem(void **p) {
-
+    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_free_mem()... \n");
     #endif
@@ -389,7 +315,7 @@ void _webinix_free_mem(void **p) {
 }
 
 void _webinix_panic() {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_panic()... \n");
     #endif
@@ -398,7 +324,7 @@ void _webinix_panic() {
 }
 
 void* _webinix_malloc(size_t size) {
-
+    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_malloc([%d])... \n", size);
     #endif
@@ -433,7 +359,7 @@ void* _webinix_malloc(size_t size) {
 }
 
 void _webinix_sleep(long unsigned int ms) {
-
+    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_sleep([%d])... \n", ms);
     #endif
@@ -447,6 +373,10 @@ void _webinix_sleep(long unsigned int ms) {
 
 long _webinix_timer_diff(struct timespec *start, struct timespec *end) {
 
+    #ifdef WEBUI_LOG
+        // printf("[0] _webinix_timer_diff()... \n");
+    #endif
+
     return ((end->tv_sec * 1000) +
         (end->tv_nsec / 1000000)) -
         ((start->tv_sec * 1000) +
@@ -454,6 +384,10 @@ long _webinix_timer_diff(struct timespec *start, struct timespec *end) {
 }
 
 void _webinix_timer_clock_gettime(struct timespec *spec) {
+
+    #ifdef WEBUI_LOG
+        // printf("[0] _webinix_timer_clock_gettime()... \n");
+    #endif
 
     #ifdef _WIN32
         __int64 wintime;
@@ -467,15 +401,23 @@ void _webinix_timer_clock_gettime(struct timespec *spec) {
 }
 
 void _webinix_timer_start(webinix_timer_t* t) {
+
+    #ifdef WEBUI_LOG
+        // printf("[0] _webinix_timer_start()... \n");
+    #endif
     
     _webinix_timer_clock_gettime(&t->start);
 }
 
 bool _webinix_timer_is_end(webinix_timer_t* t, unsigned int ms) {
+
+    #ifdef WEBUI_LOG
+        // printf("[0] _webinix_timer_is_end()... \n");
+    #endif
     
     _webinix_timer_clock_gettime(&t->now);
 
-    long def = _webinix_timer_diff(&t->start, &t->now);
+    unsigned int def = (unsigned int) _webinix_timer_diff(&t->start, &t->now);
     if (def > ms)
         return true;
     return false;
@@ -497,6 +439,10 @@ bool _webinix_is_empty(const char* s) {
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_is_empty()... \n");
     #endif
+    
+    #ifdef WEBUI_LOG
+        // printf("[0] _webinix_is_empty()... \n");
+    #endif
 
     if((s != NULL) && (s[0] != '\0'))
         return false;
@@ -504,7 +450,7 @@ bool _webinix_is_empty(const char* s) {
 }
 
 bool _webinix_file_exist(char* file) {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_file_exist([%s])... \n", file);
     #endif
@@ -517,12 +463,16 @@ bool _webinix_file_exist(char* file) {
     return false;
 }
 
-const char* _webinix_get_extension(const char *f) {
+const char* _webinix_get_extension(const char*f) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_get_extension()... \n");
+    #endif
 
     if(f == NULL)
         return webinix_empty_string;
 
-    const char *ext = strrchr(f, '.');
+    const char*ext = strrchr(f, '.');
 
     if(ext == NULL || !ext || ext == f)
         return webinix_empty_string;
@@ -530,7 +480,7 @@ const char* _webinix_get_extension(const char *f) {
 }
 
 unsigned int _webinix_get_run_id() {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_get_run_id()... \n");
     #endif
@@ -539,7 +489,7 @@ unsigned int _webinix_get_run_id() {
 }
 
 bool _webinix_socket_test_listen_mg(unsigned int port_num) {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_socket_test_listen_mg([%d])... \n", port_num);
     #endif
@@ -566,7 +516,7 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
 
 #ifdef _WIN32
     bool _webinix_socket_test_listen_win32(unsigned int port_num) {
-
+    
         #ifdef WEBUI_LOG
             printf("[0] _webinix_socket_test_listen_win32([%d])... \n", port_num);
         #endif
@@ -591,10 +541,10 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
 
         // Resolve the server address and port
         char the_port[16];
-        sprintf(the_port, "%d", port_num);
-        iResult = getaddrinfo("127.0.0.1", the_port, &hints, &result);
+        sprintf(&the_port[0], "%d", port_num);
+        iResult = getaddrinfo("127.0.0.1", &the_port[0], &hints, &result);
         if(iResult != 0) {
-            WSACleanup();
+            // WSACleanup();
             return false;
         }
 
@@ -602,7 +552,7 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
         ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if(ListenSocket == INVALID_SOCKET) {
             freeaddrinfo(result);
-            WSACleanup();
+            // WSACleanup();
             return false;
         }
 
@@ -611,14 +561,16 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
         if(iResult == SOCKET_ERROR) {
             freeaddrinfo(result);
             closesocket(ListenSocket);
-            WSACleanup();
+            shutdown(ListenSocket, SD_BOTH);
+            // WSACleanup();
             return false;
         }
 
         // Clean
         freeaddrinfo(result);
         closesocket(ListenSocket);
-        WSACleanup();
+        shutdown(ListenSocket, SD_BOTH);
+        // WSACleanup();
 
         // Listening Success
         return true;
@@ -626,7 +578,7 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
 #endif
 
 bool _webinix_port_is_used(unsigned int port_num) {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_port_is_used([%d])... \n", port_num);
     #endif
@@ -662,7 +614,7 @@ void _webinix_serve_file(webinix_window_t* win, struct mg_connection *c, void *e
 }
 
 bool _webinix_deno_exist() {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_deno_exist()... \n");
     #endif
@@ -682,7 +634,7 @@ bool _webinix_deno_exist() {
 }
 
 bool _webinix_nodejs_exist() {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_nodejs_exist()... \n");
     #endif
@@ -702,7 +654,7 @@ bool _webinix_nodejs_exist() {
 }
 
 const char* _webinix_interpret_command(const char* cmd) {
-
+    
     #ifdef WEBUI_LOG
         printf("[0] _webinix_interpret_command()... \n");
     #endif
@@ -895,10 +847,52 @@ void _webinix_interpret_file(webinix_window_t* win, struct mg_connection *c, voi
     _webinix_free_mem((void *) &full_path);
 }
 
+const char* _webinix_generate_js_bridge(webinix_window_t* win) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] _webinix_generate_js_bridge()... \n", win->core.window_number);
+    #endif
+
+    // Calculate the cb size
+    size_t cb_mem_size = 256; // To hold `const _webinix_bind_list = ["elem1", "elem2",];`
+    for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++)
+        if(!_webinix_is_empty(webinix.html_elements[i]))
+            cb_mem_size += strlen(webinix.html_elements[i]) + 3;
+    
+    // Generate the cb-all flag
+    char* event_cb_js_array = (char*) _webinix_malloc(cb_mem_size);
+    strcat(event_cb_js_array, "\n const _webinix_bind_all = ");
+    if(win->core.is_bind_all && win->core.cb_all[0] != NULL)
+        strcat(event_cb_js_array, "true; \n");
+    else
+        strcat(event_cb_js_array, "false; \n");
+    
+    // Generate the cb array
+    strcat(event_cb_js_array, "const _webinix_bind_list = [");
+    for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++) {
+        if(!_webinix_is_empty(webinix.html_elements[i])) {
+            strcat(event_cb_js_array, "\"");
+            strcat(event_cb_js_array, webinix.html_elements[i]);
+            strcat(event_cb_js_array, "\",");
+        }
+    }
+    strcat(event_cb_js_array, "] \n");
+
+    // Generate the full Webinix JS-Bridge
+    size_t len = cb_mem_size + strlen(webinix_javascript_bridge) + 1;
+    char* js = (char*) _webinix_malloc(len);
+    sprintf(js, 
+        "_webinix_port = %d; \n _webinix_win_num = %d; \n %s \n %s \n",
+        win->core.server_port, win->core.window_number, event_cb_js_array, webinix_javascript_bridge
+    );
+
+    return js;
+}
+
 static void _webinix_server_event_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
 
     webinix_window_t* win = (webinix_window_t *) fn_data;
-
+    
     #ifdef WEBUI_LOG
         // printf("[%d] _webinix_server_event_handler()... \n", win->core.window_number);
     #endif
@@ -923,19 +917,14 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
         } 
         else if(mg_http_match_uri(hm, "/webinix.js")) {
 
-            // Webinix Bridge
+            // Webinix JS-Bridge
 
             #ifdef WEBUI_LOG
                 printf("[%d] _webinix_server_event_handler()... HTML Webinix JS\n", win->core.window_number);
             #endif
 
             // Generate JavaScript bridge
-            size_t len = 64 + strlen(webinix_javascript_bridge);
-            char* js = (char *) _webinix_malloc(len);
-            sprintf(js, 
-                "_webinix_port = %d; \n %s \n",
-                win->core.server_port, webinix_javascript_bridge
-            );
+            const char* js = _webinix_generate_js_bridge(win);
 
             // Header
             // Content-Type: text/javascript
@@ -1060,14 +1049,26 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                     #endif
 
                     win->core.server_handled = true;
+                    char* html = (char*) webinix_empty_string;
 
-                    // Inject JavaScript bridge into HTML
-                    size_t len = strlen(win->core.html) + 6 + strlen(webinix_javascript_bridge) + 128;
-                    char* html = (char *) _webinix_malloc(len);
-                    sprintf(html, 
-                        "%s \n <script type = \"text/javascript\"> \n _webinix_port = %d; \n %s \n </script>",
-                        win->core.html, win->core.server_port, webinix_javascript_bridge
-                    );
+                    if(win->core.html != NULL) {
+
+                        if(strstr(win->core.html, "</html>") != NULL) {
+
+                            // Generate the full Webinix JS-Bridge
+                            const char* js = _webinix_generate_js_bridge(win);
+
+                            // Inject Webinix JS-Bridge into HTML
+                            size_t len = strlen(win->core.html) + strlen(js) + 512;
+                            html = (char*) _webinix_malloc(len);
+                            sprintf(html, 
+                                "%s \n <script type = \"text/javascript\"> \n %s \n </script>",
+                                win->core.html, js
+                            );
+
+                            _webinix_free_mem((void *) &js);
+                        }
+                    }
 
                     // // HTTP Header
                     // char header[512];
@@ -1214,7 +1215,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 #endif
 {
     webinix_window_t* win = (webinix_window_t*) arg;
-
+    
     #ifdef WEBUI_LOG
         printf("[%d] [Thread] webinix_server_start(%s)... \n", win->core.window_number, win->core.url);
     #endif
@@ -1423,11 +1424,11 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
             if(file == NULL)
                 return false;
             #ifdef _WIN32
-                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml){:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
+                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml) {:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
             #elif __APPLE__
-                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml){:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
+                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml) {:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
             #else
-                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml){:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
+                fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml) {:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
             #endif
             fclose(file);
 
@@ -1683,10 +1684,9 @@ void _webinix_browser_clean() {
         printf("[0] _webinix_browser_clean()... \n");
     #endif
 
-    //TODO: Clean profile folders
-    // Remove browser profile folders if needed
-    // or keep it to save window positions for
-    // future run.
+    // Let's keep the web browser profile folder
+    // to let the browser remember the window position
+    // and size. This function is for future use is needed.
 }
 
 #ifdef _WIN32
@@ -1800,14 +1800,24 @@ int _webinix_cmd_async(char* cmd, bool show) {
         printf("[%d] _webinix_run_browser_detect_proc_task()... \n", arg->win->core.window_number);
     #endif
 
+    // Prevent the main loop from closing
+    webinix.servers++;
+
     // Run command
     _webinix_cmd_sync(arg->cmd, false);
+
+    #ifdef WEBUI_LOG
+        printf("[%d] _webinix_run_browser_detect_proc_task() -> Process closed.\n", arg->win->core.window_number);
+    #endif
 
     // Free memory
     _webinix_free_mem((void *) &arg->cmd);
 
-    // Close app
-    webinix_exit();
+    // The browser process just get closed
+    // let the main loop break if there is
+    // no other running browser process, or
+    // if there is not connected WS left.
+    webinix.servers--;
 
     #ifdef _WIN32
         return 0;
@@ -1826,8 +1836,8 @@ int _webinix_run_browser(webinix_window_t* win, char* cmd) {
 
     if(win->core.detect_process_close) {
 
-        // Run a async command, and close the app
-        // when the process exit
+        // Detect window closing event by the browser
+        // process, instead of the WS connection status
 
         webinix_cmd_async_t* arg = (webinix_cmd_async_t*) _webinix_malloc(sizeof(webinix_cmd_async_t));
         arg->win = win;
@@ -1836,7 +1846,8 @@ int _webinix_run_browser(webinix_window_t* win, char* cmd) {
 
         #ifdef _WIN32
             HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_run_browser_detect_proc_task, (void *) arg, 0, NULL);
-            CloseHandle(user_fun_thread); 
+            if (user_fun_thread != NULL)
+                CloseHandle(user_fun_thread);
         #else
             pthread_t thread;
             pthread_create(&thread, NULL, &_webinix_run_browser_detect_proc_task, (void *) arg);
@@ -2061,7 +2072,7 @@ void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browse
     _webinix_browser_start(win, link, browser);
 }
 
-void webinix_free_script(webinix_script_t* script) {
+void webinix_script_cleanup(webinix_script_t* script) {
 
     _webinix_free_mem((void *) &script->result.data);
     _webinix_free_mem((void *) &script->script);
@@ -2073,6 +2084,8 @@ void webinix_script(webinix_window_t* win, webinix_script_t* script) {
     #ifdef WEBUI_LOG
         printf("[%d] webinix_script([%s])... \n", win->core.window_number, script->script);
     #endif
+
+    _webinix_init();
 
     size_t js_len = strlen(script->script);
 
@@ -2146,7 +2159,7 @@ webinix_window_t* webinix_new_window() {
         printf("[0] webinix_new_window()... \n");
     #endif
 
-    _webinix_ini();
+    _webinix_init();
 
     webinix_window_t* win = (webinix_window_t*) _webinix_malloc(sizeof(webinix_window_t));
 
@@ -2155,7 +2168,7 @@ webinix_window_t* webinix_new_window() {
     win->core.browser_path = (char*) _webinix_malloc(1024);
     win->core.profile_path = (char*) _webinix_malloc(1024);
     win->path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
-
+    
     #ifdef WEBUI_LOG
         printf("[0] webinix_new_window() -> New window @ %p\n", win);
     #endif
@@ -2168,6 +2181,8 @@ void webinix_close(webinix_window_t* win) {
     #ifdef WEBUI_LOG
         printf("[%d] webinix_close()... \n", win->core.window_number);
     #endif
+
+    _webinix_init();
 
     if(win->core.connected) {
 
@@ -2198,6 +2213,8 @@ bool webinix_is_any_window_running() {
     #ifdef WEBUI_LOG
         printf("[0] webinix_is_any_window_running()... \n");
     #endif
+
+    _webinix_init();
     
     if(webinix.connections > 0)
         return true;
@@ -2220,18 +2237,23 @@ const char* webinix_new_server(webinix_window_t* win, const char* path) {
         printf("[%d] webinix_new_server()... \n", win->core.window_number);
     #endif
 
+    _webinix_init();
+
     // Root folder to serve
     if(!_webinix_set_root_folder(win, path))
         return webinix_empty_string;
     
-    // 99 is a non-existing browser
-    // this is to prevent any browser 
-    // from running. We want only to
-    // run a web-server right now.
-    webinix_show(win, NULL, 99);
+    // Prevent the server from using
+    // timeout mode (wait for connection)
+    // webinix_set_timeout(0);
+    
+    // WEBUI_NON_EXIST_BROWSER is to prevent
+    // any browser from running. Because We want 
+    // only to run a web-server right now.
+    webinix_show(win, NULL, WEBUI_NON_EXIST_BROWSER);
 
     // Wait for server to start
-    for(unsigned int n = 0; n < 2000; n++) {
+    for(unsigned int n = 0; n < 500; n++) {
 
         if(win->core.server_running)
             break;
@@ -2248,7 +2270,7 @@ bool _webinix_set_root_folder(webinix_window_t* win, const char* path) {
         printf("[%d] _webinix_set_root_folder([%s])... \n", win->core.window_number, path);
     #endif
 
-    if(path != NULL & strlen(path) > WEBUI_MAX_PATH)
+    if((path == NULL) || (strlen(path) > WEBUI_MAX_PATH))
         return false;
 
     win->core.server_root = true;
@@ -2287,16 +2309,28 @@ bool webinix_refresh(webinix_window_t* win, const char* html) {
     return webinix_show(win, html, 0);
 }
 
+bool webinix_refresh_cpy(webinix_window_t* win, const char* html) {
+
+    return webinix_show_cpy(win, html, 0);
+}
+
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_show([%.*s...], [%d])... \n", win->core.window_number, 4, html, browser);
+        printf("[%d] webinix_show(html, [%d])... \n", win->core.window_number, browser);
+        printf("- - -[HTML]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", html);
     #endif
+
+    _webinix_init();
 
     // Initializing
     win->core.html = html == NULL ? webinix_empty_string : html;
     win->core.server_handled = false;
     webinix.wait_for_socket_window = true;
+
+    // Detect window closing event by the browser
+    // process, instead of the WS connection status
+    _webinix_wait_process(win, true);
 
     if(!webinix_is_shown(win)) {
 
@@ -2310,7 +2344,8 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
         sprintf(win->core.url, "http://localhost:%d", port);
 
         // Run browser
-        if(!_webinix_browser_start(win, win->core.url, browser)) {
+        bool browser_started = _webinix_browser_start(win, win->core.url, browser);
+        if(browser != WEBUI_NON_EXIST_BROWSER && !browser_started) {
 
             // Browser not available
             _webinix_free_port(win->core.server_port);
@@ -2321,7 +2356,8 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
         #ifdef _WIN32
             HANDLE thread = CreateThread(NULL, 0, webinix_server_start, (void *) win, 0, NULL);
             win->core.server_thread = thread;
-            CloseHandle(thread);  
+            if (thread != NULL)
+                CloseHandle(thread);
         #elif __linux__
             pthread_t thread;
             pthread_create(&thread, NULL, &webinix_server_start, (void *) win);
@@ -2352,6 +2388,10 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
 
 bool webinix_show_cpy(webinix_window_t* win, const char* html, unsigned int browser) {
 
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_show_cpy(html, [%d])... \n", win->core.window_number, browser);
+    #endif
+
     // Copy HTML, And show the window
 
     // Free
@@ -2371,7 +2411,7 @@ bool webinix_show_cpy(webinix_window_t* win, const char* html, unsigned int brow
     return webinix_show(win, cpy, browser);
 }
 
-void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t* e)) {
+void webinix_bind_all(webinix_window_t* win, void (*func)(webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_bind_all([*])... \n", win->core.window_number);
@@ -2381,11 +2421,13 @@ void webinix_bind_all(webinix_window_t* win, void (*func) (webinix_event_t* e)) 
     win->core.is_bind_all = true;
 }
 
-unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func) (webinix_event_t* e)) {
+unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func)(webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_bind([%s], [%p])... \n", win->core.window_number, element, func);
     #endif
+
+    _webinix_init();
 
     char* element_id = _webinix_malloc(strlen(element));
     sprintf(element_id, "%d/%s", win->core.window_number, element);
@@ -2432,17 +2474,17 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 
     unsigned int cb_index = _webinix_get_cb_index(arg->element_id);
 
-    // Check if cb exist
+    // Check for bind
     if(cb_index > 0 && webinix.cb[cb_index] != NULL) {
 
-        // User cb
+        // Call user cb
         e.element_id = cb_index;
         webinix.cb[cb_index](&e);
     }
+    // Check for bind-all
+    else if(arg->win->core.is_bind_all && arg->win->core.cb_all[0] != NULL) {
 
-    // General user cb
-    if(arg->win->core.is_bind_all && arg->win->core.cb_all[0] != NULL) {
-
+        // Call user cb
         e.element_id = 0;
         arg->win->core.cb_all[0](&e);
     }
@@ -2477,7 +2519,8 @@ void _webinix_window_event(webinix_window_t* win, char* element_id, char* elemen
 
     #ifdef _WIN32
         HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
-        CloseHandle(user_fun_thread); 
+        if(user_fun_thread != NULL)
+            CloseHandle(user_fun_thread); 
     #else
         pthread_t thread;
         pthread_create(&thread, NULL, &_webinix_cb, (void *) arg);
@@ -2642,7 +2685,7 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
     #endif
 
     // Just open an app-mode window using the link
-    webinix_set_timeout(0);
+    // webinix_set_timeout(0);
     _webinix_wait_process(win, true);
     return _webinix_browser_start(win, url, browser);
 }
@@ -2692,8 +2735,10 @@ void webinix_exit() {
 bool webinix_is_app_running() {
 
     #ifdef WEBUI_LOG
-        printf("[0] webinix_app_exit()... \n");
+        printf("[0] webinix_is_app_running()... \n");
     #endif
+
+    _webinix_init();
     
     if(webinix.use_timeout) {
         if(webinix.wait_for_socket_window) {
@@ -2716,6 +2761,8 @@ void webinix_wait() {
         printf("[L] webinix_wait()... \n");
     #endif
 
+    _webinix_init();
+
     if(webinix.use_timeout) {
 
         #ifdef WEBUI_LOG
@@ -2732,7 +2779,7 @@ void webinix_wait() {
         if(webinix.wait_for_socket_window) {
 
             #ifdef WEBUI_LOG
-                printf("[L] webinix_wait() -> Wait for connected socket window...\n");
+                printf("[L] webinix_wait() -> Wait for connected UI...\n");
             #endif
 
             while(webinix.servers > 0) {
@@ -2811,6 +2858,8 @@ void webinix_set_timeout(unsigned int second) {
         printf("[0] webinix_set_timeout([%d])... \n", second);
     #endif
 
+    _webinix_init();
+
     if(second < 1)
         webinix.use_timeout = false;
     else {
@@ -2836,7 +2885,8 @@ unsigned int _webinix_get_free_port() {
         printf("[0] _webinix_get_free_port()... \n");
     #endif
 
-    unsigned int port = WEBUI_MIN_PORT;
+    srand(time(NULL));
+    unsigned int port = (rand() % (WEBUI_MAX_PORT + 1 - WEBUI_MIN_PORT)) + WEBUI_MIN_PORT;
 
     for(unsigned int i = WEBUI_MIN_PORT; i <= WEBUI_MAX_PORT; i++) {
 
@@ -2850,12 +2900,15 @@ unsigned int _webinix_get_free_port() {
         }
 
         if(found)
-            port++; // Port used by local window
+            // Port used by local window
+            port = (rand() % (WEBUI_MAX_PORT + 1 - WEBUI_MIN_PORT)) + WEBUI_MIN_PORT;
         else {
             if(_webinix_port_is_used(port))
-                port++; // Port used by an external app
+                // Port used by an external app
+                port = (rand() % (WEBUI_MAX_PORT + 1 - WEBUI_MIN_PORT)) + WEBUI_MIN_PORT;
             else
-                break; // Port is free
+                // Port is free
+                break;
         }
     }
 
@@ -2872,20 +2925,26 @@ unsigned int _webinix_get_free_port() {
 
 void webinix_script_runtime(webinix_window_t* win, unsigned int runtime) {
 
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_script_runtime(%d)... \n", win->core.window_number, runtime);
+    #endif
+
+    _webinix_init();
+
     if(runtime != webinix.runtime.deno && runtime != webinix.runtime.nodejs)
         win->core.runtime = webinix.runtime.none;
     else
         win->core.runtime = runtime;
 }
 
-void _webinix_ini() {
+void _webinix_init() {
+
+    if(webinix.initialized)
+        return;    
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_ini()... \n");
+        printf("[0] _webinix_init()... \n");
     #endif
-    
-    if(webinix.initialized)
-        return;
 
     // Initializing
     memset(&webinix, 0x0, sizeof(webinix_t));
@@ -2953,12 +3012,28 @@ void webinix_bind_int_handler(webinix_event_t* e) {
         webinix.cb_int[cb_index](e->element_id, e->window_id, e->element_name, e->window);
 }
 
+void webinix_bind_int_all_handler(webinix_event_t* e) {
+
+    if(webinix.cb_int_all[0] != NULL)
+        webinix.cb_int_all[0](e->element_id, e->window_id, e->element_name, e->window);
+}
+
 unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*)) {
 
-    unsigned int cb_index = webinix_bind(win, element, webinix_bind_int_handler);
-    webinix.cb_int[cb_index] = func;
+    if(_webinix_is_empty(element)) {
 
-    return cb_index;
+        // Bind All
+        webinix_bind_all(win, webinix_bind_int_all_handler);
+        webinix.cb_int_all[0] = func;
+        return 0;
+    }
+    else {
+
+        // Bind
+        unsigned int cb_index = webinix_bind(win, element, webinix_bind_int_handler);
+        webinix.cb_int[cb_index] = func;
+        return cb_index;
+    }
 }
 
 void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data) {
@@ -3005,6 +3080,7 @@ void webinix_script_interface_struct(webinix_window_t* win, webinix_script_inter
             case DLL_PROCESS_ATTACH:
                 // Initialize once for each new process.
                 // Return FALSE to fail DLL load.
+                _webinix_init();
                 break;
 
             case DLL_THREAD_ATTACH:

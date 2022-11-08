@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.3
+    Webinix Library 2.0.4
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -247,7 +247,7 @@ extern "C" {
     ) -> bool;
 }
 extern "C" {
-    pub fn webinix_free_script(script: *mut webinix_script_t);
+    pub fn webinix_script_cleanup(script: *mut webinix_script_t);
 }
 extern "C" {
     pub fn webinix_script_runtime(
@@ -308,7 +308,7 @@ extern "C" {
     pub fn webinix_TEST(win: *mut webinix_window_t);
 }
 extern "C" {
-    pub fn _webinix_ini();
+    pub fn _webinix_init();
 }
 extern "C" {
     pub fn _webinix_get_cb_index(

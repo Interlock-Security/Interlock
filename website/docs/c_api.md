@@ -96,7 +96,7 @@ webinix_window_t* my_window = webinix_new_window();
 To show a window, you can use `webinix_show()`. If the window is already shown, the UI will get refreshed in the same window.
 
 ```c
-const char* my_html = "<html>...</html>";
+const char* my_html = "<html>Hello!</html>";
 
 // Any available web browser
 webinix_show(my_window, my_html, webinix.browser.any);
@@ -105,7 +105,7 @@ webinix_show(my_window, my_html, webinix.browser.any);
 Show a window in a specific web browser
 
 ```c
-const char* my_html = "<html>...</html>";
+const char* my_html = "<html>Hello!</html>";
 
 // Chrome
 webinix_show(my_window, my_html, webinix.browser.chrome);
@@ -250,7 +250,7 @@ Webinix waits a couple of seconds to let the web browser start and connect, you 
 // Wait 10 seconds for the web browser to start
 webinix_set_timeout(10);
 webinix_wait();   // After 10 seconds, if the web browser
-                // did not connect yet, this function will return
+                // did not start yet, this function will return
 ```
 ```c
 // Wait forever.
@@ -260,6 +260,8 @@ webinix_wait(); // this function will never end
 
 ---
 ### Multi Access
+
+![webinix_access_denied](data/webinix_access_denied.png)
 
 After the window is loaded, for safety, the used URL is not valid anymore, if someone else tries to access the URL Webinix will show an error. To allow multi-user access to the same URL, you can use `webinix_multi_access()`.
 
@@ -305,7 +307,7 @@ void my_function(webinix_event_t* e){
     webinix_script(e->window, &js);
 
     // Free resources
-	webinix_free_script(&js);
+	webinix_script_cleanup(&js);
 }
 ```
 
@@ -328,7 +330,7 @@ void my_function(webinix_event_t* e){
         printf("Output: %s\n", js.result.data);
     
     // Free resources
-	webinix_free_script(&js);
+	webinix_script_cleanup(&js);
 }
 ```
 

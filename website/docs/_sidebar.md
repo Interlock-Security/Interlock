@@ -1,3 +1,4 @@
-  - [Home](/readme)
+  - [Home](/)
 - **API**
   - [Webinix C APIs](/c_api)
+  - [Webinix Python APIs](/python_api)

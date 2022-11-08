@@ -18,3 +18,19 @@ git clone https://github.com/alifcommunity/webinix.git
 cd webinix\examples\C++\Windows\GCC
 mingw32-make
 ```
+
+### Linux
+
+- **GCC**
+```sh
+git clone https://github.com/alifcommunity/webinix.git
+cd webinix/examples/C++/Linux/GCC
+make
+```
+
+- **Clang**
+```sh
+git clone https://github.com/alifcommunity/webinix.git
+cd webinix/examples/C++/Linux/Clang
+make
+```

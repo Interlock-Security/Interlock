@@ -65,7 +65,7 @@ void check_the_password(webinix_event_t* e) {
 	}
 
 	// Free data resources
-	webinix_free_script(&js);
+	webinix_script_cleanup(&js);
 }
 
 void close_the_application(webinix_event_t* e) {
