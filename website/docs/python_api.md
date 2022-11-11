@@ -199,13 +199,17 @@ Webinix waits a couple of seconds to let the web browser start and connect, you 
 ```python
 # Wait 10 seconds for the web browser to start
 webinix.set_timeout(10)
-webinix.wait()	# After 10 seconds, if the web browser
-				# did not start yet, this function will return
+
+# After 10 seconds, if the web browser did
+# not start yet, wait() will return
+webinix.wait()
 ```
 ```python
 # Wait forever.
 webinix.set_timeout(0)
-webinix.wait() # this function will never end
+
+# wait() will never end
+webinix.wait()
 ```
 
 ### Multi Access

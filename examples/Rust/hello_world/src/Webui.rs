@@ -390,7 +390,7 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn _webinix_browser_clean();
+    pub fn _webinix_clean();
 }
 extern "C" {
     pub fn _webinix_browser_exist(

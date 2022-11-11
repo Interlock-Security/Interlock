@@ -249,13 +249,17 @@ Webinix waits a couple of seconds to let the web browser start and connect, you 
 ```c
 // Wait 10 seconds for the web browser to start
 webinix_set_timeout(10);
-webinix_wait();   // After 10 seconds, if the web browser
-                // did not start yet, this function will return
+
+// After 10 seconds, if the web browser did
+// not start yet, webinix_wait() will return
+webinix_wait();
 ```
 ```c
 // Wait forever.
 webinix_set_timeout(0);
-webinix_wait(); // this function will never end
+
+// webinix_wait() will never end
+webinix_wait();
 ```
 
 ---
