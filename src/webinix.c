@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.4
+    Webinix Library 2.0.5
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -27,15 +27,21 @@ static const char* webinix_javascript_bridge =
 "var _webinix_log = false; \n"
 "var _webinix_ws; \n"
 "var _webinix_ws_status = false; \n"
-"var _webinix_action8 = new Uint8Array(1); \n"
-"var _webinix_action_val; \n"
-"function _webinix_close(vbyte, v) { \n"
+"var _webinix_close_reason = 0; \n"
+"var _webinix_close_value; \n"
+"const _WEBUI_SIGNATURE = 255; \n"
+"const _WEBUI_JS = 254; \n"
+"const _WEBUI_CLICK = 253; \n"
+"const _WEBUI_SWITCH = 252; \n"
+"const _WEBUI_CLOSE = 251; \n"
+"const _WEBUI_FUNCTION = 250; \n"
+"function _webinix_close(reason = 0, value = 0) { \n"
 "    _webinix_ws_status = false; \n"
-"    _webinix_action8[0] = vbyte; \n"
-"    _webinix_action_val = v; \n"
+"    _webinix_close_reason = reason; \n"
+"    _webinix_close_value = value; \n"
 "    _webinix_ws.close(); \n"
 "} \n"
-"function _webinix_freez_ui() { \n"
+"function _webinix_freeze_ui() { \n"
 "    document.body.style.filter = 'contrast(1%)'; \n"
 "} \n"
 "function _webinix_start() { \n"
@@ -45,108 +51,137 @@ static const char* webinix_javascript_bridge =
 "        _webinix_ws.onopen = function () { \n"
 "            _webinix_ws.binaryType = 'arraybuffer'; \n"
 "            _webinix_ws_status = true; \n"
-"            if(_webinix_log) console.log('Webinix -> Connected'); \n"
-"            _webinix_listener(); \n"
+"            if(_webinix_log) \n"
+"                console.log('Webinix -> Connected'); \n"
+"            _webinix_clicks_listener(); \n"
 "        }; \n"
 "        _webinix_ws.onerror = function () { \n"
-"            if(_webinix_log) console.log('Webinix -> Connection error'); \n"
-"            _webinix_close(255, ''); \n"
+"            if(_webinix_log) \n"
+"                console.log('Webinix -> Connection Failed'); \n"
+"            _webinix_freeze_ui(); \n"
 "        }; \n"
 "        _webinix_ws.onclose = function (evt) { \n"
 "            _webinix_ws_status = false; \n"
-"            if(_webinix_action8[0] == 252) { \n"
-"                if(_webinix_log) console.log('Webinix -> Switch URL'); \n"
-"                window.location.replace(_webinix_action_val); \n"
+"            if(_webinix_close_reason === _WEBUI_SWITCH) { \n"
+"                if(_webinix_log) \n"
+"                    console.log('Webinix -> Refresh UI'); \n"
+"                window.location.replace(_webinix_close_value); \n"
 "            } else { \n"
-"                if(_webinix_log) console.log('Webinix -> Connection lost [' + evt.code + '][' + evt.reason + ']'); \n"
+"                if(_webinix_log) \n"
+"                    console.log('Webinix -> Connection lost (' + evt.code + ')'); \n"
 "                if(!_webinix_log) window.close(); \n"
-"                else _webinix_freez_ui(); \n"
+"                else _webinix_freeze_ui(); \n"
 "            } \n"
 "        }; \n"
 "        _webinix_ws.onmessage = function (evt) { \n"
 "                const buffer8 = new Uint8Array(evt.data); \n"
 "                if(buffer8.length < 4) return; \n"
-"                if(buffer8[0] !== 255) { \n"
-"                    if(_webinix_log) console.log('Webinix -> Invalid flag -> 0x' + buffer8[0] + \n"
-"                                   ' 0x' + buffer8[1] + ' 0x' + buffer8[2]); \n"
+"                if(buffer8[0] !== _WEBUI_SIGNATURE) \n"
 "                    return; \n"
-"                } \n"
-"                if(_webinix_log) console.log('Webinix -> Flag -> 0x' + buffer8[0] + ' 0x' + \n"
-"                                               buffer8[1] + ' 0x' + buffer8[2]); \n"
 "                var len = buffer8.length - 3; \n"
 "                if(buffer8[buffer8.length - 1] === 0) \n"
 "                   len--; // Null byte (0x00) can break eval() \n"
 "                data8 = new Uint8Array(len); \n"
 "                for (i = 0; i < len; i++) data8[i] = buffer8[i + 3]; \n"
 "                var data8utf8 = new TextDecoder('utf-8').decode(data8); \n"
-"                if(buffer8[1] === 252) { \n"
-"                    _webinix_close(252, data8utf8); \n"
-"                } else if(buffer8[1] === 251) { \n"
-"                    _webinix_close(251, ''); \n"
-"                } else if(buffer8[1] === 254) { \n"
+"                // Process Command \n"
+"                if(buffer8[1] === _WEBUI_SWITCH) { \n"
+"                    _webinix_close(_WEBUI_SWITCH, data8utf8); \n"
+"                } else if(buffer8[1] === _WEBUI_CLOSE) { \n"
+"                    _webinix_close(_WEBUI_CLOSE); \n"
+"                } else if(buffer8[1] === _WEBUI_JS) { \n"
 "                    data8utf8 = data8utf8.replace(/(?:\\r\\n|\\r|\\n)/g, \"\\\\n\"); \n"
-"                    if(_webinix_log) console.log('Webinix -> JS -> Run -> ' + data8utf8); \n"
+"                    if(_webinix_log) \n"
+"                        console.log('Webinix -> JS [' + data8utf8 + ']'); \n"
 "                    var FunReturn = 'undefined'; \n"
 "                    var FunError = false; \n"
 "                    try { FunReturn = eval('(() => {' + data8utf8 + '})()'); } catch (e) { FunError = true; FunReturn = e.message } \n"
 "                    if(typeof FunReturn === 'undefined' || FunReturn === undefined) FunReturn = 'undefined'; \n"
-"                    if(_webinix_log && !FunError) console.log('Webinix -> JS -> Return -> ' + FunReturn); \n"
-"                    if(_webinix_log && FunError) console.log('Webinix -> JS -> Return Error -> ' + FunReturn); \n"
+"                    if(_webinix_log && !FunError) console.log('Webinix -> JS -> Return [' + FunReturn + ']'); \n"
+"                    if(_webinix_log && FunError) console.log('Webinix -> JS -> Error [' + FunReturn + ']'); \n"
 "                    var FunReturn8 = new TextEncoder('utf-8').encode(FunReturn); \n"
 "                    var Return8 = new Uint8Array(4 + FunReturn8.length); \n"
-"                    Return8[0] = 255; \n"
-"                    Return8[1] = 254; \n"
+"                    Return8[0] = _WEBUI_SIGNATURE; \n"
+"                    Return8[1] = _WEBUI_JS; \n"
 "                    Return8[2] = buffer8[2]; \n"
 "                    if(FunError) Return8[3] = 1; \n"
 "                    else Return8[3] = 0; \n"
 "                    var p = -1; \n"
 "                    for (i = 4; i < FunReturn8.length + 4; i++) Return8[i] = FunReturn8[++p]; \n"
-"                    if(Return8[0] !== 255) \n"
-"                        return; \n"
 "                    if(_webinix_ws_status) _webinix_ws.send(Return8.buffer); \n"
-"                    if(_webinix_log) { \n"
-"                        var buf = '[ '; \n"
-"                        for (i = 0; i < Return8.length; i++) buf = buf + '0x' + Return8[i] + ' '; \n"
-"                        buf = buf + ']'; \n"
-"                        console.log('Webinix -> JS -> Sent response -> [' + FunReturn + '] (' + buf + ')'); \n"
-"                    } \n"
 "                } \n"
 "        }; \n"
 "    } else { \n"
 "        alert('Sorry. WebSocket not supported by your Browser.'); \n"
-"        if(!_webinix_log) webinix_close_window(); \n"
+"        window.close(); \n"
 "    } \n"
 "} \n"
-"function _webinix_SendEvent(name) { \n"
-"    if(_webinix_ws_status && name != '') { \n"
-"        var Name8 = new TextEncoder('utf-8').encode(name); \n"
-"        var Event8 = new Uint8Array(3 + Name8.length); \n"
-"        Event8[0] = 255; \n"
-"        Event8[1] = 253; \n"
-"        Event8[2] = 0; \n"
-"        var p = -1; \n"
-"        for (i = 3; i < Name8.length + 3; i++) Event8[i] = Name8[++p]; \n"
-"        if(_webinix_ws_status) _webinix_ws.send(Event8.buffer); \n"
-"        if(_webinix_log) { \n"
-"            var buf = '[ '; \n"
-"            for (i = 0; i < Event8.length; i++) buf = buf + '0x' + Event8[i] + ' '; \n"
-"            buf = buf + ']'; \n"
-"            console.log('Webinix -> Event -> Send -> [' + name + '] (' + buf + ')'); \n"
+"function _webinix_clicks_listener() { \n"
+"    Object.keys(window).forEach(key=>{ \n"
+"        if(/^on(click)/.test(key)) { \n"
+"            window.addEventListener(key.slice(2),event=>{ \n"
+"                if(event.target.id !== '') { \n"
+"                    if(_webinix_bind_all || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
+"                        _webinix_send_click(event.target.id); \n"
+"                } \n"
+"            }); \n"
 "        } \n"
+"    }); \n"
+"} \n"
+"function _webinix_send_click(elem) { \n"
+"    if(_webinix_ws_status && elem !== '') { \n"
+"        var elem8 = new TextEncoder('utf-8').encode(elem); \n"
+"        var packet = new Uint8Array(3 + elem8.length); \n"
+"        packet[0] = _WEBUI_SIGNATURE; \n"
+"        packet[1] = _WEBUI_CLICK; \n"
+"        packet[2] = 0; \n"
+"        var p = -1; \n"
+"        for (i = 3; i < elem8.length + 3; i++) \n"
+"            packet[i] = elem8[++p]; \n"
+"        _webinix_ws.send(packet.buffer); \n"
+"        if(_webinix_log) \n"
+"            console.log('Webinix -> Click [' + elem + ']'); \n"
 "    } \n"
 "} \n"
-"function _webinix_listener() { \n"
-"    window.addEventListener('load', _webinix_listener_handler()); \n"
-"} \n"
-"_webinix_start(); \n"
-"setTimeout(function () { \n"
-"    if(!_webinix_ws_status) { \n"
-"        document.body.style.filter = 'contrast(1%)'; \n"
-"        alert('Webinix failed to connect to the background application.'); \n"
-"        if(!_webinix_log) webinix_close_window(); \n"
+" // -- APIs -------------------------- \n"
+"function webinix_fn(fn, value) { \n"
+"    if(_webinix_ws_status && fn !== '') { \n"
+"        if(typeof value === 'string') { var value8 = new TextEncoder('utf-8').encode(value); } \n"
+"        else if(typeof value === 'number') { var value8 = new TextEncoder('utf-8').encode(value); } \n"
+"        else if(typeof value === 'boolean') { var v = 0; if(value) v = 1; var value8 = new TextEncoder('utf-8').encode(v); } \n"
+"        else { var value8 = new TextEncoder('utf-8').encode('undefined'); } \n"
+"        const fn8 = new TextEncoder('utf-8').encode(fn); \n"
+"        var packet = new Uint8Array(3 + fn8.length + 1 + value8.length + 1); \n"
+"        packet[0] = _WEBUI_SIGNATURE; \n"
+"        packet[1] = _WEBUI_FUNCTION; \n"
+"        packet[2] = 0; \n"
+"        var p = -1; \n"
+"        var i = 3; \n"
+"        for (; i < (3 + fn8.length); i++) \n"
+"            packet[i] = fn8[++p]; \n"
+"        packet[i] = 0; \n"
+"        i++; \n"
+"        p = -1; \n"
+"        for (; i < (3 + fn8.length + 1 + value8.length); i++) \n"
+"            packet[i] = value8[++p]; \n"
+"        packet[i] = 0; \n"
+"        _webinix_ws.send(packet.buffer); \n"
+"        if(_webinix_log) \n"
+"            console.log('Webinix -> Func [' + fn + ']'); \n"
 "    } \n"
-"}, 1e3); \n"
+"} \n"
+"function webinix_log(status) { \n"
+"    if(status) { \n"
+"        console.log('Webinix -> Log Enabled.'); \n"
+"        _webinix_log = true; \n"
+"    } else { \n"
+"        console.log('Webinix -> Log Disabled.'); \n"
+"        _webinix_log = false; \n"
+"    } \n"
+"} \n"
+" // -- DOM --------------------------- \n"
 "document.addEventListener('keydown', function (e) { \n"
+"    // Disable F5 \n"
 "    if(e.keyCode === 116) { \n"
 "        e.preventDefault(); \n"
 "        e.returnValue = false; \n"
@@ -154,62 +189,18 @@ static const char* webinix_javascript_bridge =
 "        return false; \n"
 "    } \n"
 "}); \n"
-"window.addEventListener('beforeunload', function (e) { \n"
-"    _webinix_close(255, ''); \n"
-"}); \n"
 "window.onbeforeunload = function () { \n"
-"    _webinix_close(255, ''); \n"
+"   _webinix_ws.close(); \n"
 "}; \n"
-"document.addEventListener('contextmenu', function (e) {}); \n"
-"if(typeof webinix_ready === 'function') setTimeout(webinix_ready, 1); \n"
-"function webinix_debug(status) { \n"
-"    if(status) { \n"
-"        console.log('Webinix -> Debug log enabled.'); \n"
-"        _webinix_log = true; \n"
-"    } else { \n"
-"        console.log('Webinix -> Debug log disabled.'); \n"
-"        _webinix_log = false; \n"
-"    } \n"
-"} \n"
-"function webinix_close_window() { \n"
-"    _webinix_freez_ui(); \n"
-"    if(_webinix_ws_status) _webinix_close(255, ''); \n"
-"    else window.close(); \n"
-"} \n"
-"function webinix_event(event_name) { \n"
+"setTimeout(function () { \n"
 "    if(!_webinix_ws_status) { \n"
-"        console.log('Webinix -> Send Event -> Failed because status is disconnected.'); \n"
-"        return; \n"
+"        _webinix_freeze_ui(); \n"
+"        alert('Webinix failed to connect to the background application. Please try again.'); \n"
+"        if(!_webinix_log) \n"
+"            window.close(); \n"
 "    } \n"
-"    var event_name8 = new TextEncoder('utf-8').encode(event_name); \n"
-"    var SendEvent8 = new Uint8Array(3 + event_name8.length); \n"
-"    SendEvent8[0] = 255; \n"
-"    SendEvent8[1] = 250; \n"
-"    SendEvent8[2] = 0; \n"
-"    var p = -1; \n"
-"    for (i = 3; i < event_name8.length + 3; i++) SendEvent8[i] = event_name8[++p]; \n"
-"    if(SendEvent8[0] !== 255) \n"
-"        return; \n"
-"    if(_webinix_ws_status) _webinix_ws.send(SendEvent8.buffer); \n"
-"    if(_webinix_log) { \n"
-"        var buf = '[ '; \n"
-"        for (i = 0; i < SendEvent8.length; i++) buf = buf + '0x' + SendEvent8[i] + ' '; \n"
-"        buf = buf + ']'; \n"
-"        console.log('Webinix -> Send Event -> [' + event_name + '] (' + buf + ')'); \n"
-"    } \n"
-"} \n"
-"function _webinix_listener_handler() { \n"
-"    Object.keys(window).forEach(key=>{ \n"
-"        if(/^on(click)/.test(key)) { \n"
-"            window.addEventListener(key.slice(2),event=>{ \n"
-"                if(event.target.id !== '') { \n"
-"                    if(_webinix_bind_all || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
-"                        _webinix_SendEvent(event.target.id); \n"
-"                } \n"
-"            }); \n"
-"        } \n"
-"    }); \n"
-"} \n";
+"}, 1500); \n"
+"window.addEventListener('load', _webinix_start()); \n";
 
 // -- Heap ----------------------------
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
@@ -220,7 +211,7 @@ static const char* webinix_def_icon = "<?xml version=\"1.0\" ?><svg height=\"24\
 static const char* webinix_def_icon_type = "image/svg+xml";
 static const char* webinix_js_empty = "WEBUI_JS_EMPTY";
 static const char* webinix_js_timeout = "WEBUI_JS_TIMEOUT";
-static const char* webinix_empty_string = ""; // .text
+static const char* const webinix_empty_string = ""; // In case the optimization is disabled
 
 #ifdef _WIN32
     static const char* webinix_sep = "\\";
@@ -2463,27 +2454,27 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 
     _webinix_init();
 
-    char* element_id = _webinix_malloc(strlen(element));
-    sprintf(element_id, "%d/%s", win->core.window_number, element);
+    char* webinix_internal_id = _webinix_malloc(strlen(element));
+    sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
 
-    unsigned int cb_index = _webinix_get_cb_index(element_id);
+    unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
 
     if(cb_index > 0) {
 
         // Replace a reference
         webinix.cb[cb_index] = func;
 
-        _webinix_free_mem((void *) &element_id);
+        _webinix_free_mem((void *) &webinix_internal_id);
     }
     else {
 
         // New reference
-        cb_index = _webinix_set_cb_index(element_id);
+        cb_index = _webinix_set_cb_index(webinix_internal_id);
 
         if(cb_index > 0)
             webinix.cb[cb_index] = func;
         else
-            _webinix_free_mem((void *) &element_id);
+            _webinix_free_mem((void *) &webinix_internal_id);
     }
 
     return cb_index;
@@ -2505,8 +2496,10 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     e.window_id = arg->win->core.window_number;
     e.element_name = arg->element_name;
     e.window = arg->win;
+    e.data = arg->data;
+    e.data_len = arg->data_len;
 
-    unsigned int cb_index = _webinix_get_cb_index(arg->element_id);
+    unsigned int cb_index = _webinix_get_cb_index(arg->webinix_internal_id);
 
     // Check for bind
     if(cb_index > 0 && webinix.cb[cb_index] != NULL) {
@@ -2528,7 +2521,7 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     #endif    
 
     // Free
-    _webinix_free_mem((void *) &arg->element_id);
+    _webinix_free_mem((void *) &arg->webinix_internal_id);
     _webinix_free_mem((void *) &arg->element_name);
     _webinix_free_mem((void *) &arg);
 
@@ -2539,17 +2532,22 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     #endif
 }
 
-void _webinix_window_event(webinix_window_t* win, char* element_id, char* element) {
+void _webinix_window_event(webinix_window_t* win, char* webinix_internal_id, char* element, void* data, unsigned int data_len) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] _webinix_window_event([%s], [%s])... \n", win->core.window_number, element_id, element);
+        printf("[%d] _webinix_window_event([%s], [%s])... \n", win->core.window_number, webinix_internal_id, element);
     #endif
 
     // Create a thread, and call the used cb function
     webinix_cb_t* arg = (webinix_cb_t*) _webinix_malloc(sizeof(webinix_cb_t));
     arg->win = win;
-    arg->element_id = element_id;
+    arg->webinix_internal_id = webinix_internal_id;
     arg->element_name = element;
+    if(data != NULL)
+        arg->data = data;
+    else
+        arg->data = (void*) webinix_empty_string;
+    arg->data_len = data_len;
 
     #ifdef _WIN32
         HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
@@ -2639,26 +2637,33 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
     if((unsigned char) packet[0] != WEBUI_HEADER_SIGNATURE || len < 4)
         return;
 
-    if((unsigned char) packet[1] == WEBUI_HEADER_CLICK || (unsigned char) packet[1] == WEBUI_HEADER_CALL_FUNC) {
+    if((unsigned char) packet[1] == WEBUI_HEADER_CLICK) {
 
-        // Click Event / Call Function
+        // Click Event
 
         // 0: [Signature]
         // 1: [Type]
         // 2: [Null]
         // 3: [Data]
 
-        // Get data part
-        char* data;
-        size_t data_len;
-        if(!_webinix_get_data(packet, len, 3, &data_len, &data))
+        // Get html element id
+        char* element;
+        size_t element_len;
+        if(!_webinix_get_data(packet, len, 3, &element_len, &element))
             return;
 
-        size_t element_id_len = 3 + 1 + data_len + 1; // [win num][/][name][null]
-        char* element_id = (char*) _webinix_malloc(element_id_len);
-        sprintf(element_id, "%d/%s", win->core.window_number, data);
+        // Generate Webinix internal id
+        size_t element_id_len = 3 + 1 + element_len + 1; // [win num][/][name][null]
+        char* webinix_internal_id = (char*) _webinix_malloc(element_id_len);
+        sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
 
-        _webinix_window_event(win, element_id, data);
+        _webinix_window_event(
+            win,                // Window
+            webinix_internal_id,  // Webinix Internal ID
+            element,            // User HTML ID
+            NULL,               // User Custom Data
+            0                   // User Data Len
+        );
     }
     else if((unsigned char) packet[1] == WEBUI_HEADER_JS) {
 
@@ -2702,7 +2707,6 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
         else {
 
             // Empty Result
-
             webinix.run_error[run_id] = error;
             webinix.run_responses[run_id] = webinix_empty_string;
         }
@@ -2710,6 +2714,61 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
         // Send ready signal to webinix_script()
         webinix.run_done[run_id] = true;
     }
+    else if((unsigned char) packet[1] == WEBUI_HEADER_CALL_FUNC) {
+
+        // Function Call
+
+        // 0: [Signature]
+        // 1: [Type]
+        // 2: [Null]
+        // 3: [ID, Null, Data]
+
+        // Get html element id
+        char* element;
+        size_t element_len;
+        if(!_webinix_get_data(packet, len, 3, &element_len, &element))
+            return;
+
+        // Get data
+        void* data;
+        size_t data_len;
+        if(!_webinix_get_data(packet, len, (3 + element_len + 1), &data_len, (char **) &data))
+            return;
+
+        // Generate Webinix internal id
+        size_t element_id_len = 3 + 1 + element_len + 1; // [win num][/][name][null]
+        char* webinix_internal_id = (char*) _webinix_malloc(element_id_len);
+        sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
+
+        _webinix_window_event(
+            win,                // Window
+            webinix_internal_id,  // Webinix Internal ID
+            element,            // User HTML ID
+            data,               // User Custom Data
+            data_len            // User Data Len
+        );
+    }
+}
+
+const char* webinix_as_string(webinix_event_t* e) {
+
+    if(e->data != NULL && e->data_len > 0 && e->data_len <= WEBUI_MAX_BUF)
+        return (const char *) e->data;
+    return "";
+}
+
+int webinix_as_int(webinix_event_t* e) {
+
+    if(e->data != NULL && e->data_len > 0 && e->data_len <= WEBUI_MAX_BUF)
+        return atoi((const char *) e->data);
+    return 0;
+}
+
+bool webinix_as_bool(webinix_event_t* e) {
+
+    if(webinix_as_int(e) > 0)
+        return true;
+    return false;
 }
 
 bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
@@ -3003,18 +3062,18 @@ void _webinix_init() {
     webinix.executable_path       = _webinix_get_current_path();
 }
 
-unsigned int _webinix_get_cb_index(char* element_id) {
+unsigned int _webinix_get_cb_index(char* webinix_internal_id) {
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_get_cb_index([%s])... \n", element_id);
+        printf("[0] _webinix_get_cb_index([%s])... \n", webinix_internal_id);
     #endif
 
-    if(element_id != NULL) {
+    if(webinix_internal_id != NULL) {
 
         for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++) {
 
             if(!_webinix_is_empty(webinix.html_elements[i])) 
-                if(strcmp(webinix.html_elements[i], element_id) == 0)
+                if(strcmp(webinix.html_elements[i], webinix_internal_id) == 0)
                     return i;
         }
     }
@@ -3022,10 +3081,10 @@ unsigned int _webinix_get_cb_index(char* element_id) {
     return 0;
 }
 
-unsigned int _webinix_set_cb_index(char* element_id) {
+unsigned int _webinix_set_cb_index(char* webinix_internal_id) {
 
     #ifdef WEBUI_LOG
-        printf("[0] _webinix_set_cb_index([%s])... \n", element_id);
+        printf("[0] _webinix_set_cb_index([%s])... \n", webinix_internal_id);
     #endif
 
     // Add
@@ -3033,7 +3092,7 @@ unsigned int _webinix_set_cb_index(char* element_id) {
 
         if(_webinix_is_empty(webinix.html_elements[i])) {
 
-            webinix.html_elements[i] = element_id;
+            webinix.html_elements[i] = webinix_internal_id;
 
             return i;
         }

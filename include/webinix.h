@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.0.4
+    Webinix Library 2.0.5
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -17,7 +17,7 @@
     #define EXPORT extern
 #endif
 
-#define WEBUI_VERSION           "2.0.4"     // Version
+#define WEBUI_VERSION           "2.0.5"     // Version
 #define WEBUI_HEADER_SIGNATURE  0xFF        // All packets should start with this 8bit
 #define WEBUI_HEADER_JS         0xFE        // Javascript result in frontend
 #define WEBUI_HEADER_CLICK      0xFD        // Click event
@@ -123,6 +123,8 @@ typedef struct webinix_event_t {
     unsigned int element_id;
     char* element_name;
     webinix_window_t* window;
+    void* data;
+    unsigned int data_len;
 } webinix_event_t;
 typedef struct webinix_javascript_result_t {
     bool error;
@@ -136,8 +138,10 @@ typedef struct webinix_script_t {
 } webinix_script_t;
 typedef struct webinix_cb_t {
     webinix_window_t* win;
-    char* element_id;
+    char* webinix_internal_id;
     char* element_name;
+    void* data;
+    unsigned int data_len;
 } webinix_cb_t;
 typedef struct webinix_cmd_async_t {
     webinix_window_t* win;
@@ -216,6 +220,9 @@ EXPORT void webinix_bind_all(webinix_window_t* win, void (*func)(webinix_event_t
 EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_script_cleanup(webinix_script_t* script);
 EXPORT void webinix_script_runtime(webinix_window_t* win, unsigned int runtime);
+EXPORT int webinix_as_int(webinix_event_t* e);
+EXPORT const char* webinix_as_string(webinix_event_t* e);
+EXPORT bool webinix_as_bool(webinix_event_t* e);
 
 // -- Interface -----------------------
 // Used by other languages to create Webinix wrappers
@@ -232,8 +239,8 @@ EXPORT void webinix_script_interface_struct(webinix_window_t* win, webinix_scrip
 
 // Core
 EXPORT void _webinix_init();
-EXPORT unsigned int _webinix_get_cb_index(char* element);
-EXPORT unsigned int _webinix_set_cb_index(char* element);
+EXPORT unsigned int _webinix_get_cb_index(char* webinix_internal_id);
+EXPORT unsigned int _webinix_set_cb_index(char* webinix_internal_id);
 EXPORT unsigned int _webinix_get_free_port();
 EXPORT unsigned int _webinix_get_new_window_number();
 EXPORT void _webinix_wait_for_startup();
@@ -242,7 +249,7 @@ EXPORT void _webinix_set_custom_browser(webinix_custom_browser_t* p);
 EXPORT char* _webinix_get_current_path();
 EXPORT void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t len);
 EXPORT void _webinix_window_send(webinix_window_t* win, char* packet, size_t packets_size);
-EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char* element);
+EXPORT void _webinix_window_event(webinix_window_t* win, char* element_id, char* element, void* data, unsigned int data_len);
 EXPORT unsigned int _webinix_window_get_number(webinix_window_t* win);
 EXPORT void _webinix_window_open(webinix_window_t* win, char* link, unsigned int browser);
 EXPORT int _webinix_cmd_sync(char* cmd, bool show);
@@ -265,6 +272,7 @@ EXPORT void _webinix_timer_clock_gettime(struct timespec *spec);
 EXPORT bool _webinix_set_root_folder(webinix_window_t* win, const char* path);
 EXPORT void _webinix_wait_process(webinix_window_t* win, bool status);
 EXPORT const char* _webinix_generate_js_bridge(webinix_window_t* win);
+EXPORT void _webinix_print_hex(const char* data, size_t len);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
