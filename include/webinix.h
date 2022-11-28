@@ -220,9 +220,12 @@ EXPORT void webinix_bind_all(webinix_window_t* win, void (*func)(webinix_event_t
 EXPORT bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser);
 EXPORT void webinix_script_cleanup(webinix_script_t* script);
 EXPORT void webinix_script_runtime(webinix_window_t* win, unsigned int runtime);
-EXPORT int webinix_as_int(webinix_event_t* e);
-EXPORT const char* webinix_as_string(webinix_event_t* e);
-EXPORT bool webinix_as_bool(webinix_event_t* e);
+EXPORT int webinix_get_int(webinix_event_t* e);
+EXPORT const char* webinix_get_string(webinix_event_t* e);
+EXPORT bool webinix_get_bool(webinix_event_t* e);
+EXPORT void webinix_return_int(webinix_event_t* e, int n);
+EXPORT void webinix_return_string(webinix_event_t* e, char* s);
+EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
 
 // -- Interface -----------------------
 // Used by other languages to create Webinix wrappers
