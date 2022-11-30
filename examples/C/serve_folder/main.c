@@ -11,15 +11,20 @@
     Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
 */
 
+// Note:
+// To see the console logs (printf) you need to build in debug mode
+// example 'make debug', or 'nmake debug', or 'mingw32-make debug'
+
 #include "webinix.h"
 
 void all_clicks(webinix_event_t* e) {
+
     printf("You clicked on '%s' element.\n", e->element_name);
 }
 
 int main() {
 
-	// Crate new window
+	// Create a new window
 	webinix_window_t* my_window;
 	my_window = webinix_new_window();
 

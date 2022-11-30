@@ -13,7 +13,7 @@
 
 int main() {
 
-	// Crate new window
+	// Create a new window
 	webinix_window_t* my_window;
 	my_window = webinix_new_window();
 
