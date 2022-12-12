@@ -29,6 +29,7 @@
 #define WEBUI_MAX_PORT          (65500)     // Should be less than 65535
 #define WEBUI_MAX_BUF           (1024000)   // 1024 Kb max dynamic memory allocation
 #define WEBUI_DEFAULT_PATH      "."         // Default root path
+#define WEBUI_DEF_TIMEOUT       (8)         // Default startup timeout in seconds
 
 // -- C STD ---------------------------
 #include <stdbool.h>
@@ -42,6 +43,7 @@
 #include <stddef.h>
 #include <time.h>
 #include <errno.h>
+#include <math.h>
 #if defined(__GNUC__) || defined(__TINYC__)
     #include <dirent.h>
 #endif
@@ -124,7 +126,7 @@ typedef struct webinix_event_t {
     char* element_name;
     webinix_window_t* window;
     void* data;
-    unsigned int data_len;
+    void* response;
 } webinix_event_t;
 typedef struct webinix_javascript_result_t {
     bool error;
@@ -141,7 +143,6 @@ typedef struct webinix_cb_t {
     char* webinix_internal_id;
     char* element_name;
     void* data;
-    unsigned int data_len;
 } webinix_cb_t;
 typedef struct webinix_cmd_async_t {
     webinix_window_t* win;
@@ -189,8 +190,8 @@ typedef struct webinix_t {
     webinix_runtime_t runtime;
     bool initialized;
     void (*cb[WEBUI_MAX_ARRAY])(webinix_event_t* e);
-    void (*cb_int[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*, webinix_window_t*);
-    void (*cb_int_all[1])(unsigned int, unsigned int, char*, webinix_window_t*);
+    void (*cb_interface[WEBUI_MAX_ARRAY])(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**);
+    void (*cb_interface_all[1])(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**);
     char* executable_path;
     void *ptr_list[WEBUI_MAX_ARRAY];
     unsigned int ptr_position;
@@ -236,7 +237,7 @@ typedef struct webinix_script_interface_t {
     unsigned int length;
     const char* data;
 } webinix_script_interface_t;
-EXPORT unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*));
+EXPORT unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**));
 EXPORT void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data);
 EXPORT void webinix_script_interface_struct(webinix_window_t* win, webinix_script_interface_t* js_int);
 
@@ -276,6 +277,8 @@ EXPORT bool _webinix_set_root_folder(webinix_window_t* win, const char* path);
 EXPORT void _webinix_wait_process(webinix_window_t* win, bool status);
 EXPORT const char* _webinix_generate_js_bridge(webinix_window_t* win);
 EXPORT void _webinix_print_hex(const char* data, size_t len);
+EXPORT void _webinix_free_mem(void **p);
+EXPORT void _webinix_str_copy(char *destination, char *source);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);

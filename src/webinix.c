@@ -230,17 +230,21 @@ bool _webinix_ptr_exist(void *p) {
 void _webinix_ptr_add(void *p, size_t size) {
     
     #ifdef WEBUI_LOG
-        // printf("[0] _webinix_ptr_add()... \n");
+        // printf("[0] _webinix_ptr_add(0x%p)... \n", p);
     #endif
 
     if(p == NULL)
         return;
-    
+
     if(!_webinix_ptr_exist(p)) {
 
         for(unsigned int i = 0; i < webinix.ptr_position; i++) {
 
             if(webinix.ptr_list[i] == NULL) {
+
+                #ifdef WEBUI_LOG
+                    printf("[0] _webinix_ptr_add(0x%p)... Allocate %d bytes\n", p, (int)size);
+                #endif
 
                 webinix.ptr_list[i] = p;
                 webinix.ptr_size[i] = size;
@@ -248,10 +252,14 @@ void _webinix_ptr_add(void *p, size_t size) {
             }
         }
 
+        #ifdef WEBUI_LOG
+            printf("[0] _webinix_ptr_add(0x%p)... Allocate %d bytes\n", p, (int)size);
+        #endif
+
         webinix.ptr_list[webinix.ptr_position] = p;
         webinix.ptr_size[webinix.ptr_position] = size;
         webinix.ptr_position++;
-        if (webinix.ptr_position >= WEBUI_MAX_ARRAY)
+        if(webinix.ptr_position >= WEBUI_MAX_ARRAY)
             webinix.ptr_position = (WEBUI_MAX_ARRAY - 1);
     }
 }
@@ -259,7 +267,7 @@ void _webinix_ptr_add(void *p, size_t size) {
 void _webinix_free_mem(void **p) {
     
     #ifdef WEBUI_LOG
-        // printf("[0] _webinix_free_mem()... \n");
+        // printf("[0] _webinix_free_mem(0x%p)... \n", *p);
     #endif
 
     if(p == NULL || *p == NULL)
@@ -268,6 +276,10 @@ void _webinix_free_mem(void **p) {
     for(unsigned int i = 0; i < webinix.ptr_position; i++) {
 
         if(webinix.ptr_list[i] == *p) {
+
+            #ifdef WEBUI_LOG
+                printf("[0] _webinix_free_mem(0x%p)... Free %d bytes\n", *p, (int)webinix.ptr_size[i]);
+            #endif
 
             memset(*p, 0x00, webinix.ptr_size[i]);
             free(*p);
@@ -287,6 +299,18 @@ void _webinix_free_mem(void **p) {
     }
 
     *p = NULL;
+}
+
+void _webinix_str_copy(char *destination, char *source) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_str_copy: source @ %p\n", source);
+        printf("[0] _webinix_str_copy: source [%c]\n", source);
+        printf("[0] _webinix_str_copy: destination @ %p\n", destination);
+    #endif
+    
+    //char** ptr = &p;
+    //_webinix_free_mem((void *) &ptr);
 }
 
 void _webinix_panic() {
@@ -395,7 +419,7 @@ bool _webinix_timer_is_end(webinix_timer_t* t, unsigned int ms) {
     _webinix_timer_clock_gettime(&t->now);
 
     unsigned int def = (unsigned int) _webinix_timer_diff(&t->start, &t->now);
-    if (def > ms)
+    if(def > ms)
         return true;
     return false;
 }
@@ -413,10 +437,6 @@ bool _webinix_timer_is_end(webinix_timer_t* t, unsigned int ms) {
 
 bool _webinix_is_empty(const char* s) {
 
-    #ifdef WEBUI_LOG
-        // printf("[0] _webinix_is_empty()... \n");
-    #endif
-    
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_is_empty()... \n");
     #endif
@@ -1125,7 +1145,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
             e.element_name = element;
             e.window = win;
             e.data = data;
-            e.data_len = data_len;
+            e.response = NULL;
 
             unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
 
@@ -1144,20 +1164,40 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 win->core.cb_all[0](&e);
             }
 
+            if(_webinix_is_empty(e.response))
+                e.response = (char*)webinix_empty_string;
+
             #ifdef WEBUI_LOG
-                printf("[%d] _webinix_server_event_handler()... CB end -> response [%.*s]\n", win->core.window_number, e.data_len, e.data);
+                printf("[%d] _webinix_server_event_handler()... user-callback response [%s]\n", win->core.window_number, (const char*)e.response);
             #endif
 
             // Send response
             mg_http_reply(
                 c, 200,
                 "",
-                e.data
+                e.response
             );
 
             // Free
+            _webinix_free_mem((void *) &packet);
             _webinix_free_mem((void *) &webinix_internal_id);
-            _webinix_free_mem((void *) &e.data);
+
+            // Free data allocated by user callback
+            if(e.response != NULL) {
+                if(_webinix_ptr_exist(e.response)) {
+                    // This block of memory is allocated by Webinix
+                    // for example the user callback used webinix_return_int()
+                    // It's totally safe to free it right now
+                    _webinix_free_mem((void *) &e.response);
+                }
+                else {
+                    // This block of memory is allocated by 
+                    // the user-callback in another language
+                    // for example Python, Rust, Golang...
+                    // We should not free it, it's unsafe.
+                    e.response = NULL;
+                }
+            }
         }
         else {
 
@@ -1937,7 +1977,7 @@ int _webinix_run_browser(webinix_window_t* win, char* cmd) {
 
         #ifdef _WIN32
             HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_run_browser_detect_proc_task, (void *) arg, 0, NULL);
-            if (user_fun_thread != NULL)
+            if(user_fun_thread != NULL)
                 CloseHandle(user_fun_thread);
         #else
             pthread_t thread;
@@ -2447,7 +2487,7 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
         #ifdef _WIN32
             HANDLE thread = CreateThread(NULL, 0, webinix_server_start, (void *) win, 0, NULL);
             win->core.server_thread = thread;
-            if (thread != NULL)
+            if(thread != NULL)
                 CloseHandle(thread);
         #elif __linux__
             pthread_t thread;
@@ -2563,7 +2603,7 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     e.element_name = arg->element_name;
     e.window = arg->win;
     e.data = arg->data;
-    e.data_len = arg->data_len;
+    e.response = NULL;
 
     unsigned int cb_index = _webinix_get_cb_index(arg->webinix_internal_id);
 
@@ -2613,7 +2653,6 @@ void _webinix_window_event(webinix_window_t* win, char* webinix_internal_id, cha
         arg->data = data;
     else
         arg->data = (void*) webinix_empty_string;
-    arg->data_len = data_len;
 
     #ifdef _WIN32
         HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
@@ -2822,11 +2861,12 @@ const char* webinix_get_string(webinix_event_t* e) {
         printf("[0] webinix_get_string()... \n");
     #endif
 
-    if(e->data != NULL && e->data_len > 0 && e->data_len <= WEBUI_MAX_BUF) {
+    if(e->data != NULL) {
         size_t len = strlen(e->data);
         if(len > 0 && len <= WEBUI_MAX_BUF)
             return (const char *) e->data;
     }
+
     return webinix_empty_string;
 }
 
@@ -2836,8 +2876,12 @@ int webinix_get_int(webinix_event_t* e) {
         printf("[0] webinix_get_int()... \n");
     #endif
 
-    if(e->data != NULL && e->data_len > 0 && e->data_len <= WEBUI_MAX_BUF)
-        return atoi((const char *) e->data);
+    if(e->data != NULL) {
+        size_t len = strlen(e->data);
+        if(len > 0 && len <= 24) // long long has ~19 char len
+            return atoi((const char *) e->data);
+    }
+    
     return 0;
 }
 
@@ -2847,9 +2891,10 @@ bool webinix_get_bool(webinix_event_t* e) {
         printf("[0] webinix_get_bool()... \n");
     #endif
 
-    if(webinix_get_int(e) > 0)
-        return true;
-    return false;
+    if(webinix_get_int(e) == 0)
+        return false;
+    
+    return true;
 }
 
 void webinix_return_int(webinix_event_t* e, int n) {
@@ -2863,18 +2908,14 @@ void webinix_return_int(webinix_event_t* e, int n) {
     char* buf = (char*) _webinix_malloc(len + 1);
     sprintf(buf, "%d", n);
 
-    // Free old data
-    _webinix_free_mem((void *) &e->data);
-
-    // Update data
-    e->data = buf;
-    e->data_len = len;
+    // Set response
+    e->response = buf;
 }
 
 void webinix_return_string(webinix_event_t* e, char* s) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_return_int([%d])... \n", e->window_id, n);
+        printf("[%d] webinix_return_string([%s])... \n", e->window_id, s);
     #endif
 
     if(_webinix_is_empty(s))
@@ -2885,31 +2926,23 @@ void webinix_return_string(webinix_event_t* e, char* s) {
     char* buf = (char*) _webinix_malloc(len + 1);
     memcpy(buf, s, len);
 
-    // Free old data
-    _webinix_free_mem((void *) &e->data);
-
-    // Update data
-    e->data = buf;
-    e->data_len = len;
+    // Set response
+    e->response = buf;
 }
 
 void webinix_return_bool(webinix_event_t* e, bool b) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_return_int([%d])... \n", e->window_id, n);
+        printf("[%d] webinix_return_bool([%d])... \n", e->window_id, b);
     #endif
 
     // Bool to Str
-    int len = sizeof(bool);
-    bool* buf = (bool*) _webinix_malloc(len + 1);
+    int len = 1;
+    char* buf = (char*) _webinix_malloc(len + 1);
     sprintf(buf, "%d", b);
 
-    // Free old data
-    _webinix_free_mem((void *) &e->data);
-
-    // Update data
-    e->data = buf;
-    e->data_len = len;
+    // Set response
+    e->response = buf;
 }
 
 bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
@@ -3190,7 +3223,7 @@ void _webinix_init() {
     memset(&webinix, 0x0, sizeof(webinix_t));
     webinix.initialized           = true;
     webinix.use_timeout           = true;
-    webinix.startup_timeout       = 5; // Seconds
+    webinix.startup_timeout       = WEBUI_DEF_TIMEOUT;
     webinix.timeout_extra         = true;
     webinix.browser.chrome        = 1;
     webinix.browser.firefox       = 2;
@@ -3244,34 +3277,54 @@ unsigned int _webinix_set_cb_index(char* webinix_internal_id) {
 
 // --[Interface]---------------
 
-void webinix_bind_int_handler(webinix_event_t* e) {
+void webinix_bind_interface_handler(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_bind_interface_handler()... \n", e->window_id);
+    #endif
 
     unsigned int cb_index = e->element_id;
 
-    if(cb_index > 0 && webinix.cb_int[cb_index] != NULL)
-        webinix.cb_int[cb_index](e->element_id, e->window_id, e->element_name, e->window);
+    if(cb_index > 0 && webinix.cb_interface[cb_index] != NULL)
+        webinix.cb_interface[cb_index](e->element_id, e->window_id, e->element_name, e->window, (char*)e->data, (char**)&e->response);
+    
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_bind_interface_handler()... user-callback response [%s]\n", e->window_id, (const char *)e->response);
+    #endif
 }
 
-void webinix_bind_int_all_handler(webinix_event_t* e) {
+void webinix_bind_interface_all_handler(webinix_event_t* e) {
 
-    if(webinix.cb_int_all[0] != NULL)
-        webinix.cb_int_all[0](e->element_id, e->window_id, e->element_name, e->window);
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_bind_interface_all_handler()... \n", e->window_id);
+    #endif
+
+    if(webinix.cb_interface_all[0] != NULL)
+        webinix.cb_interface_all[0](e->element_id, e->window_id, e->element_name, e->window, (char*)e->data, (char**)&e->response);
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_bind_interface_all_handler()... user-callback response [%s]\n", e->window_id, (const char *)e->response);
+    #endif
 }
 
-unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*)) {
+unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**)) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_bind_interface()... \n", win->core.window_number);
+    #endif
 
     if(_webinix_is_empty(element)) {
 
         // Bind All
-        webinix_bind_all(win, webinix_bind_int_all_handler);
-        webinix.cb_int_all[0] = func;
+        webinix_bind_all(win, webinix_bind_interface_all_handler);
+        webinix.cb_interface_all[0] = func;
         return 0;
     }
     else {
 
         // Bind
-        unsigned int cb_index = webinix_bind(win, element, webinix_bind_int_handler);
-        webinix.cb_int[cb_index] = func;
+        unsigned int cb_index = webinix_bind(win, element, webinix_bind_interface_handler);
+        webinix.cb_interface[cb_index] = func;
         return cb_index;
     }
 }
