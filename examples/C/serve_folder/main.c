@@ -8,7 +8,7 @@
     https://github.com/alifcommunity/webinix
 
     Licensed under GNU General Public License v3.0.
-    Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
+    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga>.
 */
 
 // Note:
@@ -17,9 +17,16 @@
 
 #include "webinix.h"
 
-void all_clicks(webinix_event_t* e) {
+void switch_to_second_page(webinix_event_t* e) {
 
-    printf("You clicked on '%s' element.\n", e->element_name);
+	// This function get called every time 
+	// the user click on "SwitchToSecondPage" button
+    webinix_open(e->window, "second.html", webinix.browser.any);
+}
+
+void exit_app(webinix_event_t* e) {
+
+    webinix_exit();
 }
 
 int main() {
@@ -28,11 +35,16 @@ int main() {
 	webinix_window_t* my_window;
 	my_window = webinix_new_window();
 
-	// Bind all clicks
-	webinix_bind_all(my_window, all_clicks);
+	// Bind am HTML element ID with a C function
+	webinix_bind(my_window, "SwitchToSecondPage", switch_to_second_page);
+	webinix_bind(my_window, "Exit", exit_app);
+
+	// The root path. Leave it empty to let the Webinix 
+	// automatically select the current working folder
+	const char* root_path = "";
 
 	// Create a new web server using Webinix
-	const char* url = webinix_new_server(my_window, "");
+	const char* url = webinix_new_server(my_window, root_path);
 
     // Show the window using the generated URL
 	if(!webinix_open(my_window, url, webinix.browser.chrome))	// Run the window on Chrome
