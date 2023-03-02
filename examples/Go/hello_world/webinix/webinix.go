@@ -1,12 +1,12 @@
 package webinix
 
-// Webinix Library 2.0.5
+// Webinix Library 2.0.6
 //
 // http://webinix.me
 // https://github.com/alifcommunity/webinix
 //
 // Licensed under GNU General Public License v3.0.
-// Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
+// Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga>.
 
 /*
 // [?] Change the library path as you need

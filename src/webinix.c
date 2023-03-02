@@ -1,11 +1,11 @@
 /*
-    Webinix Library 2.0.5
+    Webinix Library 2.0.6
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
 
     Licensed under GNU General Public License v3.0.
-    Copyright (C)2022 Hassan DRAGA <https://github.com/hassandraga>.
+    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga>.
 */
 
 // -- Third-party ---------------------
@@ -27,6 +27,7 @@ static const char* webinix_javascript_bridge =
 "var _webinix_log = false; \n"
 "var _webinix_ws; \n"
 "var _webinix_ws_status = false; \n"
+"var _webinix_ws_status_once = false; \n"
 "var _webinix_close_reason = 0; \n"
 "var _webinix_close_value; \n"
 "const _WEBUI_SIGNATURE = 255; \n"
@@ -51,6 +52,7 @@ static const char* webinix_javascript_bridge =
 "        _webinix_ws.onopen = function () { \n"
 "            _webinix_ws.binaryType = 'arraybuffer'; \n"
 "            _webinix_ws_status = true; \n"
+"            _webinix_ws_status_once = true; \n"
 "            if(_webinix_log) \n"
 "                console.log('Webinix -> Connected'); \n"
 "            _webinix_clicks_listener(); \n"
@@ -69,7 +71,7 @@ static const char* webinix_javascript_bridge =
 "            } else { \n"
 "                if(_webinix_log) \n"
 "                    console.log('Webinix -> Connection lost (' + evt.code + ')'); \n"
-"                if(!_webinix_log) window.close(); \n"
+"                if(!_webinix_log && evt.code != 1005) window.close(); \n"
 "                else _webinix_freeze_ui(); \n"
 "            } \n"
 "        }; \n"
@@ -113,12 +115,14 @@ static const char* webinix_javascript_bridge =
 "        }; \n"
 "    } else { \n"
 "        alert('Sorry. WebSocket not supported by your Browser.'); \n"
-"        window.close(); \n"
+"        if(!_webinix_log) window.close(); \n"
 "    } \n"
 "} \n"
 "function _webinix_clicks_listener() { \n"
+"    var count = 0; \n"
 "    Object.keys(window).forEach(key=>{ \n"
 "        if(/^on(click)/.test(key)) { \n"
+"            count++; \n"
 "            window.addEventListener(key.slice(2),event=>{ \n"
 "                if(event.target.id !== '') { \n"
 "                    if(_webinix_bind_all || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
@@ -127,6 +131,8 @@ static const char* webinix_javascript_bridge =
 "            }); \n"
 "        } \n"
 "    }); \n"
+"    if(_webinix_log) \n"
+"        console.log('Webinix -> Click listening for ' + count + ' elements'); \n"
 "} \n"
 "function _webinix_send_click(elem) { \n"
 "    if(_webinix_ws_status && elem !== '') { \n"
@@ -180,14 +186,16 @@ static const char* webinix_javascript_bridge =
 "   _webinix_ws.close(); \n"
 "}; \n"
 "setTimeout(function () { \n"
-"    if(!_webinix_ws_status) { \n"
+"    if(!_webinix_ws_status_once) { \n"
 "        _webinix_freeze_ui(); \n"
 "        alert('Webinix failed to connect to the background application. Please try again.'); \n"
 "        if(!_webinix_log) \n"
 "            window.close(); \n"
 "    } \n"
 "}, 1500); \n"
-"window.addEventListener('load', _webinix_start()); \n";
+"window.addEventListener('load', _webinix_start()); \n"
+"function UnloadHandler(){window.removeEventListener('unload', UnloadHandler, false);} \n"
+"window.addEventListener('unload', UnloadHandler, false);";
 
 // -- Heap ----------------------------
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
@@ -299,18 +307,6 @@ void _webinix_free_mem(void **p) {
     }
 
     *p = NULL;
-}
-
-void _webinix_str_copy(char *destination, char *source) {
-
-    #ifdef WEBUI_LOG
-        printf("[0] _webinix_str_copy: source @ %p\n", source);
-        printf("[0] _webinix_str_copy: source [%c]\n", source);
-        printf("[0] _webinix_str_copy: destination @ %p\n", destination);
-    #endif
-    
-    //char** ptr = &p;
-    //_webinix_free_mem((void *) &ptr);
 }
 
 void _webinix_panic() {
@@ -1339,11 +1335,11 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
     if(mg_http_listen(&mgr, win->core.url, _webinix_server_event_handler, (void *)win) != NULL) {
 
-        #ifdef WEBUI_LOG
-            printf("[%d] [Thread] webinix_server_start(%s)... Listening success\n", win->core.window_number, win->core.url);
-        #endif
-
         if(webinix.use_timeout) {
+
+            #ifdef WEBUI_LOG
+                printf("[%d] [Thread] webinix_server_start(%s)... Listening Success -> Loop (%d seconds timeout)... \n", win->core.window_number, win->core.url, timeout);
+            #endif
 
             bool stop = false;
 
@@ -1354,7 +1350,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                     // Wait for first connection
                     webinix_timer_t timer;
                     _webinix_timer_start(&timer);
-                    while(1) {
+                    for(;;) {
 
                         // Stop if window is connected
                         mg_mgr_poll(&mgr, 1);
@@ -1373,7 +1369,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                         // the WebSocket an extra time to connect
                         
                         _webinix_timer_start(&timer);
-                        while(1) {
+                        for(;;) {
 
                             // Stop if window is connected
                             mg_mgr_poll(&mgr, 1);
@@ -1407,7 +1403,15 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                     break;
             }
         }
-        else {
+
+        // Let's check the flag again, there is a change
+        // that the flag is changed during the first loop
+        // for example when set_timeout() get called later
+        if(!webinix.use_timeout) {
+
+            #ifdef WEBUI_LOG
+                printf("[%d] [Thread] webinix_server_start(%s)... Listening Success -> Infinite Loop... \n", win->core.window_number, win->core.url);
+            #endif
 
             // Wait forever
             for(;;) {
@@ -2374,13 +2378,13 @@ const char* webinix_new_server(webinix_window_t* win, const char* path) {
     if(!_webinix_set_root_folder(win, path))
         return webinix_empty_string;
     
-    // Prevent the server from using
-    // timeout mode (wait for connection)
-    // webinix_set_timeout(0);
+    // Prevent the server from using the
+    // timeout-mode while waiting for connections
+    webinix_set_timeout(0);
     
     // WEBUI_NON_EXIST_BROWSER is to prevent
-    // any browser from running. Because We want 
-    // only to run a web-server right now.
+    // any browser from running. Because we want 
+    // to only to run a web-server this time.
     webinix_show(win, NULL, WEBUI_NON_EXIST_BROWSER);
 
     // Wait for server to start
@@ -2443,6 +2447,44 @@ bool webinix_refresh(webinix_window_t* win, const char* html) {
 bool webinix_refresh_cpy(webinix_window_t* win, const char* html) {
 
     return webinix_show_cpy(win, html, 0);
+}
+
+bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_open()... \n", win->core.window_number);
+    #endif
+
+    // Just open an app-mode window using the link
+    // webinix_set_timeout(0);
+    _webinix_wait_process(win, true);
+
+    if(webinix_is_shown(win)) {
+
+        // Refresh an existing running window
+
+        #ifdef WEBUI_LOG
+            printf("[%d] webinix_open()... Refresh the running window to [%s]...\n", win->core.window_number, url);
+        #endif
+
+        // Prepare packets
+        size_t packet_len = 3 + strlen(url) + 1; // [header][url][null]
+        char* packet = (char*) _webinix_malloc(packet_len);
+        packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+        packet[1] = WEBUI_HEADER_SWITCH;    // Type
+        packet[2] = 0;                      // ID
+        for(unsigned int i = 0; i < strlen(url); i++)  // Data
+            packet[i + 3] = url[i];
+
+        // Send the packet
+        _webinix_window_send(win, packet, packet_len);
+        _webinix_free_mem((void *) &packet);
+
+        return true;
+    }
+    
+    // New window
+    return _webinix_browser_start(win, url, browser);
 }
 
 bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
@@ -2945,18 +2987,6 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
     e->response = buf;
 }
 
-bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
-
-    #ifdef WEBUI_LOG
-        printf("[%d] webinix_open()... \n", win->core.window_number);
-    #endif
-
-    // Just open an app-mode window using the link
-    // webinix_set_timeout(0);
-    _webinix_wait_process(win, true);
-    return _webinix_browser_start(win, url, browser);
-}
-
 void _webinix_wait_process(webinix_window_t* win, bool status) {
 
     #ifdef WEBUI_LOG
@@ -3128,8 +3158,10 @@ void webinix_set_timeout(unsigned int second) {
 
     _webinix_init();
 
-    if(second < 1)
+    if(second < 1) {
+
         webinix.use_timeout = false;
+    }
     else {
 
         webinix.use_timeout = true;
