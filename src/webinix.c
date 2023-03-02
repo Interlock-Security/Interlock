@@ -20,11 +20,17 @@
 // -- Heap ----------------------------
 webinix_t webinix;
 
+#ifdef WEBUI_LOG
+    #define WEBUI_JS_LOG "true"
+#else
+    #define WEBUI_JS_LOG "false"
+#endif
+
 // -- Webinix JS-Bridge ---------
 // This is a uncompressed version to make the debugging
 // more easy in the browser using the builtin dev-tools
 static const char* webinix_javascript_bridge = 
-"var _webinix_log = false; \n"
+"var _webinix_log = " WEBUI_JS_LOG "; \n"
 "var _webinix_ws; \n"
 "var _webinix_ws_status = false; \n"
 "var _webinix_ws_status_once = false; \n"
@@ -189,13 +195,25 @@ static const char* webinix_javascript_bridge =
 "    if(!_webinix_ws_status_once) { \n"
 "        _webinix_freeze_ui(); \n"
 "        alert('Webinix failed to connect to the background application. Please try again.'); \n"
-"        if(!_webinix_log) \n"
-"            window.close(); \n"
+"        if(!_webinix_log) window.close(); \n"
 "    } \n"
 "}, 1500); \n"
-"window.addEventListener('load', _webinix_start()); \n"
-"function UnloadHandler(){window.removeEventListener('unload', UnloadHandler, false);} \n"
-"window.addEventListener('unload', UnloadHandler, false);";
+"window.addEventListener('unload', unload_handler, false); \n"
+"function unload_handler(){ \n"
+"    // Unload for 'back' & 'forward' navigation \n"
+"    window.removeEventListener('unload', unload_handler, false); \n"
+"} \n"
+"// Links \n"
+"document.addEventListener('click', e => { \n"
+"    const attribute = e.target.closest('a'); \n"
+"    if(attribute){ \n"
+"        const link = attribute.href; \n"
+"        e.preventDefault(); \n"
+"        _webinix_close(_WEBUI_SWITCH, link); \n"
+"    } \n"
+"}); \n"
+"// Load \n"
+"window.addEventListener('load', _webinix_start()); \n";
 
 // -- Heap ----------------------------
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
@@ -847,7 +865,7 @@ const char* _webinix_generate_js_bridge(webinix_window_t* win) {
     #endif
 
     // Calculate the cb size
-    size_t cb_mem_size = 256; // To hold `const _webinix_bind_list = ["elem1", "elem2",];`
+    size_t cb_mem_size = 256; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
     for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++)
         if(!_webinix_is_empty(webinix.html_elements[i]))
             cb_mem_size += strlen(webinix.html_elements[i]) + 3;
