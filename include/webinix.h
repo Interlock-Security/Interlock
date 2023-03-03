@@ -279,6 +279,8 @@ EXPORT const char* _webinix_generate_js_bridge(webinix_window_t* win);
 EXPORT void _webinix_print_hex(const char* data, size_t len);
 EXPORT void _webinix_free_mem(void **p);
 EXPORT void _webinix_str_copy(char *destination, char *source);
+EXPORT bool _webinix_file_exist_mg(void *ev_data);
+EXPORT bool _webinix_file_exist(char* file);
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
