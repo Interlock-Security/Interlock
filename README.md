@@ -59,7 +59,8 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
  - [TypeScript / JavaScript](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript)
  - [Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go/hello_world)
  - [Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust/hello_world)
- - [V on malisipi/vwebinix](https://github.com/malisipi/vwebinix/tree/main/examples)
+ - [V - malisipi/vwebinix](https://github.com/malisipi/vwebinix/tree/main/examples)
+ - [Nim - neroist/webinix](https://github.com/neroist/webinix/tree/main/examples)
  
 ## Supported Browser
 
@@ -86,6 +87,7 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 | Go | ✔️ | [examples/Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go) |
 | Rust | ✔️ | [examples/Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust) |
 | V | ✔️ | [malisipi/vwebinix](https://github.com/malisipi/vwebinix) |
+| Nim | ✔️ | [neroist/webinix](https://github.com/neroist/webinix) |
 
 ### License
 
