@@ -26,8 +26,6 @@ pub fn main() void {
         \\ </html>;
     ;
 
-    std.log.debug("Hello", .{});
-
     // Create a window
     var my_window: *c.webinix_window_t = c.webinix_new_window();
 
