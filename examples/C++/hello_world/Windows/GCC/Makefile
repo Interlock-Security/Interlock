@@ -1,4 +1,4 @@
-# Webinix Library 2.x
+# Webinix Library 2.0.7
 # C++ Example
 # Windows - GCC
 
