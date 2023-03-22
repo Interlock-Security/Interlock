@@ -1,11 +1,11 @@
 /*
-    Webinix Library 2.0.6
+    Webinix Library 2.0.7
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
 
-    Licensed under GNU General Public License v3.0.
-    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga>.
+    Licensed under GNU Lesser General Public License v2.1.
+    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
 */
 
 // -- Third-party ---------------------
@@ -286,6 +286,15 @@ void _webinix_ptr_add(void *p, size_t size) {
     }
 }
 
+void webinix_clean_mem(void* p) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] webinix_clean_mem(0x%p)... \n", p);
+    #endif
+
+    _webinix_free_mem((void *) &p);
+}
+
 void _webinix_free_mem(void **p) {
     
     #ifdef WEBUI_LOG
@@ -323,12 +332,41 @@ void _webinix_free_mem(void **p) {
     *p = NULL;
 }
 
+void _webinix_free_all_mem() {
+    
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_free_all_mem()... \n");
+    #endif
+
+    // Makes sure we run this once
+    static bool freed = false;
+    if(freed) return;
+    freed = true;
+
+    void* ptr = NULL;
+    for(unsigned int i = 0; i < webinix.ptr_position; i++) {
+
+        ptr = webinix.ptr_list[i];
+
+        if(ptr != NULL) {
+
+            #ifdef WEBUI_LOG
+                printf("[0] _webinix_free_all_mem()... Free %d bytes @ 0x%p\n", (int)webinix.ptr_size[i], ptr);
+            #endif
+
+            memset(ptr, 0x00, webinix.ptr_size[i]);
+            free(ptr);
+        }
+    }
+}
+
 void _webinix_panic() {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_panic()... \n");
     #endif
 
+    webinix_exit();
     exit(EXIT_FAILURE);
 }
 
@@ -1464,10 +1502,17 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                             _webinix_timer_start(&timer);
                             for(;;) {
 
-                                // Stop if window is connected
+                                // Stop if window is re-connected
                                 mg_mgr_poll(&mgr, 1);
                                 if(win->core.connected)
                                     break;
+
+                                // Stop if all process get closed
+                                if(webinix.process < 1) {
+
+                                    stop = true;
+                                    break;
+                                }
 
                                 // Stop if timer is finished
                                 if(_webinix_timer_is_end(&timer, 2500))
@@ -1881,13 +1926,20 @@ void _webinix_clean() {
         printf("[0] _webinix_clean()... \n");
     #endif
 
-    // Let's keep the web browser profile folder
-    // to let the browser remember the window position
-    // and size. This function is for future use is needed.
+    static bool cleaned = false;
+    if(cleaned) return;
+    cleaned = true;
 
     // Let's give other threads more time to safely exit
     // and finish their cleaning up.
-    _webinix_sleep(250);
+    _webinix_sleep(120);
+
+    // TODO: Add option to let the user decide if
+    // Webinix should delete the web browser profile
+    // folder or not.
+
+    // Free all non-freed memory allocations
+    _webinix_free_all_mem();
 }
 
 #ifdef _WIN32
@@ -1910,7 +1962,7 @@ void _webinix_clean() {
         // parent process (this app) get closed. If this fail
         // webinix.js will try to close the window.
         HANDLE JobObject = CreateJobObject(NULL, NULL);
-        JOBOBJECT_EXTENDED_LIMIT_INFORMATION ExtendedInfo = { 0 };
+        JOB_OBJECT_EXTENDED_LIMIT_INFORMATION ExtendedInfo = { 0 };
         ExtendedInfo.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION | JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
         SetInformationJobObject(JobObject, JobObjectExtendedLimitInformation, &ExtendedInfo, sizeof(ExtendedInfo));
         */
@@ -2034,8 +2086,8 @@ int _webinix_cmd_async(char* cmd, bool show) {
     // let the main loop break if there is
     // no other running browser process.
     webinix.process--;
-    _webinix_sleep(3000);
-    if(webinix.process < 1 && !arg->win->core.connected)
+    _webinix_sleep(250);
+    if((webinix.process < 1) && (!arg->win->core.connected))
         webinix.exit_now = true;
 
     #ifdef _WIN32
@@ -3111,29 +3163,48 @@ void webinix_exit() {
 
     webinix.wait_for_socket_window = false;
     webinix.exit_now = true;
+
+    // Let's give other threads more time to 
+    // safely exit and finish their cleaning up.
+    _webinix_sleep(100);
 }
 
 bool webinix_is_app_running() {
 
     #ifdef WEBUI_LOG
-        printf("[0] webinix_is_app_running()... \n");
+        // printf("[0] webinix_is_app_running()... \n");
     #endif
 
+    static bool app_is_running = true;
+
+    // Stop if already flagged
+    if(!app_is_running) return false;
+
+    // Initialization
+    if(!webinix.initialized)
     _webinix_init();
     
-    if(webinix.use_timeout) {
+    // Get app status
+    if(webinix.exit_now) {
+        app_is_running = false;
+    }
+    else if(webinix.use_timeout) {
         if(webinix.wait_for_socket_window) {
-            if(webinix.servers > 0)
-                return true;
-            return false;
+            if(webinix.servers < 1)
+                app_is_running = false;
         }
     }
     else {
-        if(!webinix.exit_now)
-            return true;
-        return false;
+
+        // Unknown status!
+        app_is_running = false;
     }
-    return false;
+
+    // Final cleaning
+    if(!app_is_running)
+        _webinix_clean();
+
+    return app_is_running;
 }
 
 void webinix_wait() {
@@ -3164,13 +3235,13 @@ void webinix_wait() {
                 #ifdef WEBUI_LOG
                     // printf("[%d/%d]", webinix.servers, webinix.connections);
                 #endif
-                _webinix_sleep(100);
+                _webinix_sleep(50);
             }
         }
         else {
 
             // Probably the app didn't use the show() function
-            // so, there is no window (web browser) running.
+            // so, there is no window running.
 
             #ifdef WEBUI_LOG
                 printf("[L] webinix_wait() -> Ignoring connected UI.\n");
@@ -3185,7 +3256,7 @@ void webinix_wait() {
 
         // Infinite wait
         while(!webinix.exit_now)
-            _webinix_sleep(100);
+            _webinix_sleep(50);
     }
 
     #ifdef WEBUI_LOG
@@ -3405,6 +3476,19 @@ void webinix_bind_interface_handler(webinix_event_t* e) {
     if(cb_index > 0 && webinix.cb_interface[cb_index] != NULL)
         webinix.cb_interface[cb_index](e->element_id, e->window_id, e->element_name, e->window, (char*)e->data, (char**)&e->response);
     
+    if(_webinix_is_empty((const char *)e->response)) {
+        e->response = (void*)webinix_empty_string;
+    }
+    else {
+
+        // The response pointer is not guaranteed to stay live
+        // so let's make our own copy.
+        size_t len = strlen((const char *)e->response);
+        char* new_cpy = (char*)_webinix_malloc(len + 1);
+        memcpy(new_cpy, e->response, len);
+        e->response = new_cpy;
+    }
+
     #ifdef WEBUI_LOG
         printf("[%d] webinix_bind_interface_handler()... user-callback response [%s]\n", e->window_id, (const char *)e->response);
     #endif
@@ -3446,7 +3530,7 @@ unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, 
     }
 }
 
-void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data) {
+void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char** data) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_script_interface()... \n", win->core.window_number);
@@ -3459,7 +3543,7 @@ void webinix_script_interface(webinix_window_t* win, const char* script, unsigne
 
     webinix_script(win, &js);
 
-    data = (char*) js.result.data;
+    *data = (char*) js.result.data;
     *error = js.result.error;
     *length = js.result.length;
 }
@@ -3484,29 +3568,6 @@ void webinix_script_interface_struct(webinix_window_t* win, webinix_script_inter
 
 #ifdef _WIN32
     BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
-
-        switch(fdwReason) {
-
-            case DLL_PROCESS_ATTACH:
-                // Initialize once for each new process.
-                // Return FALSE to fail DLL load.
-                _webinix_init();
-                break;
-
-            case DLL_THREAD_ATTACH:
-                // Do thread-specific initialization.
-                break;
-
-            case DLL_THREAD_DETACH:
-                // Do thread-specific cleanup.
-                break;
-
-            case DLL_PROCESS_DETACH:
-                // Perform any necessary cleanup.
-                webinix_exit();
-                break;
-        }
-
-        return TRUE;
+        return true;
     }
 #endif

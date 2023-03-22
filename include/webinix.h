@@ -1,11 +1,11 @@
 /*
-    Webinix Library 2.0.6
+    Webinix Library 2.0.7
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
 
-    Licensed under GNU General Public License v3.0.
-    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga>.
+    Licensed under GNU Lesser General Public License v2.1.
+    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
 */
 
 #ifndef _WEBUI_H
@@ -17,7 +17,7 @@
     #define EXPORT extern
 #endif
 
-#define WEBUI_VERSION           "2.0.6"     // Version
+#define WEBUI_VERSION           "2.0.7"     // Version
 #define WEBUI_HEADER_SIGNATURE  0xFF        // All packets should start with this 8bit
 #define WEBUI_HEADER_JS         0xFE        // Javascript result in frontend
 #define WEBUI_HEADER_CLICK      0xFD        // Click event
@@ -227,6 +227,7 @@ EXPORT bool webinix_get_bool(webinix_event_t* e);
 EXPORT void webinix_return_int(webinix_event_t* e, int n);
 EXPORT void webinix_return_string(webinix_event_t* e, char* s);
 EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
+EXPORT void webinix_clean_mem(void* p);
 
 // -- Interface -----------------------
 // Used by other languages to create Webinix wrappers
@@ -238,7 +239,7 @@ typedef struct webinix_script_interface_t {
     const char* data;
 } webinix_script_interface_t;
 EXPORT unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**));
-EXPORT void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char* data);
+EXPORT void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char** data);
 EXPORT void webinix_script_interface_struct(webinix_window_t* win, webinix_script_interface_t* js_int);
 
 // Core
@@ -278,9 +279,9 @@ EXPORT void _webinix_wait_process(webinix_window_t* win, bool status);
 EXPORT const char* _webinix_generate_js_bridge(webinix_window_t* win);
 EXPORT void _webinix_print_hex(const char* data, size_t len);
 EXPORT void _webinix_free_mem(void **p);
-EXPORT void _webinix_str_copy(char *destination, char *source);
 EXPORT bool _webinix_file_exist_mg(void *ev_data);
 EXPORT bool _webinix_file_exist(char* file);
+EXPORT void _webinix_free_all_mem();
 #ifdef _WIN32
     EXPORT DWORD WINAPI _webinix_cb(LPVOID _arg);
     EXPORT DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
