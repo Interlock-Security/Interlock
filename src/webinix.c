@@ -2372,9 +2372,9 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_edge(win, address);
         else if(browser == webinix.browser.custom)
             return _webinix_browser_start_custom(win, address);
-				else if(browser == webinix.browser.chromium)
-						return _webinix_browser_start_chromium(win, address);
-				else
+        else if(browser == webinix.browser.chromium)
+            return _webinix_browser_start_chromium(win, address);
+        else
             return false;
     }
     else if(win->core.CurrentBrowser != 0) {
@@ -2388,9 +2388,9 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_edge(win, address);
         else if(win->core.CurrentBrowser == webinix.browser.custom)
             return _webinix_browser_start_custom(win, address);
-				else if(browser == webinix.browser.chromium)
-						return _webinix_browser_start_chromium(win, address);
-				else
+        else if(browser == webinix.browser.chromium)
+            return _webinix_browser_start_chromium(win, address);
+        else
             return false;
             //webinix::exit();
     }
@@ -2404,27 +2404,27 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-														if(!_webinix_browser_start_chromium(win, address))
-															return false;
-															//webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #elif __APPLE__
             // macOS
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-														if(!_webinix_browser_start_chromium(win, address))
-															return false;
-															//webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #else
             // Linux
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-														if(!_webinix_browser_start_chromium(win, address))
-															return false;
-															//webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #endif
     }
 
