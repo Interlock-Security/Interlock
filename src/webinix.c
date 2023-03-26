@@ -1897,8 +1897,8 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
 
 						char fullpath32[1024];
 						char fullpath64[1024];
-						sprintf(fullpath32, "%s%sChromium\\Application\\chrome.exe", programs_folder32, webinix_sep);
-						sprintf(fullpath64, "%s%sChromium\\Application\\chrome.exe", programs_folder64, webinix_sep);
+						sprintf(fullpath32, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("APPDATA"));
+						sprintf(fullpath64, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("LOCALAPPDATA"));
 
 						if (_webinix_file_exist(fullpath64)) {
 
@@ -2370,10 +2370,10 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_firefox(win, address);
         else if(browser == webinix.browser.edge)
             return _webinix_browser_start_edge(win, address);
-        else if(browser == webinix.browser.custom)
-            return _webinix_browser_start_custom(win, address);
         else if(browser == webinix.browser.chromium)
             return _webinix_browser_start_chromium(win, address);
+        else if(browser == webinix.browser.custom)
+            return _webinix_browser_start_custom(win, address);
         else
             return false;
     }
@@ -2386,10 +2386,10 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_firefox(win, address);
         else if(win->core.CurrentBrowser == webinix.browser.edge)
             return _webinix_browser_start_edge(win, address);
-        else if(win->core.CurrentBrowser == webinix.browser.custom)
-            return _webinix_browser_start_custom(win, address);
         else if(browser == webinix.browser.chromium)
             return _webinix_browser_start_chromium(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.custom)
+            return _webinix_browser_start_custom(win, address);
         else
             return false;
             //webinix::exit();
@@ -2403,8 +2403,8 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_custom(win, address))
-                              if(!_webinix_browser_start_chromium(win, address))
+                        if(!_webinix_browser_start_chromium(win, address))
+                              if(!_webinix_browser_start_custom(win, address))
                                     return false;
                                     //webinix::exit();
         #elif __APPLE__
@@ -2412,8 +2412,8 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_custom(win, address))
-                              if(!_webinix_browser_start_chromium(win, address))
+                        if(!_webinix_browser_start_chromium(win, address))
+                              if(!_webinix_browser_start_custom(win, address))
                                     return false;
                                     //webinix::exit();
         #else
@@ -2421,8 +2421,8 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_custom(win, address))
-                              if(!_webinix_browser_start_chromium(win, address))
+                        if(!_webinix_browser_start_chromium(win, address))
+                              if(!_webinix_browser_start_custom(win, address))
                                     return false;
                                     //webinix::exit();
         #endif
