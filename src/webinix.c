@@ -1607,6 +1607,14 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
         return true;
     }
     
+    // Chromium
+    // No need to create a folder
+    if(browser == webinix.browser.chromium) {
+
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixChromiumProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+		
     // Edge
     // No need to create a folder
     if(browser == webinix.browser.edge) {
@@ -1879,6 +1887,57 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
 
         #endif
     }
+		else if (browser == webinix.browser.chromium) {
+
+				// Chromium
+
+				#ifdef _WIN32
+
+						// Chromium on Windows
+
+						char fullpath32[1024];
+						char fullpath64[1024];
+						sprintf(fullpath32, "%s%sChromium\\Application\\chrome.exe", programs_folder32, webinix_sep);
+						sprintf(fullpath64, "%s%sChromium\\Application\\chrome.exe", programs_folder64, webinix_sep);
+
+						if (_webinix_file_exist(fullpath64)) {
+
+								sprintf(win->core.browser_path, "\"%s\"", fullpath64);
+								return true;
+						}
+						else if (_webinix_file_exist(fullpath32)) {
+
+								sprintf(win->core.browser_path, "\"%s\"", fullpath32);
+								return true;
+						}
+						else return false;
+
+				#elif __APPLE__
+
+						// Chromium on macOS
+
+						if (_webinix_cmd_sync("open -R -a \"Chromium\"", false) == 0) {
+
+								sprintf(win->core.browser_path, "/Applications/Chromium.app/Contents/MacOS/Chromium");
+								return true;
+						}
+						else
+								return false;
+
+				#else
+
+						// Chromium on Linux
+
+						if (_webinix_cmd_sync("chromium-browser --version", false) == 0) {
+
+								sprintf(win->core.browser_path, "chromium-browser");
+								return true;
+						}
+						else
+								return false;
+
+				#endif
+		}
     else if(browser == webinix.browser.edge) {
 
         // Edge
@@ -2168,6 +2227,38 @@ bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address) {
         return false;
 }
 
+bool _webinix_browser_start_chromium(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_chromium([%s])... \n", address);
+    #endif
+    
+    // -- Chromium -------------------
+
+    if (win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.chromium)
+        return false;
+
+    if (!_webinix_browser_exist(win, webinix.browser.chromium))
+        return false;
+    
+    if (!_webinix_browser_create_profile_folder(win, webinix.browser.chromium))
+        return false;
+    
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if (_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.chromium;
+        return true;
+    }
+    else
+        return false;
+}
+
 bool _webinix_browser_start_custom(webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
@@ -2281,6 +2372,8 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_edge(win, address);
         else if(browser == webinix.browser.custom)
             return _webinix_browser_start_custom(win, address);
+        else if(browser == webinix.browser.chromium)
+            return _webinix_browser_start_chromium(win, address);
         else
             return false;
     }
@@ -2295,6 +2388,8 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
             return _webinix_browser_start_edge(win, address);
         else if(win->core.CurrentBrowser == webinix.browser.custom)
             return _webinix_browser_start_custom(win, address);
+        else if(browser == webinix.browser.chromium)
+            return _webinix_browser_start_chromium(win, address);
         else
             return false;
             //webinix::exit();
@@ -2309,24 +2404,27 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-                            return false;
-                            //webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #elif __APPLE__
             // macOS
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-                            return false;
-                            //webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #else
             // Linux
             if(!_webinix_browser_start_chrome(win, address))
                 if(!_webinix_browser_start_firefox(win, address))
                     if(!_webinix_browser_start_edge(win, address))
                         if(!_webinix_browser_start_custom(win, address))
-                            return false;
-                            //webinix::exit();
+                              if(!_webinix_browser_start_chromium(win, address))
+                                    return false;
+                                    //webinix::exit();
         #endif
     }
 
