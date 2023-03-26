@@ -1897,8 +1897,8 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
 
 						char fullpath32[1024];
 						char fullpath64[1024];
-						sprintf(fullpath32, "%s%sChromium\\Application\\chrome.exe", programs_folder32, webinix_sep);
-						sprintf(fullpath64, "%s%sChromium\\Application\\chrome.exe", programs_folder64, webinix_sep);
+						sprintf(fullpath32, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("APPDATA"));
+						sprintf(fullpath64, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("LOCALAPPDATA"));
 
 						if (_webinix_file_exist(fullpath64)) {
 
