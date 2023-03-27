@@ -107,6 +107,13 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 > GNU General Public License v3.0
 
+### Contributions
+
+Contributions are welcome! Please follow the guidelines below:
+
+ - Please create PRs on the beta branches
+ - Make sure that PRs deal with one issue only
+
 ### Stargazers
 
 [![Stargazers repo roster for @alifcommunity/webinix](https://reporoster.com/stars/alifcommunity/webinix)](https://github.com/alifcommunity/webinix/stargazers)
