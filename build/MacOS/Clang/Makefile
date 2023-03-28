@@ -17,7 +17,7 @@ debug:
 	@echo "Build Webinix Library (Debug Dynamic)..."
 	@clang -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@clang -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@clang -g -shared -o webinix-2-aarch64-apple-darwin.dylib webinix.o mongoose.o
+	@clang -g -shared -o webinix-2-x64.dyn webinix.o mongoose.o
 #	Clean
 	@- rm -f *.o
 	@echo "Done."
@@ -33,7 +33,7 @@ release:
 	@echo "Build Webinix Library (Release Dynamic)..."
 	@clang -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@clang -O3 -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@clang -shared -o webinix-2-aarch64-apple-darwin.dylib webinix.o mongoose.o
+	@clang -shared -o webinix-2-x64.dyn webinix.o mongoose.o
 #	Clean
 	@- rm -f *.o
 	@echo "Done."
