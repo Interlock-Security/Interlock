@@ -17,7 +17,7 @@ debug:
 	@echo Build Webinix Library (Debug Dynamic)...
 	@tcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@tcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c" -DWEBUI_LOG
-	@tcc -g -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32
+	@tcc -g -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32 -lAdvapi32
 #	Clean
 	@- del *.o >nul 2>&1
 	@echo Done.
@@ -32,7 +32,7 @@ release:
 	@echo Build Webinix Library (Release Dynamic)...
 	@tcc -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@tcc -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@tcc -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32
+	@tcc -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32 -lAdvapi32
 #	Clean
 	@- del *.o >nul 2>&1
 	@echo Done.

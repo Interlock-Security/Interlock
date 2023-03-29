@@ -1,13 +1,3 @@
-
-# Webinix Library 2.0.7
-# Python Example
-#
-# http://webinix.me
-# https://github.com/alifcommunity/webinix
-#
-# Licensed under GNU General Public License v3.0.
-# Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
-
 # This script is for debugging & development of the Webinix Python wrapper
 # The source code is located at 'webinix/packages/PyPI/src/webinix/webinix.py'
 
@@ -102,7 +92,7 @@ def main():
 	MyWindow.bind('ExitID', close)
 
 	# Show the window
-	MyWindow.show(html, webinix.browser.any)
+	MyWindow.show(html)
 
 	# Wait until all windows are closed
 	webinix.wait()

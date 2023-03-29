@@ -1,54 +1,55 @@
-/*
-    Webinix Library 2.0.7
-    C99 Example
-
-    http://webinix.me
-    https://github.com/alifcommunity/webinix
-
-    Licensed under GNU General Public License v3.0.
-    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
-*/
-
-// Note:
-// To see the console logs (printf) you need to build in debug mode
-// example 'make debug', or 'nmake debug', or 'mingw32-make debug'
+// Call C from JavaScript Example
 
 #include "webinix.h"
 
-void function_one(webinix_event_t* e) {
+void my_function_string(webinix_event_t* e) {
 
-    // JavaScript: webinix_fn('One', 'Hello');
+    // JavaScript:
+    // webinix_fn('MyID_One', 'Hello');
 
     const char* str = webinix_get_string(e);
-    printf("function_one: %s\n", str); // Hello
+    printf("my_function_string: %s\n", str); // Hello
+
+    // Need Multiple Arguments?
+    //
+    // Webinix support only one argument. To get multiple arguments
+    // you can send a JSON string from JavaScript then decode it.
+    // Example:
+    //
+    // my_json = my_json_decoder(str);
+    // foo = my_json[0];
+    // bar = my_json[1];
 }
 
-void function_two(webinix_event_t* e) {
+void my_function_integer(webinix_event_t* e) {
 
-    // JavaScript: webinix_fn('Two', 2022);
+    // JavaScript:
+    // webinix_fn('MyID_Two', 123456789);
 
-    int number = webinix_get_int(e);
-    printf("function_two: %d\n", number); // 2022
+    long long number = webinix_get_int(e);
+    printf("my_function_integer: %lld\n", number); // 123456789
 }
 
-void function_three(webinix_event_t* e) {
+void my_function_boolean(webinix_event_t* e) {
 
-    // JavaScript: webinix_fn('Three', true);
+    // JavaScript:
+    // webinix_fn('MyID_Three', true);
 
-    bool status = webinix_get_bool(e);
+    bool status = webinix_get_bool(e); // True
     if(status)
-        printf("function_three: True\n"); // True
+        printf("my_function_boolean: True\n");
     else
-        printf("function_three: False\n"); // False
+        printf("my_function_boolean: False\n");
 }
 
-void function_four(webinix_event_t* e) {
+void my_function_with_response(webinix_event_t* e) {
 
-    // JavaScript: const result = webinix_fn('Four', 2);
+    // JavaScript:
+    // const result = webinix_fn('MyID_Four', number);
 
-    int number = webinix_get_int(e);
+    long long number = webinix_get_int(e);
     number = number * 2;
-    printf("function_four: %d\n", number); // 4
+    printf("my_function_with_response: %lld\n", number);
 
     // Send back the response to JavaScript
     webinix_return_int(e, number);
@@ -57,41 +58,61 @@ void function_four(webinix_event_t* e) {
 int main() {
 
     // HTML
-    const char* my_html = "<!DOCTYPE html>"
-    "<html><head><title>Webinix 2 - C99 Example</title>"
-    "<style>body{color: white; background: #0F2027;"
-    "background: -webkit-linear-gradient(to right, #2C5364, #203A43, #0F2027);"
-    "background: linear-gradient(to right, #2C5364, #203A43, #0F2027);"
-    "text-align:center; font-size: 18px; font-family: sans-serif;}</style></head><body>"
-    "<h2>Webinix 2 - C99 Example</h2>"
-    "<p>Call C function with arguments (See log in the Windows console)</p><br>"
-    "<button OnClick=\"webinix_fn('One', 'Hello');\">Call C function one</button><br><br>"
-    "<button OnClick=\"webinix_fn('Two', 2022);\">Call C function two</button><br><br>"
-    "<button OnClick=\"webinix_fn('Three', true);\">Call C function three</button><br><br>"
-    "<p>Call C function four, and wait for the result</p><br>"
-    "<button OnClick=\"MyJS();\">Call C function four</button><br><br>"
-    "<input type=\"text\" id=\"MyInput\" value=\"2\">"
-    "<script>"
-    "   function MyJS() {"
-    "       const number = document.getElementById('MyInput').value;"
-    "       var result = webinix_fn('Four', number);"
-    "       document.getElementById('MyInput').value = result;"
-    "   }"
-    "</script>"
-    "</body></html>";
+    const char* my_html = 
+    "<html>"
+    "  <head>"
+    "    <title>Call C from JavaScript Example</title>"
+    "    <style>"
+    "      body {"
+    "        color: white;"
+    "        background: #0F2027;"
+    "        text-align: center;"
+    "        font-size: 16px;"
+    "        font-family: sans-serif;"
+    "      }"
+    "    </style>"
+    "  </head>"
+    "  <body>"
+    "    <h2>Webinix - Call C from JavaScript Example</h2>"
+    "    <p>Call C function with argument (<em>See the logs in your terminal</em>)</p>"
+    "    <br>"
+    "    <button onclick=\"webinix_fn('MyID_One', 'Hello');\">Call my_function_string()</button>"
+    "    <br>"
+    "    <br>"
+    "    <button onclick=\"webinix_fn('MyID_Two', 123456789);\">Call my_function_integer()</button>"
+    "    <br>"
+    "    <br>"
+    "    <button onclick=\"webinix_fn('MyID_Three', true);\">Call my_function_boolean()</button>"
+    "    <br>"
+    "    <br>"
+    "    <p>Call C function and wait for the response</p>"
+    "    <br>"
+    "    <button onclick=\"MyJS();\">Call my_function_with_response()</button>"
+    "    <br>"
+    "    <br>"
+    "    <input type=\"text\" id=\"MyInputID\" value=\"2\">"
+    "    <script>"
+    "      function MyJS() {"
+    "        const MyInput = document.getElementById('MyInputID');"
+    "        const number = MyInput.value;"
+    "        const result = webinix_fn('MyID_Four', number);"
+    "        MyInput.value = result;"
+    "      }"
+    "    </script>"
+    "  </body>"
+    "</html>";
 
     // Create a window
     webinix_window_t* my_window = webinix_new_window();
 
-    // Bind HTML elements with functions
-    webinix_bind(my_window, "One", function_one);
-    webinix_bind(my_window, "Two", function_two);
-    webinix_bind(my_window, "Three", function_three);
-    webinix_bind(my_window, "Four", function_four);
+    // Bind HTML elements with C functions
+    webinix_bind(my_window, "MyID_One", my_function_string);
+    webinix_bind(my_window, "MyID_Two", my_function_integer);
+    webinix_bind(my_window, "MyID_Three", my_function_boolean);
+    webinix_bind(my_window, "MyID_Four", my_function_with_response);
 
     // Show the window
-    if(!webinix_show(my_window, my_html, webinix.browser.chrome))   // Run the window on Chrome
-        webinix_show(my_window, my_html, webinix.browser.any);      // If not, run on any other installed web browser
+    webinix_show(my_window, my_html);
 
     // Wait until all windows get closed
     webinix_wait();

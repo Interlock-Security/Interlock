@@ -1,7 +1,7 @@
 
-# Webinix Examples - C
+# Webinix C - Minimal Example
 
-To build the C example you will need one of those C compilers, no dependencies is needed.
+Example of how to create the minimal Webinix application in C. To build this example, you will need one of those C compilers (*no dependencies are required*).
 
 ### Windows
 

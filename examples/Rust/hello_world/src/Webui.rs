@@ -1,12 +1,4 @@
-/*
-    Webinix Library 2.0.7
-    
-    http://webinix.me
-    https://github.com/alifcommunity/webinix
 
-    Licensed under GNU General Public License v3.0.
-    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
-*/
 
 // Flags
 #![allow(non_camel_case_types)]
@@ -179,13 +171,6 @@ extern "C" {
 }
 extern "C" {
     pub fn webinix_show(
-        win: *mut webinix_window_t,
-        html: *const ::std::os::raw::c_char,
-        browser: ::std::os::raw::c_uint,
-    ) -> bool;
-}
-extern "C" {
-    pub fn webinix_show_cpy(
         win: *mut webinix_window_t,
         html: *const ::std::os::raw::c_char,
         browser: ::std::os::raw::c_uint,
@@ -561,7 +546,7 @@ pub fn Show(win: *mut webinix_window_t, html: &str, b: u32) -> bool {
         let html_c_str = CString::new(html).unwrap();
         let html_c_char: *const c_char = html_c_str.as_ptr() as *const c_char;
 
-        return webinix_show_cpy(win, html_c_char, b);
+        return webinix_show(win, html_c_char);
     }
 }
 

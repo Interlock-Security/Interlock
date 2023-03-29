@@ -1,11 +1,13 @@
 /*
-    Webinix Library 2.0.7
+    Webinix Library 2.1.0
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
 
-    Licensed under GNU Lesser General Public License v2.1.
-    Copyright (C)2023 Hassan DRAGA <https://github.com/hassandraga> - Canada.
+    Copyright (c) 2020-2023 Hassan Draga.
+    Licensed under GNU General Public License v2.0.
+    All rights reserved.
+    Canada.
 */
 
 // -- Third-party ---------------------
@@ -1137,21 +1139,18 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
                     if(win->core.html != NULL) {
 
-                        if(strstr(win->core.html, "</html>") != NULL) {
+                        // Generate the full Webinix JS-Bridge
+                        const char* js = _webinix_generate_js_bridge(win);
 
-                            // Generate the full Webinix JS-Bridge
-                            const char* js = _webinix_generate_js_bridge(win);
+                        // Inject Webinix JS-Bridge into HTML
+                        size_t len = strlen(win->core.html) + strlen(js) + 128;
+                        html = (char*) _webinix_malloc(len);
+                        sprintf(html, 
+                            "%s \n <script type = \"text/javascript\"> \n %s \n </script>",
+                            win->core.html, js
+                        );
 
-                            // Inject Webinix JS-Bridge into HTML
-                            size_t len = strlen(win->core.html) + strlen(js) + 512;
-                            html = (char*) _webinix_malloc(len);
-                            sprintf(html, 
-                                "%s \n <script type = \"text/javascript\"> \n %s \n </script>",
-                                win->core.html, js
-                            );
-
-                            _webinix_free_mem((void *) &js);
-                        }
+                        _webinix_free_mem((void *) &js);
                     }
 
                     // // HTTP Header
@@ -1587,45 +1586,61 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
         printf("[0] _webinix_browser_create_profile_folder(%d)... \n", browser);
     #endif
     
+    // Custom Browser
     if(browser == webinix.browser.custom) {
-
-        // Custom Browser
-
+        // Check the struct pointer
         if(webinix.custom_browser == NULL)
             return false;
-
         return true;
     }
 
     const char* temp = _webinix_browser_get_temp_path(browser);
 
-    // Chrome
-    // No need to create a folder
     if(browser == webinix.browser.chrome) {
 
+        // Google Chrome
         sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixChromeProfile", temp, webinix_sep, webinix_sep);
         return true;
     }
-    
-    // Chromium
-    // No need to create a folder
-    if(browser == webinix.browser.chromium) {
+    else if(browser == webinix.browser.edge) {
 
-        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixChromiumProfile", temp, webinix_sep, webinix_sep);
-        return true;
-    }
-		
-    // Edge
-    // No need to create a folder
-    if(browser == webinix.browser.edge) {
-
+        // Edge
         sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixEdgeProfile", temp, webinix_sep, webinix_sep);
         return true;
     }
+    else if(browser == webinix.browser.epic) {
 
-    // Firefox
-    // We need to create a folder
-    if(browser == webinix.browser.firefox) {
+        // Epic
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixEpicProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+    else if(browser == webinix.browser.vivaldi) {
+
+        // Vivaldi
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixVivaldiProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+    else if(browser == webinix.browser.brave) {
+
+        // Brave
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixBraveProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+    else if(browser == webinix.browser.yandex) {
+
+        // Yandex
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixYandexProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+    else if(browser == webinix.browser.chromium) {
+
+        // Chromium
+        sprintf(win->core.profile_path, "%s%s.Webinix%sWebinixChromiumProfile", temp, webinix_sep, webinix_sep);
+        return true;
+    }
+    else if(browser == webinix.browser.firefox) {
+
+        // Firefox (We need to create a folder)
 
         char* profile_name = "WebinixFirefoxProfile";
 
@@ -1639,7 +1654,7 @@ bool _webinix_browser_create_profile_folder(webinix_window_t* win, unsigned int 
             sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->core.browser_path, firefox_profile_path);
             _webinix_cmd_sync(buf, false);
 
-            // Wait 10 seconds while slow PCs finish creating the folder...
+            // Creating the browser profile folders timeout...
             for(unsigned int n = 0; n <= (webinix.startup_timeout * 4); n++) {
 
                 if(_webinix_folder_exist(firefox_profile_path))
@@ -1751,68 +1766,389 @@ const char* _webinix_browser_get_temp_path(unsigned int browser) {
     #endif
 }
 
+bool _webinix_get_windows_reg_value(HKEY key, const char* reg, const char* value_name, char value[WEBUI_MAX_PATH]) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_get_windows_reg_value([%s])... \n", reg);
+    #endif
+
+    HKEY hKey;
+
+    if(RegOpenKeyEx(key, reg, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+
+        DWORD valueSize = WEBUI_MAX_PATH;
+        // If `value_name` is empty then
+        // will read the "(default)" reg-key
+        if(RegQueryValueEx(hKey, value_name, NULL, NULL, (LPBYTE)value, &valueSize) == ERROR_SUCCESS) {
+
+            RegCloseKey(hKey);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool _webinix_is_google_chrome_folder(const char* folder) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_is_google_chrome_folder([%s])... \n", folder);
+    #endif
+
+    char browser_full_path[WEBUI_MAX_PATH];
+
+    // Make sure this folder is Google Chrome setup and not Chromium
+    // by checking if `master_preferences` file exist or `initial_preferences`
+    // Ref: https://support.google.com/chrome/a/answer/187948?hl=en
+
+    sprintf(browser_full_path, "%s\\master_preferences", folder);
+    if(!_webinix_file_exist(browser_full_path)) {
+
+        sprintf(browser_full_path, "%s\\initial_preferences", folder);
+        if(!_webinix_file_exist(browser_full_path))
+            return false; // This is Chromium or something else
+    }
+
+    // Make sure the browser executable file exist
+    sprintf(browser_full_path, "%s\\chrome.exe", folder);
+    if(!_webinix_file_exist(browser_full_path))
+        return false;
+    
+    return true;
+}
+
 bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_browser_exist([%d])... \n", browser);
     #endif
 
-    // Check if a browser exist
+    // Check if a web browser is installed on this machine
 
+    // Custom Browser
     if(browser == webinix.browser.custom) {
-
-        // Custom Browser
-
+        // Check the struct pointer
         if(webinix.custom_browser == NULL)
             return false;
-
         return true;
     }
 
-    #ifdef _WIN32
-        // Resolve SystemDrive
-        #ifdef _MSC_VER
-            char* drive = NULL;
-            size_t sz = 0;
-            if(_dupenv_s(&drive, &sz, "SystemDrive") != 0 || drive == NULL)
+    if(browser == webinix.browser.chrome) {
+
+        // Google Chrome
+
+        #ifdef _WIN32
+
+            // Google Chrome on Windows
+
+            char browser_folder[WEBUI_MAX_PATH];
+
+            // Search in `HKEY_LOCAL_MACHINE` (If Google Chrome installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe", "Path", browser_folder)) {
+
+                // Make sure its Google Chrome and not Chromium
+                if(_webinix_is_google_chrome_folder(browser_folder)) {
+
+                    // Google Chrome Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\\chrome.exe\"", browser_folder);
+                    return true;
+                }
+            }            
+
+            // Search in `HKEY_CURRENT_USER` (If Google Chrome installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe", "Path", browser_folder)) {
+
+                // Make sure its Google Chrome and not Chromium
+                if(_webinix_is_google_chrome_folder(browser_folder)) {
+
+                    // Google Chrome Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\\chrome.exe\"", browser_folder);
+                    return true;
+                }
+            }
+
+            return false;
+
+        #elif __APPLE__
+
+            // Google Chrome on macOS
+            if(_webinix_cmd_sync("open -R -a \"Google Chrome\"", false) == 0) {
+
+                sprintf(win->core.browser_path, "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome");
+                return true;
+            }
+            else
                 return false;
         #else
-            char* drive = getenv("SystemDrive"); // _dupenv_s
-            if(drive == NULL)
+
+            // Google Chrome on Linux
+            if(_webinix_cmd_sync("google-chrome --version", false) == 0) {
+
+                sprintf(win->core.browser_path, "google-chrome");
+                return true;
+            }
+            else
+                return false;
+
+        #endif
+    }
+    else if(browser == webinix.browser.edge) {
+
+        // Edge
+
+        #ifdef _WIN32
+
+            // Edge on Windows
+
+            char browser_fullpath[WEBUI_MAX_PATH];
+
+            // Search in `HKEY_LOCAL_MACHINE` (If Edge installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Edge Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            // Search in `HKEY_CURRENT_USER` (If Edge installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\msedge.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Edge Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            return false;
+
+        #elif __APPLE__
+
+            // Edge on macOS
+            return false;
+
+        #else
+
+            // Edge on Linux
+            return false;
+
+        #endif
+    }
+    else if(browser == webinix.browser.epic) {
+
+        // Epic Privacy Browser
+
+        #ifdef _WIN32
+
+            // Epic on Windows
+
+            char browser_fullpath[WEBUI_MAX_PATH];
+
+            // Search in `HKEY_CURRENT_USER` (If Epic installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\epic.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Epic Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            // Search in `HKEY_LOCAL_MACHINE` (If Epic installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\epic.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Epic Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            return false;
+
+        #elif __APPLE__
+
+            // Epic on macOS
+            if(_webinix_cmd_sync("open -R -a \"Epic\"", false) == 0) {
+
+                sprintf(win->core.browser_path, "/Applications/Epic\\ Epic.app/Contents/MacOS/Epic\\ Epic");
+                return true;
+            }
+            else
+                return false;
+        #else
+
+            // Epic on Linux
+            if(_webinix_cmd_sync("epic --version", false) == 0) {
+
+                sprintf(win->core.browser_path, "epic");
+                return true;
+            }
+            else
                 return false;
         #endif
-        char programs_folder32[1024];
-        char programs_folder64[1024];
-        sprintf(programs_folder32, "%s%sProgram Files (x86)", drive, webinix_sep);
-        sprintf(programs_folder64, "%s%sProgram Files", drive, webinix_sep);
-    #endif
+    }
+    else if(browser == webinix.browser.vivaldi) {
 
-    if(browser == webinix.browser.firefox) {
+        // Vivaldi Browser
+
+        #ifdef _WIN32
+
+            // Vivaldi on Windows
+
+            char browser_fullpath[WEBUI_MAX_PATH];
+
+            // Search in `HKEY_LOCAL_MACHINE` (If Vivaldi installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\vivaldi.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Vivaldi Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            // Search in `HKEY_CURRENT_USER` (If Vivaldi installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\vivaldi.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Vivaldi Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            return false;
+
+        #elif __APPLE__
+
+            // Vivaldi on macOS
+            if(_webinix_cmd_sync("open -R -a \"Vivaldi\"", false) == 0) {
+
+                sprintf(win->core.browser_path, "/Applications/Vivaldi\\ Vivaldi.app/Contents/MacOS/Vivaldi\\ Vivaldi");
+                return true;
+            }
+            else
+                return false;
+        #else
+
+            // Vivaldi on Linux
+            if(_webinix_cmd_sync("vivaldi --version", false) == 0) {
+
+                sprintf(win->core.browser_path, "vivaldi");
+                return true;
+            }
+            else
+                return false;
+        #endif
+    }
+    else if(browser == webinix.browser.brave) {
+
+        // Brave Browser
+
+        #ifdef _WIN32
+
+            // Brave on Windows
+
+            char browser_fullpath[WEBUI_MAX_PATH];
+
+            // Search in `HKEY_LOCAL_MACHINE` (If Brave installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\brave.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Brave Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            // Search in `HKEY_CURRENT_USER` (If Brave installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\brave.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Brave Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
+            }
+
+            return false;
+
+        #elif __APPLE__
+
+            // Brave on macOS
+            if(_webinix_cmd_sync("open -R -a \"Brave\"", false) == 0) {
+
+                sprintf(win->core.browser_path, "/Applications/Brave\\ Brave.app/Contents/MacOS/Brave\\ Brave");
+                return true;
+            }
+            else
+                return false;
+        #else
+
+            // Brave on Linux
+            if(_webinix_cmd_sync("brave-browser --version", false) == 0) {
+
+                sprintf(win->core.browser_path, "brave-browser");
+                return true;
+            }
+            else
+                return false;
+        #endif
+    }
+    else if(browser == webinix.browser.firefox) {
 
         // Firefox
         
         #ifdef _WIN32
         
-            // Firefox 32/64 on Windows
+            // Firefox on Windows
 
-            // TODO: Add support for C:\Program Files\Firefox Nightly\firefox.exe
-            char fullpath32[1024];
-            char fullpath64[1024];
-            sprintf(fullpath32, "%s%sMozilla Firefox\\firefox.exe", programs_folder32, webinix_sep);
-            sprintf(fullpath64, "%s%sMozilla Firefox\\firefox.exe", programs_folder64, webinix_sep);
+            char browser_fullpath[WEBUI_MAX_PATH];
 
-            if(_webinix_file_exist(fullpath64)) {
-                
-                sprintf(win->core.browser_path, "\"%s\"", fullpath64);
-                return true;
+            // Search in `HKEY_LOCAL_MACHINE` (If Firefox installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Firefox Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
             }
-            else if(_webinix_file_exist(fullpath32)) {
 
-                sprintf(win->core.browser_path, "\"%s\"", fullpath32);
-                return true;
+            // Search in `HKEY_CURRENT_USER` (If Firefox installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Firefox Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
             }
-            else
-                return false;
+
+            return false;
 
         #elif __APPLE__
             
@@ -1839,140 +2175,120 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
         #endif
 
     }
-    else if(browser == webinix.browser.chrome) {
+    else if(browser == webinix.browser.yandex) {
 
-        // Chrome
+        // Yandex Browser
 
         #ifdef _WIN32
 
-            // Chrome on Windows
+            // Yandex on Windows
 
-            char fullpath32[1024];
-            char fullpath64[1024];
-            sprintf(fullpath32, "%s%sGoogle\\Chrome\\Application\\chrome.exe", programs_folder32, webinix_sep);
-            sprintf(fullpath64, "%s%sGoogle\\Chrome\\Application\\chrome.exe", programs_folder64, webinix_sep);
+            char browser_fullpath[WEBUI_MAX_PATH];
 
-            if(_webinix_file_exist(fullpath64)) {
+            // Search in `HKEY_CURRENT_USER` (If Yandex installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\browser.exe", "", browser_fullpath)) {
 
-                sprintf(win->core.browser_path, "\"%s\"", fullpath64);
-                return true;
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Yandex Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
             }
-            else if(_webinix_file_exist(fullpath32)) {
 
-                sprintf(win->core.browser_path, "\"%s\"", fullpath32);
-                return true;
+            // Search in `HKEY_LOCAL_MACHINE` (If Yandex installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\browser.exe", "", browser_fullpath)) {
+
+                // Make sure the browser executable file exist
+                if(_webinix_file_exist(browser_fullpath)) {
+
+                    // Yandex Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\"", browser_fullpath);
+                    return true;
+                }
             }
-            else return false;
+
+            return false;
 
         #elif __APPLE__
 
-            // Chrome on macOS
-            if(_webinix_cmd_sync("open -R -a \"Google Chrome\"", false) == 0) {
+            // Yandex on macOS
+            if(_webinix_cmd_sync("open -R -a \"Yandex\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome");
+                sprintf(win->core.browser_path, "/Applications/Yandex\\ Yandex.app/Contents/MacOS/Yandex\\ Yandex");
                 return true;
             }
             else
                 return false;
         #else
 
-            // Chrome on Linux
-            if(_webinix_cmd_sync("google-chrome --version", false) == 0) {
+            // Yandex on Linux
+            if(_webinix_cmd_sync("yandex-browser --version", false) == 0) {
 
-                sprintf(win->core.browser_path, "google-chrome");
+                sprintf(win->core.browser_path, "yandex-browser");
                 return true;
             }
             else
                 return false;
-
         #endif
     }
-		else if (browser == webinix.browser.chromium) {
+    else if(browser == webinix.browser.chromium) {
 
-				// Chromium
-
-				#ifdef _WIN32
-
-						// Chromium on Windows
-
-						char fullpath32[1024];
-						char fullpath64[1024];
-						sprintf(fullpath32, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("APPDATA"));
-						sprintf(fullpath64, "%s\\..\\Local\\Chromium\\Application\\chrome.exe", getenv("LOCALAPPDATA"));
-
-						if (_webinix_file_exist(fullpath64)) {
-
-								sprintf(win->core.browser_path, "\"%s\"", fullpath64);
-								return true;
-						}
-						else if (_webinix_file_exist(fullpath32)) {
-
-								sprintf(win->core.browser_path, "\"%s\"", fullpath32);
-								return true;
-						}
-						else return false;
-
-				#elif __APPLE__
-
-						// Chromium on macOS
-
-						if (_webinix_cmd_sync("open -R -a \"Chromium\"", false) == 0) {
-
-								sprintf(win->core.browser_path, "/Applications/Chromium.app/Contents/MacOS/Chromium");
-								return true;
-						}
-						else
-								return false;
-
-				#else
-
-						// Chromium on Linux
-
-						if (_webinix_cmd_sync("chromium-browser --version", false) == 0) {
-
-								sprintf(win->core.browser_path, "chromium-browser");
-								return true;
-						}
-						else
-								return false;
-
-				#endif
-		}
-    else if(browser == webinix.browser.edge) {
-
-        // Edge
+        // The Chromium Projects
 
         #ifdef _WIN32
 
-            // Edge on Windows
+            // Chromium on Windows
 
-            char fullpath32[1024];
-            char fullpath64[1024];
-            sprintf(fullpath32, "%s%sMicrosoft\\Edge\\Application\\msedge.exe", programs_folder32, webinix_sep);
-            sprintf(fullpath64, "%s%sMicrosoft\\Edge\\Application\\msedge.exe", programs_folder64, webinix_sep);
+            char browser_folder[WEBUI_MAX_PATH];
 
-            if(_webinix_file_exist(fullpath64)) {
+            // Search in `HKEY_CURRENT_USER` (If Chromium installed for one user)
+            if(_webinix_get_windows_reg_value(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe", "Path", browser_folder)) {
 
-                sprintf(win->core.browser_path, "\"%s\"", fullpath64);
-                return true;
+                // Make sure its Chromium and not Google Chrome
+                if(!_webinix_is_google_chrome_folder(browser_folder)) {
+
+                    // Chromium Found (one user)
+                    sprintf(win->core.browser_path, "\"%s\\chrome.exe\"", browser_folder);
+                    return true;
+                }
             }
-            else if(_webinix_file_exist(fullpath32)) {
 
-                sprintf(win->core.browser_path, "\"%s\"", fullpath32);
-                return true;
+            // Search in `HKEY_LOCAL_MACHINE` (If Chromium installed for multi-user)
+            if(_webinix_get_windows_reg_value(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe", "Path", browser_folder)) {
+
+                // Make sure its Chromium and not Google Chrome
+                if(!_webinix_is_google_chrome_folder(browser_folder)) {
+
+                    // Chromium Found (multi-user)
+                    sprintf(win->core.browser_path, "\"%s\\chrome.exe\"", browser_folder);
+                    return true;
+                }
             }
-            else return false;
+
+            return false;
 
         #elif __APPLE__
 
-            // Edge on macOS
-            return false;
+            // Chromium on macOS
+            if(_webinix_cmd_sync("open -R -a \"Chromium\"", false) == 0) {
 
+                sprintf(win->core.browser_path, "/Applications/Chromium\\ Chromium.app/Contents/MacOS/Chromium\\ Chromium");
+                return true;
+            }
+            else
+                return false;
         #else
 
-            // Edge on Linux
-            return false;
+            // Chromium on Linux
+            if(_webinix_cmd_sync("chromium-browser --version", false) == 0) {
 
+                sprintf(win->core.browser_path, "chromium-browser");
+                return true;
+            }
+            else
+                return false;
         #endif
     }
 
@@ -2201,7 +2517,7 @@ bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address) {
         printf("[0] _webinix_browser_start_chrome([%s])... \n", address);
     #endif
     
-    // -- Chrome ----------------------
+    // -- Google Chrome ----------------------
 
     if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.chrome)
         return false;
@@ -2213,7 +2529,7 @@ bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address) {
         return false;
     
     char arg[1024];
-    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --app=", win->core.profile_path);
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
@@ -2221,6 +2537,205 @@ bool _webinix_browser_start_chrome(webinix_window_t* win, const char* address) {
     if(_webinix_run_browser(win, full) == 0) {
 
         win->core.CurrentBrowser = webinix.browser.chrome;
+        webinix.browser.current = webinix.browser.chrome;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_edge(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_edge([%s])... \n", address);
+    #endif
+
+    // -- Microsoft Edge ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.edge)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.edge))
+        return false;
+    
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.edge))
+        return false;
+
+    // TODO: We need to disable the Sync message in the first run,
+    // we fix it using `--inprivate`, but it add "" in the title bar.
+
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --inprivate --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.edge;
+        webinix.browser.current = webinix.browser.edge;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_epic(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_epic([%s])... \n", address);
+    #endif
+
+    // -- Epic Privacy Browser ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.epic)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.epic))
+        return false;
+    
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.epic))
+        return false;
+
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.epic;
+        webinix.browser.current = webinix.browser.epic;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_vivaldi(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_vivaldi([%s])... \n", address);
+    #endif
+
+    // -- Vivaldi Browser ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.vivaldi)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.vivaldi))
+        return false;
+    
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.vivaldi))
+        return false;
+
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.vivaldi;
+        webinix.browser.current = webinix.browser.vivaldi;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_brave(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_brave([%s])... \n", address);
+    #endif
+
+    // -- Brave Browser ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.brave)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.brave))
+        return false;
+    
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.brave))
+        return false;
+
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.brave;
+        webinix.browser.current = webinix.browser.brave;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_firefox(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_firefox([%s])... \n", address);
+    #endif
+
+    // -- Mozilla Firefox ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.firefox)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.firefox))
+        return false;
+
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.firefox))
+        return false;
+
+    char full[1024];
+    sprintf(full, "%s -P Webinix -purgecaches -new-window -private-window %s", win->core.browser_path, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.firefox;
+        webinix.browser.current = webinix.browser.firefox;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool _webinix_browser_start_yandex(webinix_window_t* win, const char* address) {
+
+    #ifdef WEBUI_LOG
+        printf("[0] _webinix_browser_start_yandex([%s])... \n", address);
+    #endif
+
+    // -- Yandex Browser ----------------------
+
+    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.yandex)
+        return false;
+
+    if(!_webinix_browser_exist(win, webinix.browser.yandex))
+        return false;
+    
+    if(!_webinix_browser_create_profile_folder(win, webinix.browser.yandex))
+        return false;
+
+    char arg[1024];
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
+
+    char full[1024];
+    sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
+
+    if(_webinix_run_browser(win, full) == 0) {
+
+        win->core.CurrentBrowser = webinix.browser.yandex;
+        webinix.browser.current = webinix.browser.yandex;
         return true;
     }
     else
@@ -2233,7 +2748,7 @@ bool _webinix_browser_start_chromium(webinix_window_t* win, const char* address)
         printf("[0] _webinix_browser_start_chromium([%s])... \n", address);
     #endif
     
-    // -- Chromium -------------------
+    // -- The Chromium Projects -------------------
 
     if (win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.chromium)
         return false;
@@ -2245,7 +2760,7 @@ bool _webinix_browser_start_chromium(webinix_window_t* win, const char* address)
         return false;
     
     char arg[1024];
-    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --app=", win->core.profile_path);
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --incognito --app=", win->core.profile_path);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->core.browser_path, arg, address);
@@ -2253,6 +2768,7 @@ bool _webinix_browser_start_chromium(webinix_window_t* win, const char* address)
     if (_webinix_run_browser(win, full) == 0) {
 
         win->core.CurrentBrowser = webinix.browser.chromium;
+        webinix.browser.current = webinix.browser.chromium;
         return true;
     }
     else
@@ -2285,64 +2801,7 @@ bool _webinix_browser_start_custom(webinix_window_t* win, const char* address) {
     if(_webinix_run_browser(win, full) == 0) {
 
         win->core.CurrentBrowser = webinix.browser.custom;
-        return true;
-    }
-    else
-        return false;
-}
-
-bool _webinix_browser_start_firefox(webinix_window_t* win, const char* address) {
-
-    #ifdef WEBUI_LOG
-        printf("[0] _webinix_browser_start_firefox([%s])... \n", address);
-    #endif
-
-    // -- Firefox ----------------------
-
-    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.firefox)
-        return false;
-
-    if(!_webinix_browser_exist(win, webinix.browser.firefox))
-        return false;
-
-    if(!_webinix_browser_create_profile_folder(win, webinix.browser.firefox))
-        return false;
-
-    char full[1024];
-    sprintf(full, "%s -P Webinix -purgecaches -new-window -private-window %s", win->core.browser_path, address);
-
-    if(_webinix_run_browser(win, full) == 0) {
-
-        win->core.CurrentBrowser = webinix.browser.firefox;
-        return true;
-    }
-    else
-        return false;
-}
-
-bool _webinix_browser_start_edge(webinix_window_t* win, const char* address) {
-
-    #ifdef WEBUI_LOG
-        printf("[0] _webinix_browser_start_edge([%s])... \n", address);
-    #endif
-
-    // -- Edge ----------------------
-
-    if(win->core.CurrentBrowser != 0 && win->core.CurrentBrowser != webinix.browser.edge)
-        return false;
-
-    if(!_webinix_browser_exist(win, webinix.browser.edge))
-        return false;
-    
-    if(!_webinix_browser_create_profile_folder(win, webinix.browser.edge))
-        return false;
-
-    char full[1024];
-    sprintf(full, "%s --user-data-dir=\"%s\" --no-proxy-server --app=%s", win->core.browser_path, win->core.profile_path, address);
-
-    if(_webinix_run_browser(win, full) == 0) {
-
-        win->core.CurrentBrowser = webinix.browser.edge;
+        webinix.browser.current = webinix.browser.custom;
         return true;
     }
     else
@@ -2359,17 +2818,30 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
     if(browser > 10)
         return false;
     
+    // Current browser
+    if(browser == webinix.browser.any && webinix.browser.current != 0)
+        browser = webinix.browser.current;
+
     // TODO: Convert address from [/...] to [file://...]
 
     if(browser != 0) {
 
-        // Specified browser
+        // User specified browser
+
         if(browser == webinix.browser.chrome)
             return _webinix_browser_start_chrome(win, address);
-        else if(browser == webinix.browser.firefox)
-            return _webinix_browser_start_firefox(win, address);
         else if(browser == webinix.browser.edge)
             return _webinix_browser_start_edge(win, address);
+        else if(browser == webinix.browser.epic)
+            return _webinix_browser_start_epic(win, address);
+        else if(browser == webinix.browser.vivaldi)
+            return _webinix_browser_start_vivaldi(win, address);
+        else if(browser == webinix.browser.brave)
+            return _webinix_browser_start_brave(win, address);
+        else if(browser == webinix.browser.firefox)
+            return _webinix_browser_start_firefox(win, address);
+        else if(browser == webinix.browser.yandex)
+            return _webinix_browser_start_yandex(win, address);
         else if(browser == webinix.browser.chromium)
             return _webinix_browser_start_chromium(win, address);
         else if(browser == webinix.browser.custom)
@@ -2379,20 +2851,28 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
     }
     else if(win->core.CurrentBrowser != 0) {
 
-        // Already set browser
+        // Already used browser
+
         if(win->core.CurrentBrowser == webinix.browser.chrome)
             return _webinix_browser_start_chrome(win, address);
-        else if(win->core.CurrentBrowser == webinix.browser.firefox)
-            return _webinix_browser_start_firefox(win, address);
         else if(win->core.CurrentBrowser == webinix.browser.edge)
             return _webinix_browser_start_edge(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.epic)
+            return _webinix_browser_start_epic(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.vivaldi)
+            return _webinix_browser_start_vivaldi(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.brave)
+            return _webinix_browser_start_brave(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.firefox)
+            return _webinix_browser_start_firefox(win, address);
+        else if(win->core.CurrentBrowser == webinix.browser.yandex)
+            return _webinix_browser_start_yandex(win, address);
         else if(browser == webinix.browser.chromium)
             return _webinix_browser_start_chromium(win, address);
         else if(win->core.CurrentBrowser == webinix.browser.custom)
             return _webinix_browser_start_custom(win, address);
         else
             return false;
-            //webinix::exit();
     }
     else {
 
@@ -2401,30 +2881,39 @@ bool _webinix_browser_start(webinix_window_t* win, const char* address, unsigned
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
             // Windows
             if(!_webinix_browser_start_chrome(win, address))
-                if(!_webinix_browser_start_firefox(win, address))
-                    if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_chromium(win, address))
-                              if(!_webinix_browser_start_custom(win, address))
-                                    return false;
-                                    //webinix::exit();
+                if(!_webinix_browser_start_edge(win, address))
+                    if(!_webinix_browser_start_epic(win, address))
+                        if(!_webinix_browser_start_vivaldi(win, address))
+                            if(!_webinix_browser_start_brave(win, address))
+                                if(!_webinix_browser_start_firefox(win, address))
+                                    if(!_webinix_browser_start_yandex(win, address))
+                                        if(!_webinix_browser_start_chromium(win, address))
+                                            if(!_webinix_browser_start_custom(win, address))
+                                                return false;
         #elif __APPLE__
             // macOS
             if(!_webinix_browser_start_chrome(win, address))
-                if(!_webinix_browser_start_firefox(win, address))
-                    if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_chromium(win, address))
-                              if(!_webinix_browser_start_custom(win, address))
-                                    return false;
-                                    //webinix::exit();
+                if(!_webinix_browser_start_edge(win, address))
+                    if(!_webinix_browser_start_epic(win, address))
+                        if(!_webinix_browser_start_vivaldi(win, address))
+                            if(!_webinix_browser_start_brave(win, address))
+                                if(!_webinix_browser_start_firefox(win, address))
+                                    if(!_webinix_browser_start_yandex(win, address))
+                                        if(!_webinix_browser_start_chromium(win, address))
+                                            if(!_webinix_browser_start_custom(win, address))
+                                                return false;
         #else
             // Linux
             if(!_webinix_browser_start_chrome(win, address))
-                if(!_webinix_browser_start_firefox(win, address))
-                    if(!_webinix_browser_start_edge(win, address))
-                        if(!_webinix_browser_start_chromium(win, address))
-                              if(!_webinix_browser_start_custom(win, address))
-                                    return false;
-                                    //webinix::exit();
+                if(!_webinix_browser_start_edge(win, address))
+                    if(!_webinix_browser_start_epic(win, address))
+                        if(!_webinix_browser_start_vivaldi(win, address))
+                            if(!_webinix_browser_start_brave(win, address))
+                                if(!_webinix_browser_start_firefox(win, address))
+                                    if(!_webinix_browser_start_yandex(win, address))
+                                        if(!_webinix_browser_start_chromium(win, address))
+                                            if(!_webinix_browser_start_custom(win, address))
+                                                return false;
         #endif
     }
 
@@ -2445,7 +2934,6 @@ void webinix_script_cleanup(webinix_script_t* script) {
 
     _webinix_free_mem((void *) &script->result.data);
     _webinix_free_mem((void *) &script->script);
-    memset(script, 0x00, sizeof(webinix_script_t));
 }
 
 void webinix_script(webinix_window_t* win, webinix_script_t* script) {
@@ -2534,8 +3022,8 @@ webinix_window_t* webinix_new_window() {
 
     // Initialisation
     win->core.window_number = _webinix_get_new_window_number();
-    win->core.browser_path = (char*) _webinix_malloc(1024);
-    win->core.profile_path = (char*) _webinix_malloc(1024);
+    win->core.browser_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
+    win->core.profile_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     win->path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     sprintf(win->path, "%s", WEBUI_DEFAULT_PATH);
     
@@ -2620,7 +3108,7 @@ const char* webinix_new_server(webinix_window_t* win, const char* path) {
     // WEBUI_NON_EXIST_BROWSER is to prevent
     // any browser from running. Because we want 
     // to only to run a web-server this time.
-    webinix_show(win, NULL, WEBUI_NON_EXIST_BROWSER);
+    _webinix_show_window(win, NULL, WEBUI_NON_EXIST_BROWSER);
 
     // Wait for server to start
     for(unsigned int n = 0; n < 500; n++) {
@@ -2674,16 +3162,6 @@ void webinix_set_icon(webinix_window_t* win, const char* icon_s, const char* typ
     win->core.icon_type = type_s;
 }
 
-bool webinix_refresh(webinix_window_t* win, const char* html) {
-
-    return webinix_show(win, html, 0);
-}
-
-bool webinix_refresh_cpy(webinix_window_t* win, const char* html) {
-
-    return webinix_show_cpy(win, html, 0);
-}
-
 bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) {
 
     #ifdef WEBUI_LOG
@@ -2722,17 +3200,58 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
     return _webinix_browser_start(win, url, browser);
 }
 
-bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser) {
+bool webinix_show(webinix_window_t* win, const char* content) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_show(html, [%d])... \n", win->core.window_number, browser);
-        printf("- - -[HTML]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", html);
+        printf("[%d] webinix_show()... \n", win->core.window_number);
+    #endif
+
+    size_t content_len = strlen(content);
+
+    // Some wrappers does not guarantee `content` to
+    // stay valid, so, let's make a copy right now.
+    char* content_cpy = (char*) webinix_empty_string;
+    if(content_len > 1) {
+        content_cpy = _webinix_malloc(content_len + 1);
+        memcpy(content_cpy, content, content_len);
+    }
+
+    // Check if this is an HTML script or a file name
+    if(strstr(content_cpy, "<html")) {
+
+        // Handel the static HTML script
+        #ifdef WEBUI_LOG
+            printf("[%d] webinix_show()... -> Static HTML Script:\n", win->core.window_number);
+            printf("- - -[HTML]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", content_cpy);
+        #endif
+        win->core.server_root = false;
+        return _webinix_show_window(win, content_cpy, webinix.browser.any);
+    }
+    
+    // Handel the file
+    #ifdef WEBUI_LOG
+        printf("[%d] webinix_show()... -> File: [%s]\n", win->core.window_number, content_cpy);
+    #endif
+    if(content_len > WEBUI_MAX_PATH || strstr(content_cpy, "<"))
+        return false;
+    if(win->core.url == NULL)
+        webinix_new_server(win, "");
+    // URL: [localhost:port][/][filename]
+    char* url = (char*) _webinix_malloc(strlen(win->core.url) + 1 + content_len);
+    sprintf(url, "%s/%s", win->core.url, content_cpy);
+    return webinix_open(win, url, win->core.CurrentBrowser);
+}
+
+bool _webinix_show_window(webinix_window_t* win, const char* html, unsigned int browser) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] _webinix_show_window(html, [%d])... \n", win->core.window_number, browser);
     #endif
 
     _webinix_init();
 
     // Initializing
-    win->core.html = html == NULL ? webinix_empty_string : html;
+    win->core.html = (html == NULL ? webinix_empty_string : html);
     win->core.server_handled = false;
     webinix.wait_for_socket_window = true;
 
@@ -2792,31 +3311,6 @@ bool webinix_show(webinix_window_t* win, const char* html, unsigned int browser)
     }
 
     return true;
-}
-
-bool webinix_show_cpy(webinix_window_t* win, const char* html, unsigned int browser) {
-
-    #ifdef WEBUI_LOG
-        printf("[%d] webinix_show_cpy(html, [%d])... \n", win->core.window_number, browser);
-    #endif
-
-    // Copy HTML, And show the window
-
-    // Free
-    if(win->core.html_cpy != NULL)
-        _webinix_free_mem((void *) &win->core.html_cpy);
-    
-    // Allocate
-    char* cpy = (char*) webinix_empty_string;
-    size_t len = strlen(html);
-    if(len > 1) {
-
-        cpy = _webinix_malloc(len + 1);
-        memcpy(cpy, html, len);
-    }
-    
-    // Show window
-    return webinix_show(win, cpy, browser);
 }
 
 void webinix_bind_all(webinix_window_t* win, void (*func)(webinix_event_t* e)) {
@@ -3147,16 +3641,18 @@ const char* webinix_get_string(webinix_event_t* e) {
     return webinix_empty_string;
 }
 
-int webinix_get_int(webinix_event_t* e) {
+long long int webinix_get_int(webinix_event_t* e) {
     
     #ifdef WEBUI_LOG
         printf("[0] webinix_get_int()... \n");
     #endif
 
+    char *endptr;
+
     if(e->data != NULL) {
         size_t len = strlen(e->data);
-        if(len > 0 && len <= 24) // long long has ~19 char len
-            return atoi((const char *) e->data);
+        if(len > 0 && len <= 20) // 64-bit max is -9,223,372,036,854,775,808 (20 character)
+            return strtoll((const char *) e->data, &endptr, 10);
     }
     
     return 0;
@@ -3168,22 +3664,23 @@ bool webinix_get_bool(webinix_event_t* e) {
         printf("[0] webinix_get_bool()... \n");
     #endif
 
-    if(webinix_get_int(e) == 0)
-        return false;
+    const char* str = webinix_get_string(e);
+    if(str[0] == 't' || str[0] == 'T') // true || True
+        return true;
     
-    return true;
+        return false;
 }
 
-void webinix_return_int(webinix_event_t* e, int n) {
+void webinix_return_int(webinix_event_t* e, long long int n) {
 
     #ifdef WEBUI_LOG
-        printf("[%d] webinix_return_int([%d])... \n", e->window_id, n);
+        printf("[%d] webinix_return_int([%lld])... \n", e->window_id, n);
     #endif
 
     // Int to Str
-    int len = (int)((ceil(log10(n))) * sizeof(char));
-    char* buf = (char*) _webinix_malloc(len + 1);
-    sprintf(buf, "%d", n);
+    // 64-bit max is -9,223,372,036,854,775,808 (20 character)
+    char* buf = (char*) _webinix_malloc(32);
+    sprintf(buf, "%lld", n);
 
     // Set response
     e->response = buf;
@@ -3516,6 +4013,11 @@ void _webinix_init() {
     webinix.browser.edge          = 3;
     webinix.browser.safari        = 4;
     webinix.browser.chromium      = 5;
+    webinix.browser.opera         = 6;
+    webinix.browser.brave         = 7;
+    webinix.browser.vivaldi       = 8;
+    webinix.browser.epic          = 9;
+    webinix.browser.yandex        = 10;
     webinix.browser.custom        = 99;
     webinix.runtime.deno          = 1;
     webinix.runtime.nodejs        = 2;
