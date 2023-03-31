@@ -1,5 +1,5 @@
 # Webinix Library
-# MacOS - Clang
+# macOS - Clang
 
 SOURCE=../../../src
 INCLUDE=../../../include
@@ -11,8 +11,8 @@ debug:
 	@echo "Build Webinix Library (Debug Static)..."
 	@clang -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@clang -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@ar rc libwebinix-2-aarch64-apple-darwin.a webinix.o mongoose.o
-	@ranlib libwebinix-2-aarch64-apple-darwin.a
+	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ranlib libwebinix-2-static-x64.a
 #	Dynamic with Debug info
 	@echo "Build Webinix Library (Debug Dynamic)..."
 	@clang -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
@@ -27,8 +27,8 @@ release:
 	@echo "Build Webinix Library (Release Static)..."
 	@clang -Os -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
 	@clang -Os -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@ar rc libwebinix-2-aarch64-apple-darwin.a webinix.o mongoose.o
-	@ranlib libwebinix-2-aarch64-apple-darwin.a
+	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ranlib libwebinix-2-static-x64.a
 #	Dynamic Release
 	@echo "Build Webinix Library (Release Dynamic)..."
 	@clang -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c"
