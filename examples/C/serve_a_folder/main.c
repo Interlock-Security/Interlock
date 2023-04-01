@@ -11,6 +11,21 @@ void exit_app(webinix_event_t* e) {
     webinix_exit();
 }
 
+void events(webinix_event_t* e) {
+
+    // This function gets called every time
+    // there is an event
+
+    if(e->type == WEBUI_EVENT_CONNECTED)
+        printf("Connected. \n");
+    else if(e->type == WEBUI_EVENT_DISCONNECTED)
+        printf("Disconnected. \n");
+    else if(e->type == WEBUI_EVENT_MOUSE_CLICK)
+        printf("Click. \n");
+    else if(e->type == WEBUI_EVENT_NAVIGATION)
+        printf("Starting navigation to: %s \n", (char *)e->data);
+}
+
 void switch_to_second_page(webinix_event_t* e) {
 
     // This function gets called every
@@ -41,6 +56,9 @@ int main() {
     webinix_bind(my_window, "OpenNewWindow", show_second_window);
     webinix_bind(my_window, "Exit", exit_app);
     webinix_bind(my_second_window, "Exit", exit_app);
+
+    // Bind events
+    webinix_bind(my_window, "", events);
 
     // Show a new window
     webinix_show(my_window, "index.html");

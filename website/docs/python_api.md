@@ -137,13 +137,13 @@ MyWindow.bind("MyID", my_function)
 ---
 ### Bind All
 
-You can also automatically bind all HTML elements with one function call.
+You can listen for events by biding an empty ID.
 
 ```python
-def all_clicks(e : webinix.event)
+def events(e : webinix.event)
 	...
 
-MyWindow.bind_all(all_clicks)
+MyWindow.bind("", events)
 ```
 
 ---

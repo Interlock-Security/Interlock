@@ -1,5 +1,5 @@
 
-# Webinix Library 2.1.0
+# Webinix Library 2.1.1
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -140,22 +140,6 @@ class window:
             Webinix.webinix_bind_interface(
                 self.window,
                 element.encode('utf-8'),
-                self.c_events))
-        self.cb_fun_list.insert(cb_index, func)
-
-
-    def bind_all(self, func):
-        global Webinix
-        if self.window is None:
-            err_window_is_none('bind')
-            return
-        if Webinix is None:
-            err_library_not_found('bind')
-            return
-        cb_index = int(
-            Webinix.webinix_bind_interface(
-                self.window,
-                "".encode('utf-8'),
                 self.c_events))
         self.cb_fun_list.insert(cb_index, func)
 

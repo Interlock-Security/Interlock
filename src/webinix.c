@@ -1,5 +1,5 @@
 /*
-    Webinix Library 2.1.0
+    Webinix Library 2.1.1
     
     http://webinix.me
     https://github.com/alifcommunity/webinix
@@ -38,6 +38,7 @@ static const char* webinix_javascript_bridge =
 "var _webinix_ws_status_once = false; \n"
 "var _webinix_close_reason = 0; \n"
 "var _webinix_close_value; \n"
+"var _webinix_has_events = false; \n"
 "const _WEBUI_SIGNATURE = 255; \n"
 "const _WEBUI_JS = 254; \n"
 "const _WEBUI_CLICK = 253; \n"
@@ -45,6 +46,7 @@ static const char* webinix_javascript_bridge =
 "const _WEBUI_CLOSE = 251; \n"
 "const _WEBUI_FUNCTION = 250; \n"
 "function _webinix_close(reason = 0, value = 0) { \n"
+"    _webinix_send_event_navigation(value); \n"
 "    _webinix_ws_status = false; \n"
 "    _webinix_close_reason = reason; \n"
 "    _webinix_close_value = value; \n"
@@ -55,6 +57,7 @@ static const char* webinix_javascript_bridge =
 "} \n"
 "function _webinix_start() { \n"
 "    if('WebSocket' in window) { \n"
+"        if(_webinix_bind_list.includes(_webinix_win_num + '/')) _webinix_has_events = true; \n"
 "        _webinix_ws = new WebSocket('ws://localhost:' + _webinix_port + '/_ws'); \n"
 "        _webinix_ws.binaryType = 'arraybuffer'; \n"
 "        _webinix_ws.onopen = function () { \n"
@@ -131,7 +134,7 @@ static const char* webinix_javascript_bridge =
 "        if(/^on(click)/.test(key)) { \n"
 "            window.addEventListener(key.slice(2),event=>{ \n"
 "                if(event.target.id !== '') { \n"
-"                    if(_webinix_bind_all || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
+"                    if(_webinix_has_events || _webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)) \n"
 "                        _webinix_send_click(event.target.id); \n"
 "                } \n"
 "            }); \n"
@@ -153,8 +156,25 @@ static const char* webinix_javascript_bridge =
 "            console.log('Webinix -> Click [' + elem + ']'); \n"
 "    } \n"
 "} \n"
+"function _webinix_send_event_navigation(url) { \n"
+"    if(_webinix_ws_status && url !== '') { \n"
+"        var url8 = new TextEncoder('utf-8').encode(url); \n"
+"        var packet = new Uint8Array(3 + url8.length); \n"
+"        packet[0] = _WEBUI_SIGNATURE; \n"
+"        packet[1] = _WEBUI_SWITCH; \n"
+"        packet[2] = 0; \n"
+"        var p = -1; \n"
+"        for (i = 3; i < url8.length + 3; i++) \n"
+"            packet[i] = url8[++p]; \n"
+"        _webinix_ws.send(packet.buffer); \n"
+"        if(_webinix_log) \n"
+"            console.log('Webinix -> Navigation [' + url + ']'); \n"
+"    } \n"
+"} \n"
 " // -- APIs -------------------------- \n"
 "function webinix_fn(fn, value) { \n"
+"    if(!_webinix_has_events && !_webinix_bind_list.includes(_webinix_win_num + '/' + fn)) \n"
+"        return; \n"
 "    var data = ''; \n"
 "    if(_webinix_ws_status && fn !== '') { \n"
 "        if(_webinix_log) \n"
@@ -187,7 +207,7 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "}); \n"
 "window.onbeforeunload = function () { \n"
-"   _webinix_ws.close(); \n"
+"   //_webinix_ws.close(); \n"
 "}; \n"
 "setTimeout(function () { \n"
 "    if(!_webinix_ws_status_once) { \n"
@@ -209,6 +229,10 @@ static const char* webinix_javascript_bridge =
 "        e.preventDefault(); \n"
 "        _webinix_close(_WEBUI_SWITCH, link); \n"
 "    } \n"
+"}); \n"
+"navigation.addEventListener('navigate', (event) => { \n"
+"    const url = new URL(event.destination.url); \n"
+"    _webinix_send_event_navigation(url); \n"
 "}); \n"
 "// Load \n"
 "window.addEventListener('load', _webinix_start()); \n";
@@ -372,15 +396,36 @@ void _webinix_panic() {
     exit(EXIT_FAILURE);
 }
 
-void* _webinix_malloc(size_t size) {
+size_t round_to_memory_block(int size) {
+
+    // If size is negative
+    if(size < 4)
+        size = 4;
+
+    // If size is already a full block
+    // we should return the same block
+    size--;
+
+    int block_size = 4;
+    while (block_size <= size)
+        block_size *= 2;
+
+    return (size_t)block_size;
+}
+
+void* _webinix_malloc(int size) {
     
     #ifdef WEBUI_LOG
         // printf("[0] _webinix_malloc([%d])... \n", size);
     #endif
-
+    
+    // Make sure we have the null
+    // terminator if it's a string
     size++;
-    void* block;
 
+    size = round_to_memory_block(size);
+
+    void* block = NULL;
     for(unsigned int i = 0; i < 8; i++) {
 
         if(size > WEBUI_MAX_BUF)
@@ -508,13 +553,14 @@ bool _webinix_file_exist_mg(void *ev_data) {
     struct mg_http_message *hm = (struct mg_http_message *) ev_data;
 
     // Get file name
-    file = (char*) _webinix_malloc(hm->uri.len + 1);
+    file = (char*) _webinix_malloc(hm->uri.len);
     const char* p = hm->uri.ptr;
     p++; // Skip "/"
     sprintf(file, "%.*s", (int)(hm->uri.len - 1), p);
 
     // Get full path
-    full_path = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + strlen(file) + 1);
+    // [current folder][/][file]
+    full_path = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + strlen(file));
     sprintf(full_path, "%s%s%s", webinix.executable_path, webinix_sep, file);
 
     bool exist = _webinix_file_exist(full_path);
@@ -751,9 +797,9 @@ const char* _webinix_interpret_command(const char* cmd) {
     int len = 1024 * 8;
 
     // Read STDOUT
-    char* out = (char*) _webinix_malloc(len + 1);
-    char* line = (char*) _webinix_malloc(1024);
-    while(fgets(line, 1024, runtime) != NULL)
+    char* out = (char*) _webinix_malloc(len);
+    char* line = (char*) _webinix_malloc(4000);
+    while(fgets(line, 4000, runtime) != NULL)
         strcat(out, line);
 
     WEBUI_PCLOSE(runtime);
@@ -788,13 +834,14 @@ void _webinix_interpret_file(webinix_window_t* win, struct mg_connection *c, voi
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
 
         // Get file name
-        file = (char*) _webinix_malloc(hm->uri.len + 1);
+        file = (char*) _webinix_malloc(hm->uri.len);
         const char* p = hm->uri.ptr;
         p++; // Skip "/"
         sprintf(file, "%.*s", (int)(hm->uri.len - 1), p);
 
         // Get full path
-        full_path = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + strlen(file) + 1);
+        // [current folder][/][file]
+        full_path = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + strlen(file));
         sprintf(full_path, "%s%s%s", webinix.executable_path, webinix_sep, file);
 
         if(!_webinix_file_exist(full_path)) {
@@ -822,7 +869,8 @@ void _webinix_interpret_file(webinix_window_t* win, struct mg_connection *c, voi
             if(_webinix_deno_exist()) {
 
                 // Set command
-                char* cmd = (char*) _webinix_malloc(64 + strlen(full_path) + 1);
+                // [disable coloring][file]
+                char* cmd = (char*) _webinix_malloc(64 + strlen(full_path));
                 #ifdef _WIN32
                     sprintf(cmd, "Set NO_COLOR=1 & deno run --allow-all \"%s\"", full_path);
                 #else
@@ -869,7 +917,8 @@ void _webinix_interpret_file(webinix_window_t* win, struct mg_connection *c, voi
             if(_webinix_nodejs_exist()) {
 
                 // Set command
-                char* cmd = (char*) _webinix_malloc(64 + strlen(full_path) + 1);
+                // [node][file]
+                char* cmd = (char*) _webinix_malloc(16 + strlen(full_path));
                 sprintf(cmd, "node \"%s\"", full_path);
 
                 // Run command
@@ -930,20 +979,13 @@ const char* _webinix_generate_js_bridge(webinix_window_t* win) {
     #endif
 
     // Calculate the cb size
-    size_t cb_mem_size = 256; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
+    size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
     for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++)
         if(!_webinix_is_empty(webinix.html_elements[i]))
             cb_mem_size += strlen(webinix.html_elements[i]) + 3;
     
-    // Generate the cb-all flag
-    char* event_cb_js_array = (char*) _webinix_malloc(cb_mem_size);
-    strcat(event_cb_js_array, "\n const _webinix_bind_all = ");
-    if(win->core.is_bind_all && win->core.cb_all[0] != NULL)
-        strcat(event_cb_js_array, "true; \n");
-    else
-        strcat(event_cb_js_array, "false; \n");
-    
     // Generate the cb array
+    char* event_cb_js_array = (char*) _webinix_malloc(cb_mem_size);
     strcat(event_cb_js_array, "const _webinix_bind_list = [");
     for(unsigned int i = 1; i < WEBUI_MAX_ARRAY; i++) {
         if(!_webinix_is_empty(webinix.html_elements[i])) {
@@ -1073,8 +1115,8 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 win->core.server_handled = true;
 
                 // Set full path
-                // [Path][Sep][Index File Name][Null]
-                char* index = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + 8 + 1); 
+                // [Path][Sep][File Name]
+                char* index = (char*) _webinix_malloc(strlen(webinix.executable_path) + 1 + 8); 
 
                 // Index.ts
                 sprintf(index, "%s%sindex.ts", webinix.executable_path, webinix_sep);
@@ -1190,7 +1232,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
             // Copy packet
             size_t len = hm->uri.len;
-            char* packet = (char*) _webinix_malloc(len + 1);
+            char* packet = (char*) _webinix_malloc(len);
             memcpy(packet, hm->uri.ptr, len);
 
             // Get html element id
@@ -1212,9 +1254,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
             size_t data_len = strlen(data);
 
             // Generate Webinix internal id
-            size_t internal_id_size = 3 + 1 + element_len + 1; // [win num][/][name][null]
-            char* webinix_internal_id = (char*) _webinix_malloc(internal_id_size);
-            sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
+            char* webinix_internal_id = _webinix_generate_internal_id(win, element);
 
             // Call user function
             webinix_event_t e;
@@ -1223,6 +1263,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
             e.window = win;
             e.data = data;
             e.response = NULL;
+            e.type = WEBUI_EVENT_CALLBACK;
 
             unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
 
@@ -1232,13 +1273,6 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 // Call user cb
                 e.element_id = cb_index;
                 webinix.cb[cb_index](&e);
-            }
-            // Check for bind-all
-            else if(win->core.is_bind_all && win->core.cb_all[0] != NULL) {
-
-                // Call user cb
-                e.element_id = 0;
-                win->core.cb_all[0](&e);
             }
 
             if(_webinix_is_empty(e.response))
@@ -1352,12 +1386,14 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
             printf("[%d] _webinix_server_event_handler()... WebSocket Connected\n", win->core.window_number);
         #endif
 
+        int event_type = WEBUI_EVENT_CONNECTED;
+
         if(!win->core.connected) {
 
             // First connection
 
-            webinix.connections++;                                // main loop
             win->core.connected = true;                         // server thread
+            webinix.connections++;                                // main loop
             webinix.mg_connections[win->core.window_number] = c;  // websocket send func
         }
         else {
@@ -1366,6 +1402,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
                 // Multi connections
                 win->core.connections++;
+                event_type = WEBUI_EVENT_MULTI_CONNECTION;
             }
             else {
 
@@ -1376,8 +1413,21 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 #endif
 
                 mg_close_conn(c);
+                event_type = WEBUI_EVENT_UNWANTED_CONNECTION;
             }
         }
+
+        // Generate Webinix internal id
+        char* webinix_internal_id = _webinix_generate_internal_id(win, "");
+
+        _webinix_window_event(
+            win,                // Window
+            webinix_internal_id,  // Webinix Internal ID
+            "",                 // User HTML ID
+            NULL,               // User Custom Data
+            0,                  // User Data Len
+            event_type          // Type of this event
+        );
     }
     else if(ev == MG_EV_WS_CTL) {
 
@@ -1399,6 +1449,18 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 win->core.connected = false;    // server thread                
             }
         }
+
+        // Generate Webinix internal id
+        char* webinix_internal_id = _webinix_generate_internal_id(win, "");
+
+        _webinix_window_event(
+            win,                        // Window
+            webinix_internal_id,          // Webinix Internal ID
+            "",                         // User HTML ID
+            NULL,                       // User Custom Data
+            0,                          // User Data Len
+            WEBUI_EVENT_DISCONNECTED    // Type of this event
+        );
     }
 }
 
@@ -1575,7 +1637,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
     #ifdef _WIN32
         return 0;
-    #elif __linux__
+    #else
         pthread_exit(NULL);
     #endif
 }
@@ -1724,6 +1786,21 @@ bool _webinix_folder_exist(char* folder) {
     #endif
 
     return false;
+}
+
+char* _webinix_generate_internal_id(webinix_window_t* win, const char* element) {
+
+    #ifdef WEBUI_LOG
+        printf("[%d] _webinix_generate_internal_id([%s])... \n", win->core.window_number, element);
+    #endif
+
+    // Generate Webinix internal id
+    size_t element_len = strlen(element);
+    size_t internal_id_size = 3 + 1 + element_len; // [win num][/][name]
+    char* webinix_internal_id = (char*) _webinix_malloc(internal_id_size);
+    sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
+
+    return webinix_internal_id;
 }
 
 const char* _webinix_browser_get_temp_path(unsigned int browser) {
@@ -2469,7 +2546,7 @@ int _webinix_cmd_async(char* cmd, bool show) {
 
     #ifdef _WIN32
         return 0;
-    #elif __linux__
+    #else
         pthread_exit(NULL);
     #endif
 }
@@ -2489,7 +2566,7 @@ int _webinix_run_browser(webinix_window_t* win, char* cmd) {
 
         webinix_cmd_async_t* arg = (webinix_cmd_async_t*) _webinix_malloc(sizeof(webinix_cmd_async_t));
         arg->win = win;
-        arg->cmd = (char*) _webinix_malloc(strlen(cmd) + 1);
+        arg->cmd = (char*) _webinix_malloc(strlen(cmd));
         strcpy(arg->cmd, cmd);
 
         #ifdef _WIN32
@@ -2970,7 +3047,7 @@ void webinix_script(webinix_window_t* win, webinix_script_t* script) {
     _webinix_free_mem((void *) &webinix.run_responses[run_id]);
 
     // Prepare the packet
-    size_t packet_len = 3 + js_len + 1; // [header][js][null]
+    size_t packet_len = 3 + js_len + 1; // [header][js]
     char* packet = (char*) _webinix_malloc(packet_len);
     packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
     packet[1] = WEBUI_HEADER_JS;        // Type
@@ -3183,7 +3260,7 @@ bool webinix_open(webinix_window_t* win, const char* url, unsigned int browser) 
         #endif
 
         // Prepare packets
-        size_t packet_len = 3 + strlen(url) + 1; // [header][url][null]
+        size_t packet_len = 3 + strlen(url) + 1; // [header][url]
         char* packet = (char*) _webinix_malloc(packet_len);
         packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
         packet[1] = WEBUI_HEADER_SWITCH;    // Type
@@ -3214,7 +3291,7 @@ bool webinix_show(webinix_window_t* win, const char* content) {
     // stay valid, so, let's make a copy right now.
     char* content_cpy = (char*) webinix_empty_string;
     if(content_len > 1) {
-        content_cpy = _webinix_malloc(content_len + 1);
+        content_cpy = _webinix_malloc(content_len);
         memcpy(content_cpy, content, content_len);
     }
 
@@ -3269,7 +3346,7 @@ bool _webinix_show_window(webinix_window_t* win, const char* html, unsigned int 
         unsigned int port = _webinix_get_free_port();
         win->core.server_port = port;
         _webinix_free_mem((void *) &win->core.url);
-        win->core.url = (char*) _webinix_malloc(256);
+        win->core.url = (char*) _webinix_malloc(2000);
         sprintf(win->core.url, "http://localhost:%d", port);
 
         // Run browser
@@ -3287,7 +3364,7 @@ bool _webinix_show_window(webinix_window_t* win, const char* html, unsigned int 
             win->core.server_thread = thread;
             if(thread != NULL)
                 CloseHandle(thread);
-        #elif __linux__
+        #else
             pthread_t thread;
             pthread_create(&thread, NULL, &webinix_server_start, (void *) win);
             pthread_detach(thread);
@@ -3299,7 +3376,7 @@ bool _webinix_show_window(webinix_window_t* win, const char* html, unsigned int 
         // Refresh an existing running window
 
         // Prepare packets
-        size_t packet_len = 3 + strlen(win->core.url) + 1; // [header][url][null]
+        size_t packet_len = 3 + strlen(win->core.url) + 1; // [header][url]
         char* packet = (char*) _webinix_malloc(packet_len);
         packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
         packet[1] = WEBUI_HEADER_SWITCH;    // Type
@@ -3315,16 +3392,6 @@ bool _webinix_show_window(webinix_window_t* win, const char* html, unsigned int 
     return true;
 }
 
-void webinix_bind_all(webinix_window_t* win, void (*func)(webinix_event_t* e)) {
-
-    #ifdef WEBUI_LOG
-        printf("[%d] webinix_bind_all([*])... \n", win->core.window_number);
-    #endif
-
-    win->core.cb_all[0] = func;
-    win->core.is_bind_all = true;
-}
-
 unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*func)(webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
@@ -3333,7 +3400,14 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 
     _webinix_init();
 
-    char* webinix_internal_id = _webinix_malloc(strlen(element));
+    int len = 0;
+    if(_webinix_is_empty(element))
+        win->core.has_events = true;
+    else
+        len = strlen(element);
+
+    // [win num][/][element]
+    char* webinix_internal_id = _webinix_malloc(3 + 1 + len);
     sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
 
     unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
@@ -3377,22 +3451,33 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
     e.window = arg->win;
     e.data = arg->data;
     e.response = NULL;
+    e.type = arg->event_type;
 
-    unsigned int cb_index = _webinix_get_cb_index(arg->webinix_internal_id);
+    // Check for the events-bind function
+    if(arg->win->core.has_events) {
 
-    // Check for bind
-    if(cb_index > 0 && webinix.cb[cb_index] != NULL) {
+        char* events_id = _webinix_generate_internal_id(arg->win, "");
+        unsigned int events_cb_index = _webinix_get_cb_index(events_id);
+        _webinix_free_mem((void *) &events_id);
 
-        // Call user cb
-        e.element_id = cb_index;
-        webinix.cb[cb_index](&e);
+        if(events_cb_index > 0 && webinix.cb[events_cb_index] != NULL) {
+
+            // Call user events cb
+            e.element_id = 0;
+            webinix.cb[events_cb_index](&e);
+        }
     }
-    // Check for bind-all
-    else if(arg->win->core.is_bind_all && arg->win->core.cb_all[0] != NULL) {
 
-        // Call user cb
-        e.element_id = 0;
-        arg->win->core.cb_all[0](&e);
+    // Check for the bind function
+    if(!_webinix_is_empty(arg->element_name)) {
+
+        unsigned int cb_index = _webinix_get_cb_index(arg->webinix_internal_id);
+        if(cb_index > 0 && webinix.cb[cb_index] != NULL) {
+
+            // Call user cb
+            e.element_id = cb_index;
+            webinix.cb[cb_index](&e);
+        }
     }
 
     #ifdef WEBUI_LOG
@@ -3406,12 +3491,12 @@ unsigned int webinix_bind(webinix_window_t* win, const char* element, void (*fun
 
     #ifdef _WIN32
         return 0;
-    #elif __linux__
+    #else
         pthread_exit(NULL);
     #endif
 }
 
-void _webinix_window_event(webinix_window_t* win, char* webinix_internal_id, char* element, void* data, unsigned int data_len) {
+void _webinix_window_event(webinix_window_t* win, char* webinix_internal_id, char* element, void* data, unsigned int data_len, int event_type) {
 
     #ifdef WEBUI_LOG
         printf("[%d] _webinix_window_event([%s], [%s])... \n", win->core.window_number, webinix_internal_id, element);
@@ -3422,10 +3507,15 @@ void _webinix_window_event(webinix_window_t* win, char* webinix_internal_id, cha
     arg->win = win;
     arg->webinix_internal_id = webinix_internal_id;
     arg->element_name = element;
-    if(data != NULL)
+    arg->event_type = event_type;
+    if(data != NULL) {
         arg->data = data;
-    else
+        arg->data_len = data_len;
+    }
+    else {
         arg->data = (void*) webinix_empty_string;
+        arg->data_len = 0;
+    }
 
     #ifdef _WIN32
         HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
@@ -3474,7 +3564,7 @@ bool _webinix_get_data(const char* packet, size_t packet_len, unsigned int pos, 
         return false;
     }
 
-    *data = (char*) _webinix_malloc((packet_len - pos) + 1);
+    *data = (char*) _webinix_malloc((packet_len - pos));
 
     // Check mem
     if(*data == NULL) {
@@ -3521,7 +3611,7 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
 
         // 0: [Signature]
         // 1: [Type]
-        // 2: [Null]
+        // 2: 
         // 3: [Data]
 
         // Get html element id
@@ -3531,16 +3621,15 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
             return;
 
         // Generate Webinix internal id
-        size_t internal_id_size = 3 + 1 + element_len + 1; // [win num][/][name][null]
-        char* webinix_internal_id = (char*) _webinix_malloc(internal_id_size);
-        sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
+        char* webinix_internal_id = _webinix_generate_internal_id(win, element);
 
         _webinix_window_event(
             win,                // Window
             webinix_internal_id,  // Webinix Internal ID
             element,            // User HTML ID
             NULL,               // User Custom Data
-            0                   // User Data Len
+            0,                  // User Data Len
+            WEBUI_EVENT_MOUSE_CLICK // Type of this event
         );
     }
     else if((unsigned char) packet[1] == WEBUI_HEADER_JS) {
@@ -3598,7 +3687,7 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
 
         // 0: [Signature]
         // 1: [Type]
-        // 2: [Null]
+        // 2: 
         // 3: [ID, Null, Data]
 
         // Get html element id
@@ -3614,16 +3703,42 @@ void _webinix_window_receive(webinix_window_t* win, const char* packet, size_t l
             return;
 
         // Generate Webinix internal id
-        size_t internal_id_size = 3 + 1 + element_len + 1; // [win num][/][name][null]
-        char* webinix_internal_id = (char*) _webinix_malloc(internal_id_size);
-        sprintf(webinix_internal_id, "%d/%s", win->core.window_number, element);
+        char* webinix_internal_id = _webinix_generate_internal_id(win, element);
 
         _webinix_window_event(
             win,                // Window
             webinix_internal_id,  // Webinix Internal ID
             element,            // User HTML ID
             data,               // User Custom Data
-            data_len            // User Data Len
+            data_len,           // User Data Len
+            WEBUI_EVENT_CALLBACK    // Type of this event
+        );
+    }
+    else if((unsigned char) packet[1] == WEBUI_HEADER_SWITCH) {
+
+        // Navigation Event
+
+        // 0: [Signature]
+        // 1: [Type]
+        // 2: 
+        // 3: [URL]
+
+        // Get URL
+        char* url;
+        size_t url_len;
+        if(!_webinix_get_data(packet, len, 3, &url_len, &url))
+            return;
+
+        // Generate Webinix internal id
+        char* webinix_internal_id = _webinix_generate_internal_id(win, "");
+
+        _webinix_window_event(
+            win,                // Window
+            webinix_internal_id,  // Webinix Internal ID
+            "",                 // HTML ID
+            url,                // URL
+            url_len,            // URL Len
+            WEBUI_EVENT_NAVIGATION // Type of this event
         );
     }
 }
@@ -3681,7 +3796,7 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
 
     // Int to Str
     // 64-bit max is -9,223,372,036,854,775,808 (20 character)
-    char* buf = (char*) _webinix_malloc(32);
+    char* buf = (char*) _webinix_malloc(20);
     sprintf(buf, "%lld", n);
 
     // Set response
@@ -3699,7 +3814,7 @@ void webinix_return_string(webinix_event_t* e, char* s) {
 
     // Copy Str
     int len = strlen(s);
-    char* buf = (char*) _webinix_malloc(len + 1);
+    char* buf = (char*) _webinix_malloc(len);
     memcpy(buf, s, len);
 
     // Set response
@@ -3714,7 +3829,7 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
 
     // Bool to Str
     int len = 1;
-    char* buf = (char*) _webinix_malloc(len + 1);
+    char* buf = (char*) _webinix_malloc(len);
     sprintf(buf, "%d", b);
 
     // Set response
@@ -4086,7 +4201,7 @@ void webinix_bind_interface_handler(webinix_event_t* e) {
         // The response pointer is not guaranteed to stay live
         // so let's make our own copy.
         size_t len = strlen((const char *)e->response);
-        char* new_cpy = (char*)_webinix_malloc(len + 1);
+        char* new_cpy = (char*)_webinix_malloc(len);
         memcpy(new_cpy, e->response, len);
         e->response = new_cpy;
     }
@@ -4096,40 +4211,16 @@ void webinix_bind_interface_handler(webinix_event_t* e) {
     #endif
 }
 
-void webinix_bind_interface_all_handler(webinix_event_t* e) {
-
-    #ifdef WEBUI_LOG
-        printf("[%d] webinix_bind_interface_all_handler()... \n", e->window_id);
-    #endif
-
-    if(webinix.cb_interface_all[0] != NULL)
-        webinix.cb_interface_all[0](e->element_id, e->window_id, e->element_name, e->window, (char*)e->data, (char**)&e->response);
-
-    #ifdef WEBUI_LOG
-        printf("[%d] webinix_bind_interface_all_handler()... user-callback response [%s]\n", e->window_id, (const char *)e->response);
-    #endif
-}
-
 unsigned int webinix_bind_interface(webinix_window_t* win, const char* element, void (*func)(unsigned int, unsigned int, char*, webinix_window_t*, char*, char**)) {
 
     #ifdef WEBUI_LOG
         printf("[%d] webinix_bind_interface()... \n", win->core.window_number);
     #endif
 
-    if(_webinix_is_empty(element)) {
-
-        // Bind All
-        webinix_bind_all(win, webinix_bind_interface_all_handler);
-        webinix.cb_interface_all[0] = func;
-        return 0;
-    }
-    else {
-
-        // Bind
-        unsigned int cb_index = webinix_bind(win, element, webinix_bind_interface_handler);
-        webinix.cb_interface[cb_index] = func;
-        return cb_index;
-    }
+    // Bind
+    unsigned int cb_index = webinix_bind(win, element, webinix_bind_interface_handler);
+    webinix.cb_interface[cb_index] = func;
+    return cb_index;
 }
 
 void webinix_script_interface(webinix_window_t* win, const char* script, unsigned int timeout, bool* error, unsigned int* length, char** data) {

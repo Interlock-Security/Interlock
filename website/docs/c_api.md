@@ -179,16 +179,16 @@ webinix_bind(my_window, "MyID", my_function);
 ```
 
 ---
-### Bind All
+### Events
 
-You can also automatically bind all HTML elements with one function call.
+You can listen for events by biding an empty ID.
 
 ```c
-void all_clicks(webinix_event_t* e) {
+void events(webinix_event_t* e) {
     ...
 }
 
-webinix_bind_all(my_window, all_clicks);
+webinix_bind(my_window, "", events);
 ```
 
 ---
