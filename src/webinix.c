@@ -52,15 +52,15 @@ static const char* webinix_javascript_bridge =
 "    _webinix_close_value = value; \n"
 "    _webinix_ws.close(); \n"
 "} \n"
-"function _webinix_freeze_ui(void) { \n"
+"function _webinix_freeze_ui() { \n"
 "    document.body.style.filter = 'contrast(1%)'; \n"
 "} \n"
-"function _webinix_start(void) { \n"
+"function _webinix_start() { \n"
 "    if('WebSocket' in window) { \n"
 "        if(_webinix_bind_list.includes(_webinix_win_num + '/')) _webinix_has_events = true; \n"
 "        _webinix_ws = new WebSocket('ws://localhost:' + _webinix_port + '/_ws'); \n"
 "        _webinix_ws.binaryType = 'arraybuffer'; \n"
-"        _webinix_ws.onopen = function (void) { \n"
+"        _webinix_ws.onopen = function () { \n"
 "            _webinix_ws.binaryType = 'arraybuffer'; \n"
 "            _webinix_ws_status = true; \n"
 "            _webinix_ws_status_once = true; \n"
@@ -68,7 +68,7 @@ static const char* webinix_javascript_bridge =
 "                console.log('Webinix -> Connected'); \n"
 "            _webinix_clicks_listener(); \n"
 "        }; \n"
-"        _webinix_ws.onerror = function (void) { \n"
+"        _webinix_ws.onerror = function () { \n"
 "            if(_webinix_log) \n"
 "                console.log('Webinix -> Connection Failed'); \n"
 "            _webinix_freeze_ui(); \n"
@@ -129,7 +129,7 @@ static const char* webinix_javascript_bridge =
 "        if(!_webinix_log) window.close(); \n"
 "    } \n"
 "} \n"
-"function _webinix_clicks_listener(void) { \n"
+"function _webinix_clicks_listener() { \n"
 "    Object.keys(window).forEach(key=>{ \n"
 "        if(/^on(click)/.test(key)) { \n"
 "            window.addEventListener(key.slice(2),event=>{ \n"
@@ -206,10 +206,10 @@ static const char* webinix_javascript_bridge =
 "        return false; \n"
 "    } \n"
 "}); \n"
-"window.onbeforeunload = function (void) { \n"
+"window.onbeforeunload = function () { \n"
 "   //_webinix_ws.close(); \n"
 "}; \n"
-"setTimeout(function (void) { \n"
+"setTimeout(function () { \n"
 "    if(!_webinix_ws_status_once) { \n"
 "        _webinix_freeze_ui(); \n"
 "        alert('Webinix failed to connect to the background application. Please try again.'); \n"
@@ -217,7 +217,7 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "}, 1500); \n"
 "window.addEventListener('unload', unload_handler, false); \n"
-"function unload_handler(void) { \n"
+"function unload_handler() { \n"
 "    // Unload for 'back' & 'forward' navigation \n"
 "    window.removeEventListener('unload', unload_handler, false); \n"
 "} \n"
@@ -3884,7 +3884,7 @@ void webinix_exit(void) {
 bool webinix_is_app_running(void) {
 
     #ifdef WEBUI_LOG
-        printf("[0] webinix_is_app_running()... \n");
+        // printf("[0] webinix_is_app_running()... \n");
     #endif
 
     static bool app_is_running = true;

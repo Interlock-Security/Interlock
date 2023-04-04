@@ -7,7 +7,7 @@ import * as webinix from "../module/webinix.ts";
 
 // Optional - Set a custom library path:
 //  const lib_full_path = '../../../../build/Windows/MSVC/webinix-2-x64.dll';
-//  console.log("Optional: Looking for the Webinix dynamic library at: " + lib_full_path);
+//  console.log("Looking for the Webinix dynamic library at: " + lib_full_path);
 //  webinix.set_lib_path(lib_full_path);
 
 const my_html = `
@@ -90,10 +90,10 @@ webinix.bind(my_window, "Exit", function(e : webinix.event) {
 });
 
 // Show the window
-if(!webinix.show(my_window, my_html, webinix.browser.chrome))
-	webinix.show(my_window, my_html, webinix.browser.any);
+webinix.show(my_window, my_html);
 
 // Wait until all windows get closed
 await webinix.wait();
 
 console.log("Thank you.");
+Deno.exit(0);
