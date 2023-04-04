@@ -35,6 +35,7 @@ release:
 	@gcc -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
 	@gcc -O3 -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
 	@gcc -shared -o webinix-2-x64.dll webinix.o mongoose.o -lws2_32
+	@strip --strip-unneeded webinix-2-x64.dll
 #	Clean
 	@- del *.o >nul 2>&1
 	@echo Done.
