@@ -12,7 +12,7 @@ import webinix
 # Use the local Webinix Dynamic lib
 # For instructions on compiling it please visit:
 # https://github.com/alifcommunity/webinix/tree/main/build
-webinix.set_library_path('../../../build/Windows/MSVC')
+webinix.set_library_path('../../../build/Windows/GCC')
 
 # HTML
 html = """

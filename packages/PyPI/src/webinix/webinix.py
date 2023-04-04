@@ -100,10 +100,10 @@ class window:
             sys.exit(1)
 
 
-    def __del__(self):
-        global Webinix
-        if self.window is not None and Webinix is not None:
-            Webinix.webinix_close(self.window)
+    # def __del__(self):
+    #     global Webinix
+    #     if self.window is not None and Webinix is not None:
+    #         Webinix.webinix_close(self.window)
 
 
     def events(self, element_id, window_id, 
