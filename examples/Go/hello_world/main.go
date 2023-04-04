@@ -1,6 +1,3 @@
-// Webinix Go Hello World Example
-// https://github.com/alifcommunity/webinix
-
 package main
 
 import (
@@ -84,7 +81,7 @@ func Check(e webinix.Event) {
 		// Check the password
 		if MyScript.Data == "123456" {
 
-			webinix.Show(e.Window, dashboard_html, webinix.AnyBrowser)
+			webinix.Show(e.Window, dashboard_html)
 		} else {
 
 			MyScript.Script = " document.getElementById('err').innerHTML = 'Sorry. Wrong password'; "
@@ -107,7 +104,7 @@ func main() {
 	webinix.Bind(my_window, "Exit", Exit)
 
 	// Show window
-	webinix.Show(my_window, login_html, webinix.AnyBrowser)
+	webinix.Show(my_window, login_html)
 
 	// Loop
 	webinix.Wait()

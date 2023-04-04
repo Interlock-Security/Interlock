@@ -1,6 +1,16 @@
+/*
+   Webinix Library 2.1.1
+
+   http://webinix.me
+   https://github.com/alifcommunity/webinix
+
+   Copyright (c) 2020-2023 Hassan Draga.
+   Licensed under GNU General Public License v2.0.
+   All rights reserved.
+   Canada.
+*/
+
 package webinix
-
-
 
 /*
 // [?] Change the library path as you need
@@ -94,10 +104,16 @@ func Exit() {
 	C.webinix_exit()
 }
 
-func Show(window *C.webinix_window_t, html string, browser uint) {
+func Show(window *C.webinix_window_t, content string) {
 
-	c_html := C.CString(html)
-	C.webinix_show(window, c_html, C.uint(browser))
+	c_content := C.CString(content)
+	C.webinix_show(window, c_content)
+}
+
+func Open(window *C.webinix_window_t, url string, browser uint) {
+
+	c_url := C.CString(url)
+	C.webinix_open(window, c_url, C.uint(browser))
 }
 
 func Wait() {
