@@ -52,15 +52,15 @@ static const char* webinix_javascript_bridge =
 "    _webinix_close_value = value; \n"
 "    _webinix_ws.close(); \n"
 "} \n"
-"function _webinix_freeze_ui() { \n"
+"function _webinix_freeze_ui(void) { \n"
 "    document.body.style.filter = 'contrast(1%)'; \n"
 "} \n"
-"function _webinix_start() { \n"
+"function _webinix_start(void) { \n"
 "    if('WebSocket' in window) { \n"
 "        if(_webinix_bind_list.includes(_webinix_win_num + '/')) _webinix_has_events = true; \n"
 "        _webinix_ws = new WebSocket('ws://localhost:' + _webinix_port + '/_ws'); \n"
 "        _webinix_ws.binaryType = 'arraybuffer'; \n"
-"        _webinix_ws.onopen = function () { \n"
+"        _webinix_ws.onopen = function (void) { \n"
 "            _webinix_ws.binaryType = 'arraybuffer'; \n"
 "            _webinix_ws_status = true; \n"
 "            _webinix_ws_status_once = true; \n"
@@ -68,7 +68,7 @@ static const char* webinix_javascript_bridge =
 "                console.log('Webinix -> Connected'); \n"
 "            _webinix_clicks_listener(); \n"
 "        }; \n"
-"        _webinix_ws.onerror = function () { \n"
+"        _webinix_ws.onerror = function (void) { \n"
 "            if(_webinix_log) \n"
 "                console.log('Webinix -> Connection Failed'); \n"
 "            _webinix_freeze_ui(); \n"
@@ -129,7 +129,7 @@ static const char* webinix_javascript_bridge =
 "        if(!_webinix_log) window.close(); \n"
 "    } \n"
 "} \n"
-"function _webinix_clicks_listener() { \n"
+"function _webinix_clicks_listener(void) { \n"
 "    Object.keys(window).forEach(key=>{ \n"
 "        if(/^on(click)/.test(key)) { \n"
 "            window.addEventListener(key.slice(2),event=>{ \n"
@@ -206,10 +206,10 @@ static const char* webinix_javascript_bridge =
 "        return false; \n"
 "    } \n"
 "}); \n"
-"window.onbeforeunload = function () { \n"
+"window.onbeforeunload = function (void) { \n"
 "   //_webinix_ws.close(); \n"
 "}; \n"
-"setTimeout(function () { \n"
+"setTimeout(function (void) { \n"
 "    if(!_webinix_ws_status_once) { \n"
 "        _webinix_freeze_ui(); \n"
 "        alert('Webinix failed to connect to the background application. Please try again.'); \n"
@@ -217,14 +217,14 @@ static const char* webinix_javascript_bridge =
 "    } \n"
 "}, 1500); \n"
 "window.addEventListener('unload', unload_handler, false); \n"
-"function unload_handler(){ \n"
+"function unload_handler(void) { \n"
 "    // Unload for 'back' & 'forward' navigation \n"
 "    window.removeEventListener('unload', unload_handler, false); \n"
 "} \n"
 "// Links \n"
 "document.addEventListener('click', e => { \n"
 "    const attribute = e.target.closest('a'); \n"
-"    if(attribute){ \n"
+"    if(attribute) { \n"
 "        const link = attribute.href; \n"
 "        e.preventDefault(); \n"
 "        _webinix_close(_WEBUI_SWITCH, link); \n"
@@ -358,7 +358,7 @@ void _webinix_free_mem(void **p) {
     *p = NULL;
 }
 
-void _webinix_free_all_mem() {
+void _webinix_free_all_mem(void) {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_free_all_mem()... \n");
@@ -386,7 +386,7 @@ void _webinix_free_all_mem() {
     }
 }
 
-void _webinix_panic() {
+void _webinix_panic(void) {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_panic()... \n");
@@ -601,7 +601,7 @@ const char* _webinix_get_extension(const char*f) {
     return ext + 1;
 }
 
-unsigned int _webinix_get_run_id() {
+unsigned int _webinix_get_run_id(void) {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_get_run_id()... \n");
@@ -735,7 +735,7 @@ void _webinix_serve_file(webinix_window_t* win, struct mg_connection *c, void *e
     mg_http_serve_dir(c, ev_data, &opts);
 }
 
-bool _webinix_deno_exist() {
+bool _webinix_deno_exist(void) {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_deno_exist()... \n");
@@ -755,7 +755,7 @@ bool _webinix_deno_exist() {
         return false;
 }
 
-bool _webinix_nodejs_exist() {
+bool _webinix_nodejs_exist(void) {
     
     #ifdef WEBUI_LOG
         printf("[0] _webinix_nodejs_exist()... \n");
@@ -1549,12 +1549,12 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                         mg_mgr_poll(&mgr, 1);
 
                         // Exit signal
-                        if(webinix.exit_now){
+                        if(webinix.exit_now) {
                             stop = true;
                             break;
                         }
 
-                        if(!win->core.connected){
+                        if(!win->core.connected) {
 
                             // The UI is just get disconnected
                             // let's wait for re-connection...
@@ -1953,7 +1953,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Google Chrome on macOS
             if(_webinix_cmd_sync("open -R -a \"Google Chrome\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome");
+                sprintf(win->core.browser_path, "/Applications/Google\\ Chrome.app/Contents/macOS/Google\\ Chrome");
                 return true;
             }
             else
@@ -2060,7 +2060,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Epic on macOS
             if(_webinix_cmd_sync("open -R -a \"Epic\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Epic\\ Epic.app/Contents/MacOS/Epic\\ Epic");
+                sprintf(win->core.browser_path, "/Applications/Epic\\ Epic.app/Contents/macOS/Epic\\ Epic");
                 return true;
             }
             else
@@ -2118,7 +2118,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Vivaldi on macOS
             if(_webinix_cmd_sync("open -R -a \"Vivaldi\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Vivaldi\\ Vivaldi.app/Contents/MacOS/Vivaldi\\ Vivaldi");
+                sprintf(win->core.browser_path, "/Applications/Vivaldi\\ Vivaldi.app/Contents/macOS/Vivaldi\\ Vivaldi");
                 return true;
             }
             else
@@ -2176,7 +2176,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Brave on macOS
             if(_webinix_cmd_sync("open -R -a \"Brave\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Brave\\ Brave.app/Contents/MacOS/Brave\\ Brave");
+                sprintf(win->core.browser_path, "/Applications/Brave\\ Brave.app/Contents/macOS/Brave\\ Brave");
                 return true;
             }
             else
@@ -2234,7 +2234,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Firefox on macOS
             if(_webinix_cmd_sync("open -R -a \"firefox\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Firefox.app/Contents/MacOS/firefox");
+                sprintf(win->core.browser_path, "/Applications/Firefox.app/Contents/macOS/firefox");
                 return true;
             }
             else
@@ -2295,7 +2295,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Yandex on macOS
             if(_webinix_cmd_sync("open -R -a \"Yandex\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Yandex\\ Yandex.app/Contents/MacOS/Yandex\\ Yandex");
+                sprintf(win->core.browser_path, "/Applications/Yandex\\ Yandex.app/Contents/macOS/Yandex\\ Yandex");
                 return true;
             }
             else
@@ -2353,7 +2353,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
             // Chromium on macOS
             if(_webinix_cmd_sync("open -R -a \"Chromium\"", false) == 0) {
 
-                sprintf(win->core.browser_path, "/Applications/Chromium\\ Chromium.app/Contents/MacOS/Chromium\\ Chromium");
+                sprintf(win->core.browser_path, "/Applications/Chromium\\ Chromium.app/Contents/macOS/Chromium\\ Chromium");
                 return true;
             }
             else
@@ -2374,7 +2374,7 @@ bool _webinix_browser_exist(webinix_window_t* win, unsigned int browser) {
     return false;
 }
 
-void _webinix_clean() {
+void _webinix_clean(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_clean()... \n");
@@ -3089,7 +3089,7 @@ void webinix_script(webinix_window_t* win, webinix_script_t* script) {
     }
 }
 
-webinix_window_t* webinix_new_window() {
+webinix_window_t* webinix_new_window(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] webinix_new_window()... \n");
@@ -3145,7 +3145,7 @@ bool webinix_is_shown(webinix_window_t* win) {
     return win->core.connected;
 }
 
-bool webinix_is_any_window_running() {
+bool webinix_is_any_window_running(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] webinix_is_any_window_running()... \n");
@@ -3845,7 +3845,7 @@ void _webinix_wait_process(webinix_window_t* win, bool status) {
     win->core.detect_process_close = status;
 }
 
-char* _webinix_get_current_path() {
+char* _webinix_get_current_path(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_get_current_path()... \n");
@@ -3867,7 +3867,7 @@ void _webinix_set_custom_browser(webinix_custom_browser_t* p) {
     webinix.custom_browser = p;
 }
 
-void webinix_exit() {
+void webinix_exit(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] webinix_exit()... \n");
@@ -3881,10 +3881,10 @@ void webinix_exit() {
     _webinix_sleep(100);
 }
 
-bool webinix_is_app_running() {
+bool webinix_is_app_running(void) {
 
     #ifdef WEBUI_LOG
-        // printf("[0] webinix_is_app_running()... \n");
+        printf("[0] webinix_is_app_running()... \n");
     #endif
 
     static bool app_is_running = true;
@@ -3919,7 +3919,7 @@ bool webinix_is_app_running() {
     return app_is_running;
 }
 
-void webinix_wait() {
+void webinix_wait(void) {
 
     #ifdef WEBUI_LOG
         printf("[L] webinix_wait()... \n");
@@ -3993,7 +3993,7 @@ void _webinix_free_port(unsigned int port) {
     }
 }
 
-void _webinix_wait_for_startup() {
+void _webinix_wait_for_startup(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_wait_for_startup()... \n");
@@ -4038,7 +4038,7 @@ void webinix_set_timeout(unsigned int second) {
     }
 }
 
-unsigned int _webinix_get_new_window_number() {
+unsigned int _webinix_get_new_window_number(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_get_new_window_number()... \n");
@@ -4047,7 +4047,7 @@ unsigned int _webinix_get_new_window_number() {
     return ++webinix.last_window;
 }
 
-unsigned int _webinix_get_free_port() {
+unsigned int _webinix_get_free_port(void) {
 
     #ifdef WEBUI_LOG
         printf("[0] _webinix_get_free_port()... \n");
@@ -4110,7 +4110,7 @@ void webinix_script_runtime(webinix_window_t* win, unsigned int runtime) {
         win->core.runtime = runtime;
 }
 
-void _webinix_init() {
+void _webinix_init(void) {
 
     if(webinix.initialized)
         return;    
