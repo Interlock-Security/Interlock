@@ -16,9 +16,7 @@ pub fn main() void {
     const url = c.webinix_new_server(my_window, root_path);
 
     // Show the window using the generated url
-    if (!c.webinix_show(my_window, url, c.webinix.browser.chrome)) {
-        _ = c.webinix_show(my_window, url, c.webinix.browser.any);
-    }
+    c.webinix_show(my_window, url);
 
     // Wait until all windows get closed
     c.webinix_wait();

@@ -47,9 +47,7 @@ pub fn main() void {
     _ = c.webinix_bind(my_window, "Four", function_four);
 
     // Show the window
-    if (!c.webinix_show(my_window, my_html, c.webinix.browser.chrome)) {
-        _ = c.webinix_show(my_window, my_html, c.webinix.browser.any);
-    }
+    c.webinix_show(my_window, my_html);
 
     // Wait until all windows get closed
     c.webinix_wait();
