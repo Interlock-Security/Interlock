@@ -396,7 +396,7 @@ void _webinix_panic(void) {
     exit(EXIT_FAILURE);
 }
 
-size_t round_to_memory_block(int size) {
+size_t _webinix_round_to_memory_block(int size) {
 
     // If size is negative
     if(size < 4)
@@ -423,7 +423,7 @@ void* _webinix_malloc(int size) {
     // terminator if it's a string
     size++;
 
-    size = round_to_memory_block(size);
+    size = _webinix_round_to_memory_block(size);
 
     void* block = NULL;
     for(unsigned int i = 0; i < 8; i++) {
@@ -3894,7 +3894,7 @@ bool webinix_is_app_running(void) {
 
     // Initialization
     if(!webinix.initialized)
-    _webinix_init();
+        _webinix_init();
     
     // Get app status
     if(webinix.exit_now) {
@@ -3906,15 +3906,14 @@ bool webinix_is_app_running(void) {
                 app_is_running = false;
         }
     }
-    else {
-
-        // Unknown status!
-        app_is_running = false;
-    }
 
     // Final cleaning
-    if(!app_is_running)
+    if(!app_is_running) {
+        #ifdef WEBUI_LOG
+            printf("[0] webinix_is_app_running()... -> App Stopped.\n");
+        #endif
         _webinix_clean();
+    }
 
     return app_is_running;
 }
@@ -4116,6 +4115,7 @@ void _webinix_init(void) {
         return;    
 
     #ifdef WEBUI_LOG
+        printf("[0] Webinix v%s \n", WEBUI_VERSION);
         printf("[0] _webinix_init()... \n");
     #endif
 
