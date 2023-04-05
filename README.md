@@ -72,7 +72,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
  - [Windows](https://github.com/alifcommunity/webinix/tree/main/build/Windows)
  - [Linux](https://github.com/alifcommunity/webinix/tree/main/build/Linux)
- - macOS (*Not Complete*)
+ - [macOS](https://github.com/alifcommunity/webinix/tree/main/build/macOS)
 
 ## Examples
 
