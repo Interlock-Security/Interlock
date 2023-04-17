@@ -1,5 +1,5 @@
 
-# Webinix Library 2.1.1
+# Webinix Library 2.2.0
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -26,7 +26,6 @@ PTR_PTR_CHAR = ctypes.POINTER(PTR_CHAR)
 
 # Event
 class event:
-    element_id = 0
     window_id = 0
     element_name = ""
     data = ""
@@ -137,7 +136,7 @@ class window:
             err_library_not_found('bind')
             return
         cb_index = int(
-            Webinix.webinix_bind_interface(
+            Webinix.webinix_interface_bind(
                 self.window,
                 element.encode('utf-8'),
                 self.c_events))

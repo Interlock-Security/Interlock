@@ -87,7 +87,7 @@ Please visit [C Examples](https://github.com/alifcommunity/webinix/tree/main/exa
 To create a new window object, you can use `webinix_new_window()`, which returns a pointer to a struct `webinix_window_t`. This pointer does *NOT* need to be freed.
 
 ```c
-webinix_window_t* my_window = webinix_new_window();
+void* my_window = webinix_new_window();
 ```
 
 ---
@@ -328,10 +328,10 @@ void my_function(webinix_event_t* e){
     webinix_script(e->window, &js);
 
 	// Check if there is any JavaScript error
-	if(js.result.error)
-		printf("Error: %s\n", js.result.data);
+	if(js.error)
+		printf("Error: %s\n", js.data);
     else
-        printf("Output: %s\n", js.result.data);
+        printf("Output: %s\n", js.data);
     
     // Free resources
 	webinix_script_cleanup(&js);

@@ -2,7 +2,7 @@
 // Run this script by:
 // deno run --allow-all --unstable hello_world.ts
 
-// Import Webinix module
+// Import Webinix module (Local file)
 import * as webinix from "../module/webinix.ts";
 
 // Optional - Set a custom library path:
@@ -34,15 +34,15 @@ const my_html = `
 	    <button id="Calculate">Calculate</button> - <button id="Exit">Exit</button>
         <script>
             function get_A() {
-                return parseInt(document.getElementById('MyInputA').value);
+              return parseInt(document.getElementById('MyInputA').value);
             }
 
             function get_B() {
-                return parseInt(document.getElementById('MyInputB').value);
+              return parseInt(document.getElementById('MyInputB').value);
             }
 
             function set_result(res) {
-                document.getElementById("Result").innerHTML = 'A + B = ' + res;
+              document.getElementById("Result").innerHTML = 'A + B = ' + res;
             }
         </script>
     </body>
@@ -51,32 +51,38 @@ const my_html = `
 
 function calculate(e : webinix.event) {
 
-    // Create a JS struct
-    const MyJS: webinix.js = {
-        Script: "",
-        Timeout: 0,
-    };
- 
-    // Call JS function `get_A()`
-    MyJS.Script = "return get_A();";
-    webinix.run(e.win, MyJS);
-    const A = MyJS.Data;
+  // Create a JavaScript object
+  const my_js = webinix.js;
 
-    // Check for error
-    if(MyJS.Error) {
-        console.log("Error in the JavaScript: " + MyJS.Data);
-    }
+  // Settings if needed
+  // my_js.timeout = 30; // Set javascript execution timeout
+  // my_js.response_size = 64; // Set the response size in bytes
 
-    // Call JS function `get_B()`
-    MyJS.Script = "return get_B();";
-    webinix.run(e.win, MyJS);
-    const B = MyJS.Data;
+  // Call a js function
+  if(!webinix.script(e.win, my_js, "return get_A()")) {
+    // Error
+    console.log("Error in the JavaScript: " + my_js.response);
+    return;
+  }
 
-    const C : Number = parseInt(A) + parseInt(B);
+  // Get A
+  const A = my_js.response;
 
-    // Set the result
-    MyJS.Script = "set_result(" + C + ");";
-    webinix.run(e.win, MyJS);
+  // Call a js function
+  if(!webinix.script(e.win, my_js, "return get_B();")) {
+    // Error
+    console.log("Error in the JavaScript: " + my_js.response);
+    return;
+  }
+
+  // Get B
+  const B = my_js.response;
+
+  // Calculate
+  const C : number = parseInt(A) + parseInt(B);
+
+  // Run js (Quick Way)
+  webinix.run(e.win, "set_result(" + C + ");");
 }
 
 // Create new window
@@ -85,12 +91,12 @@ const my_window = webinix.new_window();
 // Bind
 webinix.bind(my_window, "Calculate", calculate);
 webinix.bind(my_window, "Exit", function(e : webinix.event) {
-    // Close all windows and exit
-    webinix.exit();
+  // Close all windows and exit
+  webinix.exit();
 });
 
 // Show the window
-webinix.show(my_window, my_html);
+webinix.show(my_window, my_html); // Or webinix.show(my_window, 'hello_world.html');
 
 // Wait until all windows get closed
 await webinix.wait();

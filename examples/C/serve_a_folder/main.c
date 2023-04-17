@@ -2,8 +2,8 @@
 
 #include "webinix.h"
 
-webinix_window_t* my_window;
-webinix_window_t* my_second_window;
+void* my_window;
+void* my_second_window;
 
 void exit_app(webinix_event_t* e) {
 

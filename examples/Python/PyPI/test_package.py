@@ -1,12 +1,12 @@
 # This script is for debugging & development of the Webinix Python wrapper
-# The source code is located at 'webinix/packages/PyPI/src/webinix/webinix.py'
+# The source code is located at 'webinix/examples/Python/PyPI/Package/src/webinix/webinix.py'
 
 # [!] Make sure to remove the Webinix package
 # pip uninstall webinix2
 
 # Import the Webinix local module
 import sys
-sys.path.append('../../../packages/PyPI/src/webinix')
+sys.path.append('Package/src/webinix')
 import webinix
 
 # Use the local Webinix Dynamic lib

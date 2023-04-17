@@ -1,4 +1,7 @@
 
-# Webinix Examples - Node.js
+# Webinix Examples - Nodejs
 
-Webinix can create a web server and use [Node.js](https://nodejs.org/) runtimes to parse `JavaScript` files. Another way is simply create a web server using Node.js and run a simple system command to run a basic Webinix application to open a window.
+Unfortunately, Nodejs does not support FFI natively (only trough unofficial addon). We recommend using Deno instead.
+
+
+The only way to use Nodejs with Webinix is to create a simple app in another language like C, C++, Nim, Go, Python, V, Zig, Rust... and use `webinix_set_runtime()` to interpret the Nodejs files.

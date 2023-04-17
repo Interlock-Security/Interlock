@@ -52,46 +52,50 @@ const dashboard_html string = `<!DOCTYPE html>
   <body>
     <h1>Welcome !</h1>
     <br>
+    Call Secret() function and get the response
+    <br>
+    <br>
+    <button OnClick="alert('Response is ' + webinix_fn('Sec'))">Secret</button>
+    <br>
     <br>
     <button id="Exit">Exit</button>
   </body>
 </html>`
 
-func Exit(e webinix.Event) {
+func Exit(e webinix.Event) string {
 
 	webinix.Exit()
+	return ""
 }
 
-func Check(e webinix.Event) {
+func Secret(e webinix.Event) string {
 
-	// Script to get the text value
-	MyScript := webinix.JavaScript{
-		Timeout: 10,
-		Script:  " return document.getElementById('MyInput').value; ",
-	}
+	return "I Love Go!"
+}
+
+func Check(e webinix.Event) string {
+
+	// Create new JavaScript object
+	js := webinix.NewJavaScript()
 
 	// Run the script
-	webinix.RunJavaScript(e.Window, &MyScript)
-
-	// Check if any error
-	if !MyScript.Error {
-
-		fmt.Printf("Password: %s\n", MyScript.Data)
-
-		// Check the password
-		if MyScript.Data == "123456" {
-
-			webinix.Show(e.Window, dashboard_html)
-		} else {
-
-			MyScript.Script = " document.getElementById('err').innerHTML = 'Sorry. Wrong password'; "
-			webinix.RunJavaScript(e.Window, &MyScript)
-		}
-	} else {
+	if !webinix.Script(e.Window, &js, "return document.getElementById('MyInput').value;") {
 
 		// There is an error in our script
-		fmt.Printf("JavaScript Error: %s\n", MyScript.Data)
+		fmt.Printf("JavaScript Error: %s\n", js.Response)
+		return ""
 	}
+
+	fmt.Printf("Password: [%s]\n", js.Response)
+
+	// Check the password
+	if js.Response == "123456" {
+		webinix.Show(e.Window, dashboard_html)
+	} else {
+		webinix.Script(e.Window, &js, "document.getElementById('err').innerHTML = 'Sorry. Wrong password';")
+	}
+
+	return ""
 }
 
 func main() {
@@ -101,6 +105,7 @@ func main() {
 
 	// Bind
 	webinix.Bind(my_window, "CheckPassword", Check)
+	webinix.Bind(my_window, "Sec", Secret)
 	webinix.Bind(my_window, "Exit", Exit)
 
 	// Show window
