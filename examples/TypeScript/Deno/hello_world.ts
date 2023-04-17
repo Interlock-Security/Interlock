@@ -3,10 +3,10 @@
 // deno run --allow-all --unstable hello_world.ts
 
 // Import Webinix module (Local file)
-import * as webinix from "../module/webinix.ts";
+import * as webinix from "./webinix.ts";
 
 // Optional - Set a custom library path:
-//  const lib_full_path = '../../../../build/Windows/MSVC/webinix-2-x64.dll';
+//  const lib_full_path = 'webinix-2-x64.dll';
 //  console.log("Looking for the Webinix dynamic library at: " + lib_full_path);
 //  webinix.set_lib_path(lib_full_path);
 
