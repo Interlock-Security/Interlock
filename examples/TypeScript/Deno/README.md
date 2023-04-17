@@ -14,11 +14,10 @@ This example shows how to use the Webinix Dynamic Library in Deno.
  2. Download Webinix pre-built Library (*[webinix.me](https://webinix.me/)*)
  3. Run `deno run --allow-all --unstable hello_world.ts`
 
-Folder structure example (*Windows*)
+Folder structure example:
 
     [My Folder]
 	    * deno
 	    * hello_world.ts
-		* module/webinix.ts
-		* module/`webinix-2-x64` library
-
+		* webinix.ts
+		* webinix-2-x64 dynamic library
