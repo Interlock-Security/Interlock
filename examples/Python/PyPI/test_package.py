@@ -1,5 +1,5 @@
-# This script is for debugging & development of the Webinix Python wrapper
-# The source code is located at 'webinix/examples/Python/PyPI/Package/src/webinix/webinix.py'
+# This script is for debugging & the development of the Webinix Python wrapper.
+# The wrapper source code is located at 'webinix/examples/Python/PyPI/Package/src/webinix/webinix.py'
 
 # [!] Make sure to remove the Webinix package
 # pip uninstall webinix2
@@ -10,16 +10,14 @@ sys.path.append('Package/src/webinix')
 import webinix
 
 # Use the local Webinix Dynamic lib
-# For instructions on compiling it please visit:
-# https://github.com/alifcommunity/webinix/tree/main/build
-webinix.set_library_path('../../../build/Windows/GCC')
+webinix.set_library_path('../../../build/Windows/MSVC')
 
 # HTML
 html = """
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Webinix 2 - Python Debug & Development</title>
+		<title>Webinix 2 - Python Wrapper Test</title>
 		<style>
 			body {
 				color: white;
@@ -33,52 +31,58 @@ html = """
 		</style>
 	</head>
 	<body>
-		<h2>Python Debug & Development</h2>
+		<h2>Python Wrapper Test</h2>
 		<br>
 		<input type="text" id="MyInput" OnKeyUp="document.getElementById('err').innerHTML='&nbsp;';" autocomplete="off" value=\"2\">
 		<br>
 		<h3 id="err" style="color: #dbdd52">&nbsp;</h3>
 		<br>
-		<button id="TestID">Test Python-To-JS</button>
+		<button id="P2JS">Test Python-To-JS</button>
 		<button OnClick="MyJS();">Test JS-To-Python</button>
 		<button id="ExitID">Exit</button>
 		<script>
 			function MyJS() {
 				const number = document.getElementById('MyInput').value;
-				var result = webinix_fn('Test2', number);
+				var result = webinix_fn('JS2P', number);
 				document.getElementById('MyInput').value = result;
 			}
 		</script>
     </body></html>
 """
 
-def test(e : webinix.event):
-	print('Element_id: ' + str(e.element_id))
-	print('Window_id: ' + str(e.window_id))
-	print('Element_name: ' + e.element_name)
+def all_events(e : webinix.event):
+	print('Function: all_events()')
+	print('Element: ' + e.Element)
+	print('EventType: ' + e.EventType)
+	print('Data: ' + e.Data)
 
+def python_to_js(e : webinix.event):
+	print('Function: python_to_js()')
+	print('Element: ' + e.Element)
+	print('EventType: ' + e.EventType)
+	print('Data: ' + e.Data)
 	# Run JavaScript to get the password
-	res = e.window.run_js("return document.getElementById('MyInput').value;")
-
+	res = e.window.script("return document.getElementById('MyInput').value;")
 	# Check for any error
 	if res.error is True:
 		print("JavaScript Error -> Output: [" + res.data + "]")
 	else:
 		print("JavaScript OK -> Output: [" + res.data + "]")
 
-def test2(e : webinix.event):
-	print('Element_id: ' + str(e.element_id))
-	print('Window_id: ' + str(e.window_id))
-	print('Element_name: ' + e.element_name)
-	print('Data: ' + e.data)
+def js_to_python(e : webinix.event):
+	print('Function: js_to_python()')
+	print('Element: ' + e.Element)
+	print('EventType: ' + e.EventType)
+	print('Data: ' + e.Data)
 	v = int(e.data)
 	v = v * 2
 	return v
 
-def close(e : webinix.event):
-	print('Element_id: ' + str(e.element_id))
-	print('Window_id: ' + str(e.window_id))
-	print('Element_name: ' + e.element_name)
+def exit(e : webinix.event):
+	print('Function: exit()')
+	print('Element: ' + e.Element)
+	print('EventType: ' + e.EventType)
+	print('Data: ' + e.Data)
 	webinix.exit()
 
 def main():
@@ -87,9 +91,10 @@ def main():
 	MyWindow = webinix.window()
 
 	# Bind am HTML element ID with a python function
-	MyWindow.bind('', test)
-	MyWindow.bind('Test2', test2)
-	MyWindow.bind('ExitID', close)
+	MyWindow.bind('', all_events)
+	MyWindow.bind('P2JS', python_to_js)
+	MyWindow.bind('JS2P', js_to_python)
+	MyWindow.bind('Exit', exit)
 
 	# Show the window
 	MyWindow.show(html)
