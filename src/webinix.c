@@ -746,8 +746,17 @@ void _webinix_interface_bind_handler(webinix_event_t* e) {
     char* webinix_internal_id = _webinix_generate_internal_id(e->window, e->element);
     unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
 
-    if(cb_index > 0 && _webinix_core.cb_interface[cb_index] != NULL)
+    if(cb_index > 0 && _webinix_core.cb_interface[cb_index] != NULL) {
+
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> User callback @ 0x%p\n", _webinix_core.cb_interface[cb_index]);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> Response set @ 0x%p\n", (char*)&e->response);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> type [%d]\n", e->type);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> data [%s]\n", e->data);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> element [%s]\n", e->element);
+        #endif
         _webinix_core.cb_interface[cb_index](e->window, e->type, e->element, e->data, (char*)&e->response);
+    }
     
     if(_webinix_is_empty((const char *)e->response))
         e->response = (char*)webinix_empty_string;
@@ -756,7 +765,7 @@ void _webinix_interface_bind_handler(webinix_event_t* e) {
     _webinix_free_mem((void *)webinix_internal_id);
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_interface_bind_handler()... user-callback response [%s]\n", (const char *)e->response);
+        printf("[Core]\t\t_webinix_interface_bind_handler() -> user-callback response [%s] @ 0x%p\n", (const char *)e->response, e->response);
     #endif
 }
 
@@ -779,6 +788,7 @@ void webinix_interface_set_response(char* ptr, const char* response) {
 
     #ifdef WEBUI_LOG
         printf("[User] webinix_interface_set_response()... \n");
+        printf("[User] webinix_interface_set_response() -> Pointer @ 0x%p \n", ptr);
         printf("[User] webinix_interface_set_response() -> Response [%s] \n", response);
     #endif
 
@@ -2244,7 +2254,7 @@ bool _webinix_browser_exist(_webinix_window_t* win, unsigned int browser) {
             }
             else if(_webinix_cmd_sync("google-chrome-stable --version", false) == 0) {
 
-                sprintf(win->core.browser_path, "google-chrome-stable");
+                sprintf(win->browser_path, "google-chrome-stable");
                 return true;
             }
             else
@@ -3892,7 +3902,7 @@ WEBUI_CB
     e.response = NULL;
     e.type = arg->event_type;
 
-    // Check for the events-bind function
+    // Check for all events-binded function
     if(arg->win->has_events) {
 
         char* events_id = _webinix_generate_internal_id(arg->win, "");
@@ -3901,12 +3911,12 @@ WEBUI_CB
 
         if(events_cb_index > 0 && _webinix_core.cb[events_cb_index] != NULL) {
 
-            // Call user events cb
+            // Call user all events cb
             _webinix_core.cb[events_cb_index](&e);
         }
     }
 
-    // Check for the bind function
+    // Check for the binded function
     if(arg->element_name != NULL && !_webinix_is_empty(arg->element_name)) {
 
         unsigned int cb_index = _webinix_get_cb_index(arg->webinix_internal_id);

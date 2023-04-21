@@ -157,7 +157,7 @@ WEBUI_EXPORT void webinix_set_icon(void* window, const char* icon, const char* t
 WEBUI_EXPORT void webinix_set_multi_access(void* window, bool status);
 
 // -- JavaScript ----------------------
-// Quickly run a JavaScript.
+// Quickly run a JavaScript (no response waiting).
 WEBUI_EXPORT bool webinix_run(void* window, const char* script);
 // Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
 WEBUI_EXPORT bool webinix_script(void* window, const char* script, unsigned int timeout, char* buffer, size_t buffer_length);
@@ -177,9 +177,9 @@ WEBUI_EXPORT void webinix_return_string(webinix_event_t* e, char* s);
 WEBUI_EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
 
 // -- Interface -----------------------
-// Bind a specific html element click event with a function. Empty element means all events. This replace webinix_bind().
+// Bind a specific html element click event with a function. Empty element means all events. This replace webinix_bind(). The func is (Window, EventType, Element, Data, Response)
 WEBUI_EXPORT unsigned int webinix_interface_bind(void* window, const char* element, void (*func)(void*, unsigned int, char*, char*, char*));
-// When using `webinix_interface_bind()` you need this function to easily set your response.
+// When using `webinix_interface_bind()` you need this function to easily set your callback response.
 WEBUI_EXPORT void webinix_interface_set_response(char* ptr, const char* response);
 // Check if the app still running or not. This replace webinix_wait().
 WEBUI_EXPORT bool webinix_interface_is_app_running(void);

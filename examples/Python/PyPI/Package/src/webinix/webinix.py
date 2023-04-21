@@ -1,5 +1,5 @@
 
-# Webinix Library 2.2.0
+# webinix_lib Library 2.2.0
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
@@ -18,175 +18,186 @@ from ctypes import *
 import shutil
 
 
-Webinix = None
-Webinix_Path = os.path.dirname(__file__)
+webinix_lib = None
+webinix_path = os.path.dirname(__file__)
 PTR_CHAR = ctypes.POINTER(ctypes.c_char)
 PTR_PTR_CHAR = ctypes.POINTER(PTR_CHAR)
 
 
-# Event
+# event
 class event:
-    Window = None
-    EventType = 0
-    Element = ""
-    Data = ""
+    window = None
+    type = 0
+    element = ""
+    data = ""
 
 
 # JavaScript
 class javascript:
-    Error = False
-    Response = ""
+    error = False
+    response = ""
 
 
 # Scripts Runtime
 class runtime:
     none = 0
-    Deno = 1
-    Nodejs = 2
+    deno = 1
+    nodejs = 2
 
 
 # The window class
 class window:
 
     window = None
-    window_id = None
+    window_id = ""
     c_events = None
     cb_fun_list = {}
 
     def __init__(self):
-        global Webinix
+        global webinix_lib
         try:
-            # Load Webinix Shared Library
-            load_library()
+            # Load webinix_lib Shared Library
+            _load_library()
             # Check library if correctly loaded
-            if Webinix is None:
+            if webinix_lib is None:
                 print(
-                    'Please download the latest Webinix lib from https://webinix.me')
+                    'Please download the latest webinix_lib lib from https://webinix.me')
                 sys.exit(1)
-            # Create new Webinix window
+            # Create new webinix_lib window
             webinix_wrapper = None
-            webinix_wrapper = Webinix.webinix_new_window
+            webinix_wrapper = webinix_lib.webinix_new_window
             webinix_wrapper.restype = c_void_p
             self.window = c_void_p(webinix_wrapper())
             # Get the window unique ID
-            self.window_id = int(
-                Webinix.webinix_interface_get_window_id(
+            window_unique_id = int(
+                webinix_lib.webinix_interface_get_window_id(
                 self.window))
+            self.window_id = str(window_unique_id)
             # Initializing events() to be used by
-            # Webinix library as a callback
+            # webinix_lib library as a callback
             py_fun = ctypes.CFUNCTYPE(
-                ctypes.c_void_p, # Window
-                ctypes.c_uint, # EventType
-                ctypes.c_char_p, # Element
-                ctypes.c_char_p, # Data
-                ctypes.c_char_p) # Response
-            self.c_events = py_fun(self.events)
+                ctypes.c_void_p, # RESERVED
+                ctypes.c_void_p, # window
+                ctypes.c_uint, # type
+                ctypes.c_char_p, # element
+                ctypes.c_char_p, # data
+                PTR_CHAR) # response
+            self.c_events = py_fun(self._events)
         except OSError as e:
             print(
-                "Webinix Exception: %s" % e)
+                "webinix_lib Exception: %s" % e)
             sys.exit(1)
 
 
     # def __del__(self):
-    #     global Webinix
-    #     if self.window is not None and Webinix is not None:
-    #         Webinix.webinix_close(self.window)
+    #     global webinix_lib
+    #     if self.window is not None and webinix_lib is not None:
+    #         webinix_lib.webinix_close(self.window)
 
 
-    def events(self, window, event_type, 
-                element, data, response):
-        if self.cb_fun_list[self.window_id][element] is None:
-            print('Webinix Error: Callback is None.')
+    def _events(self, window: ctypes.c_void_p,
+               event_type: ctypes.c_uint,
+               _element: ctypes.c_char_p,
+               data: ctypes.c_char_p,
+               response_ptr: PTR_CHAR):
+        element = _element.decode('utf-8')
+        func_id = self.window_id + element
+        if self.cb_fun_list[func_id] is None:
+            print('webinix_lib error: Callback is None.')
             return
         # Create event
         e = event()
-        e.Window = self
-        e.EventType = int(event_type)
-        e.Element = element.decode('utf-8')
-        e.Data = data.decode('utf-8')
+        e.window = self
+        e.type = int(event_type)
+        e.element = element
+        e.data = data.decode('utf-8')
         # User callback
-        cb_res = str(self.cb_fun_list[self.window_id][element](e))
-        cb_res_encode = cb_res.encode('utf-8')
-        # Set the response
-        Webinix.webinix_interface_bind(response, cb_res_encode)
+        cb_result = self.cb_fun_list[func_id](e)
+        if cb_result is not None:
+            cb_result_str = str(cb_result)
+            cb_result_encode = cb_result_str.encode('utf-8')
+            # Set the response
+            webinix_lib.webinix_interface_set_response(response_ptr, cb_result_encode)
 
-
+    # Bind a specific html element click event with a function. Empty element means all events.
     def bind(self, element, func):
-        global Webinix
+        global webinix_lib
         if self.window is None:
-            err_window_is_none('bind')
+            _err_window_is_none('bind')
             return
-        if Webinix is None:
-            err_library_not_found('bind')
+        if webinix_lib is None:
+            _err_library_not_found('bind')
             return
         # Bind
-        Webinix.webinix_interface_bind(
+        webinix_lib.webinix_interface_bind(
             self.window,
             element.encode('utf-8'),
             self.c_events)
         # Add CB to the list
-        self.cb_fun_list[self.window_id] = {element: func}
+        func_id = self.window_id + element
+        self.cb_fun_list[func_id] = func
 
-
+    # Show a window using a embedded HTML, or a file. If the window is already opened then it will be refreshed.
     def show(self, content="<html></html>"):
-        global Webinix
+        global webinix_lib
         if self.window is None:
-            err_window_is_none('show')
+            _err_window_is_none('show')
             return
-        if Webinix is None:
-            err_library_not_found('show')
+        if webinix_lib is None:
+            _err_library_not_found('show')
             return
         # Show the window
-        Webinix.webinix_show(self.window, content.encode('utf-8'))
+        webinix_lib.webinix_show(self.window, content.encode('utf-8'))
 
-
+    # Chose between Deno and Nodejs runtime for .js and .ts files.
     def set_runtime(self, rt=runtime.deno):
-        global Webinix
+        global webinix_lib
         if self.window is None:
-            err_window_is_none('set_runtime')
+            _err_window_is_none('set_runtime')
             return
-        if Webinix is None:
-            err_library_not_found('set_runtime')
+        if webinix_lib is None:
+            _err_library_not_found('set_runtime')
             return
-        Webinix.webinix_set_runtime(self.window, 
+        webinix_lib.webinix_set_runtime(self.window, 
                         ctypes.c_uint(rt))
 
 
     def set_multi_access(self, status=False):
-        global Webinix
+        global webinix_lib
         if self.window is None:
-            err_window_is_none('set_multi_access')
+            _err_window_is_none('set_multi_access')
             return
-        if Webinix is None:
-            err_library_not_found('set_multi_access')
+        if webinix_lib is None:
+            _err_library_not_found('set_multi_access')
             return
-        Webinix.webinix_set_multi_access(self.window, 
+        webinix_lib.webinix_set_multi_access(self.window, 
                         ctypes.c_bool(status))
 
-
+    # Close the window.
     def close(self):
-        global Webinix
-        if Webinix is None:
-            err_library_not_found('close')
+        global webinix_lib
+        if webinix_lib is None:
+            _err_library_not_found('close')
             return
-        Webinix.webinix_close(self.window)
+        webinix_lib.webinix_close(self.window)
 
 
     def is_shown(self):
-        global Webinix
-        if Webinix is None:
-            err_library_not_found('is_shown')
+        global webinix_lib
+        if webinix_lib is None:
+            _err_library_not_found('is_shown')
             return
-        r = bool(Webinix.webinix_is_shown(self.window))
+        r = bool(webinix_lib.webinix_is_shown(self.window))
         return r
 
+    # Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
     def script(self, script, timeout=0, response_size=(1024 * 8)) -> javascript:
-        global Webinix
+        global webinix_lib
         if self.window is None:
-            err_window_is_none('show')
+            _err_window_is_none('script')
             return
-        if Webinix is None:
-            err_library_not_found('show')
+        if webinix_lib is None:
+            _err_library_not_found('script')
             return
         # Create Buffer
         buffer = ctypes.create_string_buffer(response_size)
@@ -194,25 +205,38 @@ class window:
         # Create a pointer to the buffer
         buffer_ptr = ctypes.pointer(buffer)
         # Run JavaScript
-        status = bool(Webinix.webinix_script(self.window, 
+        status = bool(webinix_lib.webinix_script(self.window, 
             ctypes.c_char_p(script.encode('utf-8')), 
             ctypes.c_uint(timeout), buffer_ptr,
             ctypes.c_uint(response_size)))
         # Initializing Result
         res = javascript()
         res.data = buffer.value.decode('utf-8')
-        res.error = status
+        res.error = not status
         return res
 
+    # Quickly run a JavaScript (no response waiting).
+    def run(self, script):
+        global webinix_lib
+        if self.window is None:
+            _err_window_is_none('run')
+            return
+        if webinix_lib is None:
+            _err_library_not_found('run')
+            return
+        # Run JavaScript
+        webinix_lib.webinix_run(self.window, 
+            ctypes.c_char_p(script.encode('utf-8')))
 
-def get_library_path() -> str:
-    global Webinix_Path
+
+def _get_library_path() -> str:
+    global webinix_path
     if platform.system() == 'Darwin':
         file = '/webinix-2-x64.dylib'
         path = os.getcwd() + file
         if os.path.exists(path):
             return path
-        path = Webinix_Path + file
+        path = webinix_path + file
         if os.path.exists(path):
             return path
         return path
@@ -221,7 +245,7 @@ def get_library_path() -> str:
         path = os.getcwd() + file
         if os.path.exists(path):
             return path
-        path = Webinix_Path + file
+        path = webinix_path + file
         if os.path.exists(path):
             return path
         return path
@@ -230,7 +254,7 @@ def get_library_path() -> str:
         path = os.getcwd() + file
         if os.path.exists(path):
             return path
-        path = Webinix_Path + file
+        path = webinix_path + file
         if os.path.exists(path):
             return path
         return path
@@ -238,78 +262,74 @@ def get_library_path() -> str:
         return ""
 
 
-# Load Webinix Dynamic Library
-def load_library():
-    global Webinix
-    global Webinix_Path
-    if Webinix is not None:
+# Load webinix_lib Dynamic Library
+def _load_library():
+    global webinix_lib
+    global webinix_path
+    if webinix_lib is not None:
         return
     if platform.system() == 'Darwin':
-        Webinix = ctypes.CDLL(get_library_path())
-        if Webinix is None:
+        webinix_lib = ctypes.CDLL(_get_library_path())
+        if webinix_lib is None:
             print(
-                "Webinix Error: Failed to load Webinix lib.")
+                "webinix_lib error: Failed to load webinix_lib lib.")
     elif platform.system() == 'Windows':
         if sys.version_info.major==3 and sys.version_info.minor<=8:
             os.chdir(os.getcwd())
             os.add_dll_directory(os.getcwd())
-            Webinix = ctypes.CDLL(get_library_path())
+            webinix_lib = ctypes.CDLL(_get_library_path())
         else:
             os.chdir(os.getcwd())
             os.add_dll_directory(os.getcwd())
-            Webinix = cdll.LoadLibrary(get_library_path())
-        if Webinix is None:
-            print("Webinix Error: Failed to load Webinix lib.")
+            webinix_lib = cdll.LoadLibrary(_get_library_path())
+        if webinix_lib is None:
+            print("webinix_lib error: Failed to load webinix_lib lib.")
     elif platform.system() == 'Linux':
-        Webinix = ctypes.CDLL(get_library_path())
-        if Webinix is None:
-            print("Webinix Error: Failed to load Webinix lib.")
+        webinix_lib = ctypes.CDLL(_get_library_path())
+        if webinix_lib is None:
+            print("webinix_lib error: Failed to load webinix_lib lib.")
     else:
-        print("Webinix Error: Unsupported OS")
+        print("webinix_lib error: Unsupported OS")
 
 
-# Exit app
+# Close all opened windows. webinix_wait() will break.
 def exit():
-    global Webinix
-    if Webinix is None:
-        load_library()
-        if Webinix is None:
-            err_library_not_found('exit')
-            return
-    Webinix.webinix_exit()
+    global webinix_lib
+    if webinix_lib is not None:
+        webinix_lib.webinix_exit()
 
 
 # Set startup timeout
 def set_timeout(second):
-    global Webinix
-    if Webinix is None:
-        load_library()
-        if Webinix is None:
-            err_library_not_found('set_timeout')
+    global webinix_lib
+    if webinix_lib is None:
+        _load_library()
+        if webinix_lib is None:
+            _err_library_not_found('set_timeout')
             return
-    Webinix.webinix_set_timeout(ctypes.c_uint(second))
+    webinix_lib.webinix_set_timeout(ctypes.c_uint(second))
 
 
 def is_app_running():
-    global Webinix
-    if Webinix is None:
-        load_library()
-        if Webinix is None:
-            err_library_not_found('is_app_running')
+    global webinix_lib
+    if webinix_lib is None:
+        _load_library()
+        if webinix_lib is None:
+            _err_library_not_found('is_app_running')
             return
-    r = bool(Webinix.webinix_interface_is_app_running())
+    r = bool(webinix_lib.webinix_interface_is_app_running())
     return r
 
 
-# Wait until all windows get closed
+# Wait until all opened windows get closed.
 def wait():
-    global Webinix
-    if Webinix is None:
-        load_library()
-        if Webinix is None:
-            err_library_not_found('wait')
+    global webinix_lib
+    if webinix_lib is None:
+        _load_library()
+        if webinix_lib is None:
+            _err_library_not_found('wait')
             return
-    Webinix.webinix_wait()
+    webinix_lib.webinix_wait()
     try:
         shutil.rmtree(os.getcwd() + '/__intcache__/')
     except OSError:
@@ -317,16 +337,16 @@ def wait():
 
 
 # 
-def err_library_not_found(f):
-    print('Webinix ' + f + '(): Library Not Found.')
+def _err_library_not_found(f):
+    print('webinix_lib ' + f + '(): Library Not Found.')
 
 
 #
-def err_window_is_none(f):
-    print('Webinix ' + f + '(): Window is None.')
+def _err_window_is_none(f):
+    print('webinix_lib ' + f + '(): window is None.')
 
 
-# Set the path to the Webinix prebuilt dynamic lib
+# Set the path to the webinix_lib prebuilt dynamic lib
 def set_library_path(Path):
-    global Webinix_Path
-    Webinix_Path = Path
+    global webinix_path
+    webinix_path = Path
