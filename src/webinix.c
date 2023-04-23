@@ -372,7 +372,7 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
             // Copy response to the user's response buffer
             size_t response_len = strlen(_webinix_core.run_responses[run_id]);
             size_t bytes_to_cpy = (response_len <= buffer_length ? response_len : buffer_length);
-            snprintf(buffer, bytes_to_cpy, "%s", _webinix_core.run_responses[run_id]);
+            snprintf(buffer, bytes_to_cpy+1, "%s", _webinix_core.run_responses[run_id]);
         }
 
         _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
