@@ -112,7 +112,7 @@ int main() {
     webinix_bind(my_window, "MyID_Four", my_function_with_response);
 
     // Show the window
-    webinix_show(my_window, my_html);
+    webinix_show(my_window, my_html); // webinix_show_browser(my_window, my_html, Chrome);
 
     // Wait until all windows get closed
     webinix_wait();

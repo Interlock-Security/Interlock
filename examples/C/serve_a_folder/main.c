@@ -61,7 +61,7 @@ int main() {
     webinix_bind(my_window, "", events);
 
     // Show a new window
-    webinix_show(my_window, "index.html");
+    webinix_show(my_window, "index.html"); // webinix_show_browser(my_window, "index.html", Chrome);
 
     // Wait until all windows get closed
     webinix_wait();

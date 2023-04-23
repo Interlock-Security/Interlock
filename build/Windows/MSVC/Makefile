@@ -6,8 +6,8 @@ all: release
 debug:
 #	Static with Debug info
 	@echo Build Webinix Library (MSVC Debug Static)...
-	@cl /Zi /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
-	@cl /Zi /Fowebinix.obj /c /EHsc /DWEBUI_LOG "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
+	@cl /Zl /Zi /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
+	@cl /Zl /Zi /Fowebinix.obj /c /EHsc /DWEBUI_LOG "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
 	@lib /OUT:webinix-2-static-x64.lib webinix.obj mongoose.obj 1>NUL 2>&1
 #	Dynamic with Debug info
 	@echo Build Webinix Library (MSVC Debug Dynamic)...
@@ -21,8 +21,8 @@ debug:
 release:
 #	Static Release
 	@echo Build Webinix Library (MSVC Release Static)...
-	@cl /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
-	@cl /Fowebinix.obj /c /EHsc "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
+	@cl /Zl /Fomongoose.obj /c /EHsc "../../../src/mongoose.c" /I "../../../include" 1>NUL 2>&1
+	@cl /Zl /Fowebinix.obj /c /EHsc "../../../src/webinix.c" /I "../../../include" 1>NUL 2>&1
 	@lib /OUT:webinix-2-static-x64.lib webinix.obj mongoose.obj 1>NUL 2>&1
 #	Dynamic Release
 	@echo Build Webinix Library (MSVC Release Dynamic)...

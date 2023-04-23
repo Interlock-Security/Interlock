@@ -305,7 +305,7 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
 
     // Initializing response buffer
     if(buffer_length > 0)
-        memset(buffer, 0x00, buffer_length);    
+        memset(buffer, 0, buffer_length);    
 
     size_t js_len = strlen(script);
 
@@ -488,7 +488,7 @@ bool webinix_show_browser(void* window, const char* content, unsigned int browse
     _webinix_window_t* win = (_webinix_window_t*)window;
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_show_browser([%d])... \n", browser);
+        printf("[User] webinix_show_browser([%u])... \n", browser);
     #endif
 
     return _webinix_show(win, content, browser);
@@ -513,7 +513,7 @@ unsigned int webinix_bind(void* window, const char* element, void (*func)(webini
 
     // [win num][/][element]
     char* webinix_internal_id = _webinix_malloc(3 + 1 + len);
-    sprintf(webinix_internal_id, "%d/%s", win->window_number, element);
+    sprintf(webinix_internal_id, "%u/%s", win->window_number, element);
 
     unsigned int cb_index = _webinix_get_cb_index(webinix_internal_id);
 
@@ -667,7 +667,7 @@ void webinix_wait(void) {
     if(_webinix_core.startup_timeout > 0) {
 
         #ifdef WEBUI_LOG
-            printf("[Loop] webinix_wait() -> Using timeout %d second\n", _webinix_core.startup_timeout);
+            printf("[Loop] webinix_wait() -> Using timeout %u second\n", _webinix_core.startup_timeout);
         #endif
 
         // Wait for browser to start
@@ -680,7 +680,7 @@ void webinix_wait(void) {
         while(_webinix_core.servers > 0) {
 
             #ifdef WEBUI_LOG
-                // printf("[%d/%d]", _webinix_core.servers, _webinix_core.connections);
+                // printf("[%u/%u]", _webinix_core.servers, _webinix_core.connections);
             #endif
             _webinix_sleep(50);
         }
@@ -707,7 +707,7 @@ void webinix_wait(void) {
 void webinix_set_timeout(unsigned int second) {
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_set_timeout([%d])... \n", second);
+        printf("[User] webinix_set_timeout([%u])... \n", second);
     #endif
 
     _webinix_init();
@@ -724,7 +724,7 @@ void webinix_set_runtime(void* window, unsigned int runtime) {
     _webinix_window_t* win = (_webinix_window_t*)window;
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_script_runtime(%d)... \n", runtime);
+        printf("[User] webinix_script_runtime(%u)... \n", runtime);
     #endif
 
     _webinix_init();
@@ -751,7 +751,7 @@ void _webinix_interface_bind_handler(webinix_event_t* e) {
         #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_interface_bind_handler() -> User callback @ 0x%p\n", _webinix_core.cb_interface[cb_index]);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> Response set @ 0x%p\n", (char*)&e->response);
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> type [%d]\n", e->type);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> type [%u]\n", e->type);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> data [%s]\n", e->data);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> element [%s]\n", e->element);
         #endif
@@ -928,7 +928,7 @@ static void _webinix_free_mem(void* ptr) {
                 printf("[Core]\t\t_webinix_free_mem(0x%p)... Free %d bytes\n", ptr, (int)_webinix_core.ptr_size[i]);
             #endif
 
-            memset(ptr, 0x00, _webinix_core.ptr_size[i]);
+            memset(ptr, 0, _webinix_core.ptr_size[i]);
             free(ptr);
 
             _webinix_core.ptr_size[i] = 0;
@@ -968,7 +968,7 @@ static void _webinix_free_all_mem(void) {
                 printf("[Core]\t\t_webinix_free_all_mem()... Free %d bytes @ 0x%p\n", (int)_webinix_core.ptr_size[i], ptr);
             #endif
 
-            memset(ptr, 0x00, _webinix_core.ptr_size[i]);
+            memset(ptr, 0, _webinix_core.ptr_size[i]);
             free(ptr);
         }
     }
@@ -1033,7 +1033,7 @@ void* _webinix_malloc(int size) {
         return NULL;
     }
 
-    memset(block, 0x00, size);
+    memset(block, 0, size);
 
     _webinix_ptr_add((void *) block, size);
 
@@ -1043,7 +1043,7 @@ void* _webinix_malloc(int size) {
 static void _webinix_sleep(long unsigned int ms) {
     
     #ifdef WEBUI_LOG
-        // printf("[Core]\t\t_webinix_sleep([%d])... \n", ms);
+        // printf("[Core]\t\t_webinix_sleep([%u])... \n", ms);
     #endif
 
     #ifdef _WIN32
@@ -1190,7 +1190,7 @@ unsigned char _webinix_get_run_id(void) {
 bool _webinix_socket_test_listen_mg(unsigned int port_num) {
     
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_socket_test_listen_mg([%d])... \n", port_num);
+        printf("[Core]\t\t_webinix_socket_test_listen_mg([%u])... \n", port_num);
     #endif
 
     struct mg_connection *c;
@@ -1198,7 +1198,7 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
     mg_mgr_init(&mgr);
 
     char url[32];
-    sprintf(url, "http://localhost:%d", port_num);
+    sprintf(url, "http://localhost:%u", port_num);
 
     if((c = mg_http_listen(&mgr, url, NULL, &mgr)) == NULL) {
 
@@ -1216,7 +1216,7 @@ bool _webinix_socket_test_listen_mg(unsigned int port_num) {
 bool _webinix_port_is_used(unsigned int port_num) {
     
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_port_is_used([%d])... \n", port_num);
+        printf("[Core]\t\t_webinix_port_is_used([%u])... \n", port_num);
     #endif
 
     #ifdef _WIN32
@@ -1514,7 +1514,7 @@ const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     size_t len = cb_mem_size + strlen(webinix_javascript_bridge);
     char* js = (char*) _webinix_malloc(len);
     sprintf(js, 
-        "_webinix_port = %d; \n_webinix_win_num = %d; \n%s \n%s \n",
+        "_webinix_port = %u; \n_webinix_win_num = %u; \n%s \n%s \n",
         win->server_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
     );
 
@@ -1973,7 +1973,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 bool _webinix_browser_create_profile_folder(_webinix_window_t* win, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_browser_create_profile_folder(%d)... \n", browser);
+        printf("[Core]\t\t_webinix_browser_create_profile_folder(%u)... \n", browser);
     #endif
 
     const char* temp = _webinix_browser_get_temp_path(browser);
@@ -2118,7 +2118,7 @@ char* _webinix_generate_internal_id(_webinix_window_t* win, const char* element)
     size_t element_len = strlen(element);
     size_t internal_id_size = 3 + 1 + element_len; // [win num][/][name]
     char* webinix_internal_id = (char*) _webinix_malloc(internal_id_size);
-    sprintf(webinix_internal_id, "%d/%s", win->window_number, element);
+    sprintf(webinix_internal_id, "%u/%s", win->window_number, element);
 
     return webinix_internal_id;
 }
@@ -2126,7 +2126,7 @@ char* _webinix_generate_internal_id(_webinix_window_t* win, const char* element)
 const char* _webinix_browser_get_temp_path(unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_browser_get_temp_path([%d])... \n", browser);
+        printf("[Core]\t\t_webinix_browser_get_temp_path([%u])... \n", browser);
     #endif
 
     #ifdef _WIN32
@@ -2193,7 +2193,7 @@ bool _webinix_is_google_chrome_folder(const char* folder) {
 bool _webinix_browser_exist(_webinix_window_t* win, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_browser_exist([%d])... \n", browser);
+        printf("[Core]\t\t_webinix_browser_exist([%u])... \n", browser);
     #endif
 
     // Check if a web browser is installed on this machine
@@ -3013,7 +3013,7 @@ bool _webinix_browser_start_chromium(_webinix_window_t* win, const char* address
 bool _webinix_browser_start(_webinix_window_t* win, const char* address, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_browser_start([%s], [%d])... \n", address, browser);
+        printf("[Core]\t\t_webinix_browser_start([%s], [%u])... \n", address, browser);
     #endif
 
     // Non existing browser
@@ -3139,7 +3139,7 @@ bool _webinix_set_root_folder(_webinix_window_t* win, const char* path) {
 bool _webinix_show(_webinix_window_t* win, const char* content, unsigned int browser) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_show([%d])... \n", browser);
+        printf("[Core]\t\t_webinix_show([%u])... \n", browser);
     #endif
 
     if(_webinix_is_empty(content))
@@ -3179,9 +3179,9 @@ bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_e
 
     #ifdef WEBUI_LOG
         if(is_embedded_html)
-            printf("[Core]\t\t_webinix_show_window(HTML, [%d])... \n", browser);
+            printf("[Core]\t\t_webinix_show_window(HTML, [%u])... \n", browser);
         else
-            printf("[Core]\t\t_webinix_show_window(FILE, [%d])... \n", browser);
+            printf("[Core]\t\t_webinix_show_window(FILE, [%u])... \n", browser);
     #endif
 
     _webinix_init();
@@ -3202,20 +3202,20 @@ bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_e
         win->html = (content == NULL ? webinix_empty_string : content);
 
         // Generate the URL
-        size_t url_len = 20; // [domain][port]
+        size_t url_len = 32; // [http][domain][port]
         url = (char*) _webinix_malloc(url_len);
-        sprintf(url, "http://localhost:%d", port);
+        sprintf(url, "http://localhost:%u", port);
     }
     else {
 
         // Show a window using a local file
         win->is_embedded_html = false;
-        win->html = webinix_empty_string;
+        win->html = NULL;
 
         // Generate the URL
-        size_t url_len = 20 + strlen(content); // [domain][port][file]
+        size_t url_len = 32 + strlen(content); // [http][domain][port][file]
         url = (char*) _webinix_malloc(url_len);
-        sprintf(url, "http://localhost:%d/%s", port, content);
+        sprintf(url, "http://localhost:%u/%s", port, content);
     }
 
     // Set URL
@@ -3561,7 +3561,7 @@ char* _webinix_get_current_path(void) {
 static void _webinix_free_port(unsigned int port) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_free_port([%d])... \n", port);
+        printf("[Core]\t\t_webinix_free_port([%u])... \n", port);
     #endif
 
     for(unsigned int i = 0; i < WEBUI_MAX_ARRAY; i++) {
@@ -3664,7 +3664,7 @@ static void _webinix_init(void) {
     #endif
 
     // Initializing
-    memset(&_webinix_core, 0x0, sizeof(_webinix_core_t));
+    memset(&_webinix_core, 0, sizeof(_webinix_core_t));
 
     _webinix_core.initialized     = true;
     _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
@@ -3748,7 +3748,7 @@ WEBUI_SERVER_START
 
             #ifdef WEBUI_LOG
                 printf("[Core]\t\t[Thread] _webinix_server_start()... Listening Success\n");
-                printf("[Core]\t\t[Thread] _webinix_server_start()... Timeout is %d seconds\n", _webinix_core.startup_timeout);
+                printf("[Core]\t\t[Thread] _webinix_server_start()... Timeout is %u seconds\n", _webinix_core.startup_timeout);
             #endif
 
             bool stop = false;
@@ -3945,7 +3945,7 @@ WEBUI_CB
     bool _webinix_socket_test_listen_win32(unsigned int port_num) {
     
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_socket_test_listen_win32([%d])... \n", port_num);
+            printf("[Core]\t\t_webinix_socket_test_listen_win32([%u])... \n", port_num);
         #endif
 
         WSADATA wsaData;
@@ -3968,7 +3968,7 @@ WEBUI_CB
 
         // Resolve the server address and port
         char the_port[16];
-        sprintf(&the_port[0], "%d", port_num);
+        sprintf(&the_port[0], "%u", port_num);
         iResult = getaddrinfo("127.0.0.1", &the_port[0], &hints, &result);
         if(iResult != 0) {
             // WSACleanup();

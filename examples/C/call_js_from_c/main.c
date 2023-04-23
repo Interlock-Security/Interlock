@@ -85,7 +85,7 @@ int main() {
     webinix_bind(my_window, "MyButton2", my_function_exit);
 
     // Show the window
-    webinix_show(my_window, my_html);
+    webinix_show(my_window, my_html); // webinix_show_browser(my_window, my_html, Chrome);
 
     // Wait until all windows get closed
     webinix_wait();
