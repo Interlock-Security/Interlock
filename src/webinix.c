@@ -72,7 +72,7 @@ static const char* webinix_javascript_bridge =
 "            _webinix_ws_status = false; \n"
 "            if(_webinix_close_reason === _WEBUI_SWITCH) { \n"
 "                if(_webinix_log) \n"
-"                    console.log('Webinix -> Refresh UI'); \n"
+"                    console.log('Webinix -> Connection lost -> Navigation to [' + _webinix_close_value + ']'); \n"
 "                window.location.replace(_webinix_close_value); \n"
 "            } else { \n"
 "                if(_webinix_log) \n"
@@ -167,6 +167,16 @@ static const char* webinix_javascript_bridge =
 "            console.log('Webinix -> Navigation [' + url + ']'); \n"
 "    } \n"
 "} \n"
+"function webinix_is_external_link(url) { \n"
+"    const currentUrl = new URL(window.location.href); \n"
+"    const targetUrl = new URL(url, window.location.href); \n"
+"    currentUrl.hash = ''; \n"
+"    targetUrl.hash = ''; \n"
+"    if (url.startsWith('#') || url === currentUrl.href + '#' || currentUrl.href === targetUrl.href) { \n"
+"        return false; \n"
+"    } \n"
+"        return true; \n"
+"} \n"
 " // -- APIs -------------------------- \n"
 "function webinix_fn(fn, value) { \n"
 "    if(!_webinix_has_events && !_webinix_bind_list.includes(_webinix_win_num + '/' + fn)) \n"
@@ -224,8 +234,10 @@ static const char* webinix_javascript_bridge =
 "    const attribute = e.target.closest('a'); \n"
 "    if(attribute) { \n"
 "        const link = attribute.href; \n"
-"        e.preventDefault(); \n"
-"        _webinix_close(_WEBUI_SWITCH, link); \n"
+"        if(webinix_is_external_link(link)) { \n"
+"            e.preventDefault(); \n"
+"            _webinix_close(_WEBUI_SWITCH, link); \n"
+"        } \n"
 "    } \n"
 "}); \n"
 "if(typeof navigation !== 'undefined') { \n"
@@ -295,10 +307,10 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
     _webinix_window_t* win = (_webinix_window_t*)window;
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_script()... \n", script);
+        printf("[User] webinix_script()... \n");
         printf("[User] webinix_script() -> Script [%s] \n", script);
         printf("[User] webinix_script() -> Response Buffer @ 0x%p \n", buffer);
-        printf("[User] webinix_script() -> Response Buffer Size %lld bytes \n", buffer_length);
+        printf("[User] webinix_script() -> Response Buffer Size %zu bytes \n", buffer_length);
     #endif
 
     _webinix_init();
@@ -370,9 +382,9 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
         if(buffer != NULL && buffer_length > 1) {
 
             // Copy response to the user's response buffer
-            size_t response_len = strlen(_webinix_core.run_responses[run_id])+1;
+            size_t response_len = strlen(_webinix_core.run_responses[run_id]) + 1;
             size_t bytes_to_cpy = (response_len <= buffer_length ? response_len : buffer_length);
-            snprintf(buffer, bytes_to_cpy, "%s", _webinix_core.run_responses[run_id]);
+            memcpy(buffer, _webinix_core.run_responses[run_id], bytes_to_cpy);
         }
 
         _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
@@ -579,8 +591,8 @@ bool webinix_get_bool(webinix_event_t* e) {
     const char* str = webinix_get_string(e);
     if(str[0] == 't' || str[0] == 'T') // true || True
         return true;
-    
-        return false;
+
+    return false;
 }
 
 void webinix_return_int(webinix_event_t* e, long long int n) {
@@ -3396,6 +3408,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             return;
         
         #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_CLICK \n");
             printf("[Core]\t\t_webinix_window_receive() -> %d bytes \n", (int)element_len);
             printf("[Core]\t\t_webinix_window_receive() -> [%s] \n", element);
         #endif
@@ -3443,6 +3456,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             error = false;
 
         #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_JS \n");
             printf("[Core]\t\t_webinix_window_receive() -> run_id = 0x%02x \n", run_id);
             printf("[Core]\t\t_webinix_window_receive() -> error = 0x%02x \n", error);
             printf("[Core]\t\t_webinix_window_receive() -> %d bytes of data\n", (int)data_len);
@@ -3491,6 +3505,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             return;
         
         #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_CALL_FUNC \n");
             printf("[Core]\t\t_webinix_window_receive() -> %d bytes \n", (int)element_len);
             printf("[Core]\t\t_webinix_window_receive() -> [%s] \n", element);
         #endif
@@ -3526,6 +3541,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
                 return;
             
             #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_SWITCH \n");
                 printf("[Core]\t\t_webinix_window_receive() -> %d bytes \n", (int)url_len);
                 printf("[Core]\t\t_webinix_window_receive() -> [%s] \n", url);
             #endif

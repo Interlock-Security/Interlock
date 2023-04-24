@@ -10,13 +10,13 @@ debug:
 #	Static with Debug info
 	@echo "Build Webinix Library (GCC Debug Static)..."
 	@gcc -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
-	@gcc -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@gcc -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c" -DWEBUI_LOG
 	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
 	@ranlib libwebinix-2-static-x64.a
 #	Dynamic with Debug info
 	@echo "Build Webinix Library (GCC Debug Dynamic)..."
 	@gcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
-	@gcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
+	@gcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c" -DWEBUI_LOG
 	@gcc -g -shared -o webinix-2-x64.so webinix.o mongoose.o
 #	Clean
 	@- rm -f *.o

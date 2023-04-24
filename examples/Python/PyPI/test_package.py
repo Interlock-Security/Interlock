@@ -69,7 +69,7 @@ def python_to_js(e : webinix.event):
 	else:
 		print("JavaScript OK: [" + res.data + "]")
 	# Quick JavaScript (no response waiting)
-	
+	# e.window.run("alert('Fast!')")
 
 def js_to_python(e : webinix.event):
 	print('Function: js_to_python()')
@@ -99,7 +99,7 @@ def main():
 	MyWindow.bind('Exit', exit)
 
 	# Show the window
-	MyWindow.show(html)
+	MyWindow.show(html, webinix.browser.any)
 
 	# Wait until all windows are closed
 	webinix.wait()
