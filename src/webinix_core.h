@@ -25,8 +25,8 @@
 #define WEBUI_MAX_PORT          (65500)     // Should be less than 65535
 #define WEBUI_MAX_BUF           (1024000)   // 1024 Kb max dynamic memory allocation
 #define WEBUI_DEFAULT_PATH      "."         // Default root path
-#define WEBUI_DEF_TIMEOUT       (10)        // Default startup timeout in seconds
-#define WEBUI_MAX_TIMEOUT       (30)        // Maximum startup timeout in seconds
+#define WEBUI_DEF_TIMEOUT       (30)        // Default startup timeout in seconds
+#define WEBUI_MAX_TIMEOUT       (60)        // Maximum startup timeout in seconds the user can set
 
 typedef struct _webinix_timer_t {
     struct timespec start;
@@ -174,6 +174,8 @@ bool _webinix_is_empty(const char* s);
 unsigned char _webinix_get_run_id(void);
 void* _webinix_malloc(int size);
 static void _webinix_sleep(long unsigned int ms);
+unsigned int _webinix_find_the_best_browser(_webinix_window_t* win);
+bool _webinix_is_process_running(const char* process_name);
 
 WEBUI_SERVER_START;
 WEBUI_CB;
