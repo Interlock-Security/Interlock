@@ -80,8 +80,8 @@ namespace webinix {
 	}
 
 	// Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
-	bool script(void* window, std::string script, unsigned int timeout, std::string buffer, size_t buffer_length) {
-		return webinix_script(window, script.c_str(), timeout, &buffer[0], buffer_length);
+	bool script(void* window, std::string script, unsigned int timeout, char* buffer, size_t buffer_length) {
+		return webinix_script(window, script.c_str(), timeout, buffer, buffer_length);
 	}
 
 	// Chose between Deno and Nodejs runtime for .js and .ts files.

@@ -232,7 +232,7 @@ class window:
         res.error = not status
         return res
 
-    # Quickly run a JavaScript (no response waiting).
+    # Run JavaScript quickly with no waiting for the response
     def run(self, script):
         global webinix_lib
         if self.window is None:

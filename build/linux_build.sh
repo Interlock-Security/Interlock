@@ -20,7 +20,7 @@ RootPath="$PWD/../"
 cd "$RootPath"
 
 echo "";
-echo "- - [Build GCC] - - - - - - - - - - - - - -";
+echo "Building Webinix using GCC...";
 echo "";
 
 # Build Webinix Library using GCC
@@ -29,7 +29,7 @@ cd "build/Linux/GCC"
 $GCC_CMD
 
 echo "";
-echo "- - [Build Clang] - - - - - - - - - - - - -";
+echo "Building Webinix using Clang...";
 echo "";
 
 # Build Webinix Library using Clang
@@ -38,7 +38,7 @@ cd "build/Linux/Clang"
 $CLANG_CMD
 
 echo "";
-echo "- - [Copy Libs] - - - - - - - - - - - - - -"
+echo "Copying Webinix libs to the examples folder..."
 echo "";
 
 cd "$RootPath"
@@ -56,7 +56,7 @@ cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/Python/PyPI/Package/src/webin
 echo "";
 if [ "$ARG1" = "" ]; then
 
-    echo "- - [Copy Release Libs] - - - - - - - - - -"
+    echo "Copying Webinix libs to the release folder..."
     echo "";
 
     # Release Linux Include
@@ -71,7 +71,7 @@ if [ "$ARG1" = "" ]; then
     cp -f "build/Linux/Clang/libwebinix-2-static-x64.a" "Release/Linux/Clang/libwebinix-2-static-x64.a"
 
     echo "";
-    echo "- - [Compress Release Folder] - - - - - - -"
+    echo "Compressing the release folder..."
     echo "";
 
     TAR_OUT="webinix-linux-x64-v$WEBUI_VERSION.zip"
@@ -81,7 +81,7 @@ if [ "$ARG1" = "" ]; then
     cd "$RootPath"
 
     echo "";
-    echo "- - [Clean] - - - - - - - - - - - - - - - -"
+    echo "Cleaning..."
     echo "";
 
     find ./ -type f -name "*.o" -exec rm -f {} \;
