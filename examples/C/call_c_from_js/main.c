@@ -103,7 +103,7 @@ int main() {
     "</html>";
 
     // Create a window
-    webinix_window_t* my_window = webinix_new_window();
+    void* my_window = webinix_new_window();
 
     // Bind HTML elements with C functions
     webinix_bind(my_window, "MyID_One", my_function_string);
@@ -112,7 +112,7 @@ int main() {
     webinix_bind(my_window, "MyID_Four", my_function_with_response);
 
     // Show the window
-    webinix_show(my_window, my_html);
+    webinix_show(my_window, my_html); // webinix_show_browser(my_window, my_html, Chrome);
 
     // Wait until all windows get closed
     webinix_wait();
