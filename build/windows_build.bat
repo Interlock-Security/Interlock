@@ -14,7 +14,7 @@ IF "%ARG1%"=="debug" (
 echo.
 echo Webinix v%WEBUI_VERSION% Build Script
 echo Platform: Microsoft Windows x64
-echo Compiler: MSVC and GCC
+echo Compiler: MSVC, GCC and TCC
 
 Set RootPath=%CD%\..\
 cd "%RootPath%"
