@@ -8,14 +8,14 @@ Example of how to create the minimal Webinix application in C++. To build this e
 - **Build Tools for Microsoft Visual Studio**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix\examples\C++\minimal\Windows\MSVC
+cd webinix\examples\C++\serve_a_folder\Windows\MSVC
 nmake
 ```
 
 - **MinGW**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix\examples\C++\minimal\Windows\GCC
+cd webinix\examples\C++\serve_a_folder\Windows\GCC
 mingw32-make
 ```
 
@@ -24,14 +24,14 @@ mingw32-make
 - **GCC**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix/examples/C++/minimal/Linux/GCC
+cd webinix/examples/C++/serve_a_folder/Linux/GCC
 make
 ```
 
 - **Clang**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix/examples/C++/minimal/Linux/Clang
+cd webinix/examples/C++/serve_a_folder/Linux/Clang
 make
 ```
 
@@ -40,6 +40,6 @@ make
 - **Clang**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix/examples/C++/minimal/macOS/Clang
+cd webinix/examples/C++/serve_a_folder/macOS/Clang
 make
 ```

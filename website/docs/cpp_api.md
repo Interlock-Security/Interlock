@@ -262,6 +262,25 @@ void my_function(webinix_event_t* e) {
 webinix::bind(my_window, "MyID", my_function);
 ```
 
+Using `webinix::bind()` to call a class member method
+
+```cpp
+class MyClass {
+    public: void my_function(webinix_event_t* e) {
+        // <button id="MyID">Hello</button> gets clicked!
+    }
+};
+
+// Wrapper:
+// Because Webinix is written in C, so it can not
+// access `MyClass` directly. That's why we should
+// create a simple C++ wrapper.
+MyClass obj;
+void my_function_wrapper(webinix_event_t* e) { obj.my_function(e); }
+
+webinix::bind(my_window, "MyID", my_function_wrapper);
+```
+
 ### Events
 
 The *e* corresponds to the word _Event_. `e` is a struct that has these elements:
