@@ -62,12 +62,17 @@ copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\TypeScript\Deno\webinix
 REM Python
 copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\Python\PyPI\Package\src\webinix\webinix-2-x64.dll"
 
+REM C++ (Minimal)
+copy /Y "include\webinix.hpp" "examples\C++\minimal\webinix.hpp"
+
 REM C++ (Visual Studio 2022)
 copy /Y "include\webinix.h" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.h"
+copy /Y "include\webinix.hpp" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.hpp"
 copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
 
 REM C++ (Visual Studio 2019)
 copy /Y "include\webinix.h" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix.h"
+copy /Y "include\webinix.hpp" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix.hpp"
 copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
 
 echo.

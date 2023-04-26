@@ -53,6 +53,9 @@ cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/TypeScript/Deno/webinix-2-x64
 # Python
 cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.so"
 
+# C++ (Minimal)
+cp -f "include/webinix.hpp" "examples/C++/minimal/webinix.hpp"
+
 echo "";
 if [ "$ARG1" = "" ]; then
 
@@ -60,7 +63,8 @@ if [ "$ARG1" = "" ]; then
     echo "";
 
     # Release Linux Include
-    cp -f "include/webinix.h" "Release/Linux/include/webinix.h"    
+    cp -f "include/webinix.h" "Release/Linux/include/webinix.h"
+    cp -f "include/webinix.hpp" "Release/Linux/include/webinix.hpp"
 
     # Release Linux GCC
     cp -f "build/Linux/GCC/webinix-2-x64.so" "Release/Linux/GCC/webinix-2-x64.so"

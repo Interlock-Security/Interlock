@@ -44,6 +44,9 @@ cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/TypeScript/Deno/webinix-2-
 # Python
 cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.dyn"
 
+# C++ (Minimal)
+cp -f "include/webinix.hpp" "examples/C++/minimal/webinix.hpp"
+
 echo "";
 if [ "$ARG1" = "" ]; then
 
@@ -51,7 +54,8 @@ if [ "$ARG1" = "" ]; then
     echo "";
 
     # Release macOS Include
-    cp -f "include/webinix.h" "Release/macOS/include/webinix.h"    
+    cp -f "include/webinix.h" "Release/macOS/include/webinix.h"
+    cp -f "include/webinix.hpp" "Release/macOS/include/webinix.hpp"
 
     # Release macOS Clang
     cp -f "build/macOS/Clang/webinix-2-x64.dyn" "Release/macOS/Clang/webinix-2-x64.dyn"
