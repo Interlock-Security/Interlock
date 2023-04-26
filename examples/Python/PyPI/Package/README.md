@@ -1,12 +1,22 @@
 # Webinix
 
-Use any web browser as GUI, with your preferred language in the backend, and HTML/JS/TS/CSS in the frontend.
+Use any web browser as GUI, with Python in the backend and HTML5 in the frontend, all in a lightweight portable lib.
+
+* [Online Documentation](https://webinix.me/docs/#/python_api)
+
+```sh
+pip install webinix2
+```
 
 ```python
 from webinix import webinix
+
+def my_function(e : webinix.event)
+    print("Hi!, You clicked on " + e.element + " element")
+
 MyWindow = webinix.window()
-MyWindow.bind('MyID', my_function)
-MyWindow.show("MyHTML")
+MyWindow.bind("MyID", my_function)
+MyWindow.show("<html>Hello World</html>")
 webinix.wait()
 ```
 
