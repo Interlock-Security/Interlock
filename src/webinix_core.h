@@ -111,7 +111,7 @@ typedef struct _webinix_cmd_async_t {
     DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
     int _webinix_system_win32(char* cmd, bool show);
     bool _webinix_socket_test_listen_win32(unsigned int port_num);
-    bool _webinix_get_windows_reg_value(HKEY key, const char* reg, const char* value_name, char value[WEBUI_MAX_PATH]);
+    bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
 
     #define WEBUI_CB DWORD WINAPI _webinix_cb(LPVOID _arg)
     #define WEBUI_SERVER_START DWORD WINAPI _webinix_server_start(LPVOID arg)
