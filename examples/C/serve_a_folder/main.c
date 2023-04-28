@@ -60,6 +60,9 @@ int main() {
     // Bind events
     webinix_bind(my_window, "", events);
 
+    // Make Deno as the `.ts` and `.js` interpreter
+    webinix_set_runtime(my_window, Deno);
+
     // Show a new window
     webinix_show(my_window, "index.html"); // webinix_show_browser(my_window, "index.html", Chrome);
 

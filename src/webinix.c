@@ -282,8 +282,8 @@ bool webinix_run(void* window, const char* script) {
     unsigned char run_id = _webinix_get_run_id();
     _webinix_core.run_done[run_id] = false;
     _webinix_core.run_error[run_id] = false;
-    if((void *)_webinix_core.run_responses[run_id] != NULL)
-        _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
+    if((void*)_webinix_core.run_responses[run_id] != NULL)
+        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
     
     // Prepare the packet
     size_t packet_len = 3 + js_len; // [header][js]
@@ -296,7 +296,7 @@ bool webinix_run(void* window, const char* script) {
     
     // Send packets
     _webinix_window_send(win, packet, packet_len);
-    _webinix_free_mem((void *)packet);
+    _webinix_free_mem((void*)packet);
 
     return true;
 }
@@ -332,8 +332,8 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
     unsigned char run_id = _webinix_get_run_id();
     _webinix_core.run_done[run_id] = false;
     _webinix_core.run_error[run_id] = false;
-    if((void *)_webinix_core.run_responses[run_id] != NULL)
-        _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
+    if((void*)_webinix_core.run_responses[run_id] != NULL)
+        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
 
     // Prepare the packet
     size_t packet_len = 3 + js_len;             // [header][js]
@@ -346,7 +346,7 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
     
     // Send packets
     _webinix_window_send(win, packet, packet_len);
-    _webinix_free_mem((void *)packet);
+    _webinix_free_mem((void*)packet);
 
     // Wait for UI response
     if(timeout_second < 1 || timeout_second > 86400) {
@@ -387,7 +387,7 @@ bool webinix_script(void* window, const char* script, unsigned int timeout_secon
             memcpy(buffer, _webinix_core.run_responses[run_id], bytes_to_cpy);
         }
 
-        _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
+        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
 
         return _webinix_core.run_error[run_id];
     }
@@ -441,7 +441,7 @@ void webinix_close(void* window) {
 
         // Send packets
         _webinix_window_send(win, packet, 4);
-        _webinix_free_mem((void *)packet);
+        _webinix_free_mem((void*)packet);
     }
 }
 
@@ -538,7 +538,7 @@ unsigned int webinix_bind(void* window, const char* element, void (*func)(webini
         // Replace a reference
         _webinix_core.cb[cb_index] = func;
 
-        _webinix_free_mem((void *)webinix_internal_id);
+        _webinix_free_mem((void*)webinix_internal_id);
     }
     else {
 
@@ -548,7 +548,7 @@ unsigned int webinix_bind(void* window, const char* element, void (*func)(webini
         if(cb_index > 0)
             _webinix_core.cb[cb_index] = func;
         else
-            _webinix_free_mem((void *)webinix_internal_id);
+            _webinix_free_mem((void*)webinix_internal_id);
     }
 
     return cb_index;
@@ -778,7 +778,7 @@ void _webinix_interface_bind_handler(webinix_event_t* e) {
         e->response = (char*)webinix_empty_string;
     
     // Free
-    _webinix_free_mem((void *)webinix_internal_id);
+    _webinix_free_mem((void*)webinix_internal_id);
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_interface_bind_handler() -> user-callback response [%s] @ 0x%p\n", (const char *)e->response, e->response);
@@ -1051,7 +1051,7 @@ void* _webinix_malloc(int size) {
 
     memset(block, 0, size);
 
-    _webinix_ptr_add((void *) block, size);
+    _webinix_ptr_add((void*) block, size);
 
     return block;
 }
@@ -1158,8 +1158,8 @@ bool _webinix_file_exist_mg(void *ev_data) {
 
     bool exist = _webinix_file_exist(full_path);
 
-    _webinix_free_mem((void *)file);
-    _webinix_free_mem((void *)full_path);
+    _webinix_free_mem((void*)file);
+    _webinix_free_mem((void*)full_path);
 
     return exist;
 }
@@ -1308,34 +1308,42 @@ bool _webinix_nodejs_exist(void) {
 const char* _webinix_interpret_command(const char* cmd) {
     
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_interpret_command()... \n");
+        printf("[Core]\t\t_webinix_interpret_command([%s])... \n", cmd);
     #endif
 
-    // Redirect stderr to stdout
-    char cmd_redirected[1024];
-    sprintf(cmd_redirected, "%s 2>&1", cmd);
+    // Run the command with redirection of errors to stdout
+    // and return the output.
 
-    FILE *runtime = WEBUI_POPEN(cmd_redirected, "r");
+    // Output buffer
+    char* out = NULL;
 
-    if(runtime == NULL)
-        return NULL;
+    #ifdef _WIN32
+        // Redirect stderr to stdout
+        char cmd_with_redirection[512];
+        sprintf(cmd_with_redirection, "cmd.exe /c %s 2>&1", cmd);    
+        _webinix_system_win32_out(cmd_with_redirection, &out, false);
+    #else
+        // Redirect stderr to stdout
+        char cmd_with_redirection[512];
+        sprintf(cmd_with_redirection, "%s 2>&1", cmd);    
 
-    // Get STDOUT length
-    // int c;
-    // while ((c = fgetc(runtime)) != EOF)
-    //     len++;
-    int len = 1024 * 8;
+        FILE *pipe = WEBUI_POPEN(cmd_with_redirection, "r");
 
-    // Read STDOUT
-    char* out = (char*) _webinix_malloc(len);
-    char* line = (char*) _webinix_malloc(4000);
-    while(fgets(line, 4000, runtime) != NULL)
-        strcat(out, line);
+        if(pipe == NULL)
+            return NULL;
+        
+        // Read STDOUT
+        out = (char*) _webinix_malloc(WEBUI_CMD_STDOUT_BUF);
+        char* line = (char*) _webinix_malloc(1024);
+        while(fgets(line, 1024, pipe) != NULL)
+            strcat(out, line);
+        WEBUI_PCLOSE(pipe);
 
-    WEBUI_PCLOSE(runtime);
-    _webinix_free_mem((void *)line);
+        // Clean
+        _webinix_free_mem((void*)line);
+    #endif
 
-    return (const char*) out;
+    return (const char*)out;
 }
 
 static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection *c, void *ev_data, char* index) {
@@ -1344,22 +1352,24 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
         printf("[Core]\t\t_webinix_interpret_file()... \n");
     #endif
 
-    // Run the JavaScript / TypeScript runtime
-    // and send back the output with HTTP 200 status code
-    // otherwise, send the file as a normal text based one
+    // Interpret the file using JavaScript/TypeScript runtimes
+    // and send back the output. otherwise, send the file as a normal text based    
 
     char* file;
     char* full_path;
+    char* query;
 
+    // Get file full path
     if(index != NULL && !_webinix_is_empty(index)) {
 
-        // Parse index file
+        // Parse as index file
+
         file = index;
         full_path = index;
     }
     else {
 
-        // Parse other files
+        // Parse as other non-index files
 
         struct mg_http_message *hm = (struct mg_http_message *) ev_data;
 
@@ -1377,12 +1387,20 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
         if(!_webinix_file_exist(full_path)) {
 
             // File not exist - 404
-            _webinix_serve_file(win, c, ev_data);
+            mg_http_reply(
+                c, 404,
+                "",
+                webinix_html_res_not_available
+            );
 
-            _webinix_free_mem((void *)file);
-            _webinix_free_mem((void *)full_path);
+            _webinix_free_mem((void*)file);
+            _webinix_free_mem((void*)full_path);
             return;
         }
+
+        // Get query
+        query = (char*) _webinix_malloc(hm->query.len);
+        sprintf(query, "%.*s", (int)hm->query.len, hm->query.ptr);
     }
 
     // Get file extension
@@ -1395,16 +1413,15 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
         if(win->runtime == Deno) {
 
             // Use Deno
-
             if(_webinix_deno_exist()) {
 
                 // Set command
                 // [disable coloring][file]
                 char* cmd = (char*) _webinix_malloc(64 + strlen(full_path));
                 #ifdef _WIN32
-                    sprintf(cmd, "Set NO_COLOR=1 & deno run --allow-all \"%s\"", full_path);
+                    sprintf(cmd, "Set NO_COLOR=1 & Set DENO_NO_UPDATE_CHECK=1 & deno run --allow-all --unstable \"%s\" \"%s\"", full_path, query);
                 #else
-                    sprintf(cmd, "NO_COLOR=1 & deno run --allow-all \"%s\"", full_path);
+                    sprintf(cmd, "NO_COLOR=1 & DENO_NO_UPDATE_CHECK=1 & deno run --allow-all --unstable \"%s\" \"%s\"", full_path, query);
                 #endif
 
                 // Run command
@@ -1412,7 +1429,7 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
 
                 if(out != NULL) {
 
-                    // Send deno output
+                    // Send Deno output
                     mg_http_reply(
                         c, 200,
                         "",
@@ -1426,15 +1443,15 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
                     _webinix_serve_file(win, c, ev_data);
                 }
 
-                _webinix_free_mem((void *)cmd);
-                _webinix_free_mem((void *)out);
+                _webinix_free_mem((void*)cmd);
+                _webinix_free_mem((void*)out);
             }
             else {
 
                 // Deno not installed
 
                 mg_http_reply(
-                    c, 200,
+                    c, 404,
                     "",
                     webinix_deno_not_found
                 );
@@ -1449,7 +1466,7 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
                 // Set command
                 // [node][file]
                 char* cmd = (char*) _webinix_malloc(16 + strlen(full_path));
-                sprintf(cmd, "node \"%s\"", full_path);
+                sprintf(cmd, "node \"%s\" \"%s\"", full_path, query);
 
                 // Run command
                 const char* out = _webinix_interpret_command(cmd);
@@ -1470,15 +1487,15 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
                     _webinix_serve_file(win, c, ev_data);
                 }
 
-                _webinix_free_mem((void *)cmd);
-                _webinix_free_mem((void *)out);
+                _webinix_free_mem((void*)cmd);
+                _webinix_free_mem((void*)out);
             }
             else {
 
                 // Node.js not installed
 
                 mg_http_reply(
-                    c, 200,
+                    c, 404,
                     "",
                     webinix_nodejs_not_found
                 );
@@ -1498,8 +1515,8 @@ static void _webinix_interpret_file(_webinix_window_t* win, struct mg_connection
         _webinix_serve_file(win, c, ev_data);
     }
 
-    _webinix_free_mem((void *)file);
-    _webinix_free_mem((void *)full_path);
+    _webinix_free_mem((void*)file);
+    _webinix_free_mem((void*)full_path);
 }
 
 const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
@@ -1580,7 +1597,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 js
             );
 
-            _webinix_free_mem((void *)js);
+            _webinix_free_mem((void*)js);
         }
         else if(strncmp(hm->uri.ptr, "/WEBUI/FUNC/", 12) == 0 && hm->uri.len >= 15) {
             
@@ -1651,9 +1668,9 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
             );
 
             // Free
-            _webinix_free_mem((void *)packet);
-            _webinix_free_mem((void *)webinix_internal_id);
-            _webinix_free_mem((void *)e.response);
+            _webinix_free_mem((void*)packet);
+            _webinix_free_mem((void*)webinix_internal_id);
+            _webinix_free_mem((void*)e.response);
         }
         else if(mg_http_match_uri(hm, "/")) {
 
@@ -1669,7 +1686,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                     // Forbidden 403
 
                     #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_server_event_handler()... HTML Main Already Handled (403)\n");
+                        printf("[Core]\t\t_webinix_server_event_handler()... Embedded Index HTML Already Handled (403)\n");
                     #endif
 
                     // Header
@@ -1688,7 +1705,7 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                     win->html_handled = true;
 
                     #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_server_event_handler()... HTML Main\n");
+                        printf("[Core]\t\t_webinix_server_event_handler()... Embedded Index HTML\n");
                     #endif
 
                     char* html = (char*) webinix_empty_string;
@@ -1706,21 +1723,8 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                             win->html, js
                         );
 
-                        _webinix_free_mem((void *)js);
+                        _webinix_free_mem((void*)js);
                     }
-
-                    // // HTTP Header
-                    // char header[512];
-                    // memset(header, 0x00, 512);
-                    // sprintf(header,
-                    //     "HTTP/1.1 200 OK\r\n"
-                    //     "Content-Type: text/html; charset=utf-8\r\n"
-                    //     "Host: localhost:%d\r\n"
-                    //     "Cache-Control: no-cache\r\n"
-                    //     "Content-Length: %d\r\n"
-                    //     "Connection: close\r\n\r\n",
-                    //     win->server_port, strlen(html)
-                    // );
 
                     // Send
                     mg_http_reply(
@@ -1729,17 +1733,17 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                         html
                     );
 
-                    _webinix_free_mem((void *)html);
+                    _webinix_free_mem((void*)html);
                 }
             }
             else {
 
-                // Serve local files
+                // Serve as index local file
 
                 win->html_handled = true;
 
                 #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_server_event_handler()... HTML Root Index\n");
+                    printf("[Core]\t\t_webinix_server_event_handler()... Local Index File\n");
                 #endif
 
                 // Set full path
@@ -1751,9 +1755,12 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 if(_webinix_file_exist(index)) {
 
                     // TypeScript Index
-                    _webinix_interpret_file(win, c, ev_data, index);
+                    if(win->runtime != None)
+                        _webinix_interpret_file(win, c, ev_data, index);
+                    else
+                        _webinix_serve_file(win, c, ev_data);
 
-                   _webinix_free_mem((void *)index);
+                   _webinix_free_mem((void*)index);
                     return;
                 }
 
@@ -1762,13 +1769,16 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
                 if(_webinix_file_exist(index)) {
 
                     // JavaScript Index
-                    _webinix_interpret_file(win, c, ev_data, index);
+                    if(win->runtime != None)
+                        _webinix_interpret_file(win, c, ev_data, index);
+                    else
+                        _webinix_serve_file(win, c, ev_data);
 
-                    _webinix_free_mem((void *)index);
+                    _webinix_free_mem((void*)index);
                     return;
                 }
 
-                _webinix_free_mem((void *)index);
+                _webinix_free_mem((void*)index);
                 
                 // Index.html
                 // Serve as a normal HTML text-based file
@@ -1826,58 +1836,22 @@ static void _webinix_server_event_handler(struct mg_connection *c, int ev, void 
 
             // [/file]
 
-            if(win->is_embedded_html) {
+            if(win->runtime != None) {
 
-                if(win->runtime != None) {
-
-                    // Interpret file
-
-                    #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_server_event_handler()... HTML Interpret file\n");
-                    #endif
-
-                    _webinix_interpret_file(win, c, ev_data, NULL);
-                }
-                else {
-
-                    // Serve local files
-
-                    #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_server_event_handler()... HTML Root file\n");
-                    #endif
-
-                    // Serve as a normal text-based file
-                    _webinix_serve_file(win, c, ev_data);
-                }
+                #ifdef WEBUI_LOG
+                    printf("[Core]\t\t_webinix_server_event_handler()... Trying to interpret local file\n");
+                #endif
+                
+                _webinix_interpret_file(win, c, ev_data, NULL);
             }
             else {
 
-                // This is a non-server-folder mode
-                // but the HTML body request a local file
-                // this request can be css, js, image, etc...
-
-                if(_webinix_file_exist_mg(ev_data)) {
-
-                    // Serve as a normal text-based file
-                    _webinix_serve_file(win, c, ev_data);
-                }
-                else {
-
-                    // 404
-
-                    #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_server_event_handler()... HTML 404\n");
-                    #endif
-
-                    // Header
-                    // text/html; charset=utf-8
-
-                    mg_http_reply(
-                        c, 404,
-                        "",
-                        webinix_html_res_not_available
-                    );
-                }
+                #ifdef WEBUI_LOG
+                    printf("[Core]\t\t_webinix_server_event_handler()... Text based local file\n");
+                #endif
+                
+                // Serve as a normal text-based file
+                _webinix_serve_file(win, c, ev_data);
             }
         }
     }
@@ -3428,9 +3402,9 @@ bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_e
 
     // Initialization
     if(win->html != NULL)
-        _webinix_free_mem((void *)win->html);
+        _webinix_free_mem((void*)win->html);
     if(win->url != NULL)
-        _webinix_free_mem((void *)win->url);
+        _webinix_free_mem((void*)win->url);
 
     if(is_embedded_html) {
 
@@ -3467,21 +3441,21 @@ bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_e
         if(!_webinix_browser_start(win, win->url, browser)) {
 
             // Browser not available
-            _webinix_free_mem((void *)win->html);
-            _webinix_free_mem((void *)win->url);
+            _webinix_free_mem((void*)win->html);
+            _webinix_free_mem((void*)win->url);
             _webinix_free_port(win->server_port);
             return false;
         }
         
         // New server thread
         #ifdef _WIN32
-            HANDLE thread = CreateThread(NULL, 0, _webinix_server_start, (void *)win, 0, NULL);
+            HANDLE thread = CreateThread(NULL, 0, _webinix_server_start, (void*)win, 0, NULL);
             win->server_thread = thread;
             if(thread != NULL)
                 CloseHandle(thread);
         #else
             pthread_t thread;
-            pthread_create(&thread, NULL, &_webinix_server_start, (void *)win);
+            pthread_create(&thread, NULL, &_webinix_server_start, (void*)win);
             pthread_detach(thread);
             win->server_thread = thread;
         #endif
@@ -3501,7 +3475,7 @@ bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_e
 
         // Send the packet
         _webinix_window_send(win, packet, packet_len);
-        _webinix_free_mem((void *)packet);
+        _webinix_free_mem((void*)packet);
     }
 
     return true;
@@ -3529,12 +3503,12 @@ static void _webinix_window_event(_webinix_window_t* win, char* webinix_internal
     }
 
     #ifdef _WIN32
-        HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void *) arg, 0, NULL);
+        HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void*) arg, 0, NULL);
         if(user_fun_thread != NULL)
             CloseHandle(user_fun_thread); 
     #else
         pthread_t thread;
-        pthread_create(&thread, NULL, &_webinix_cb, (void *) arg);
+        pthread_create(&thread, NULL, &_webinix_cb, (void*) arg);
         pthread_detach(thread);
     #endif
 }
@@ -3599,7 +3573,7 @@ bool _webinix_get_data(const char* packet, size_t packet_len, unsigned int pos, 
     *data_len = strlen(*data);
     if(*data_len < 1) {
 
-        _webinix_free_mem((void *) data);
+        _webinix_free_mem((void*) data);
         *data = NULL;
         data_len = 0;
         return false;
@@ -3689,8 +3663,8 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         #endif
 
         // Initialize pipe
-        if((void *)_webinix_core.run_responses[run_id] != NULL)
-            _webinix_free_mem((void *)_webinix_core.run_responses[run_id]);
+        if((void*)_webinix_core.run_responses[run_id] != NULL)
+            _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
 
         // Set pipe
         if(data_status && data_len > 0) {
@@ -3983,7 +3957,7 @@ WEBUI_SERVER_START
     mg_mgr_init(&mgr);
     _webinix_core.mg_mgrs[win->window_number] = &mgr;
 
-    if(mg_http_listen(&mgr, win->url, _webinix_server_event_handler, (void *)win) != NULL) {
+    if(mg_http_listen(&mgr, win->url, _webinix_server_event_handler, (void*)win) != NULL) {
 
         if(_webinix_core.startup_timeout > 0) {
 
@@ -4148,7 +4122,7 @@ WEBUI_CB
 
         char* events_id = _webinix_generate_internal_id(arg->win, "");
         unsigned int events_cb_index = _webinix_get_cb_index(events_id);
-        _webinix_free_mem((void *)events_id);
+        _webinix_free_mem((void*)events_id);
 
         if(events_cb_index > 0 && _webinix_core.cb[events_cb_index] != NULL) {
 
@@ -4173,10 +4147,10 @@ WEBUI_CB
     #endif    
 
     // Free
-    _webinix_free_mem((void *)e.response);
-    _webinix_free_mem((void *)arg->webinix_internal_id);
-    _webinix_free_mem((void *)arg->element_name);
-    _webinix_free_mem((void *)arg);
+    _webinix_free_mem((void*)e.response);
+    _webinix_free_mem((void*)arg->webinix_internal_id);
+    _webinix_free_mem((void*)arg->element_name);
+    _webinix_free_mem((void*)arg);
 
     THREAD_RETURN
 }
@@ -4242,6 +4216,105 @@ WEBUI_CB
 
         // Listening Success
         return true;
+    }
+
+    int _webinix_system_win32_out(const char *cmd, char **output, bool show) {
+
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_system_win32_out()... \n");
+        #endif
+
+        // Ini
+        *output = NULL;
+        if(cmd == NULL)
+            return -1;
+
+        // Return
+        DWORD Return = 0;
+        
+        // Flags
+        DWORD CreationFlags = CREATE_NO_WINDOW;
+        if(show)
+            CreationFlags = SW_SHOW;
+
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+        sa.bInheritHandle = TRUE;
+        sa.lpSecurityDescriptor = NULL;
+        HANDLE stdout_read, stdout_write;
+        if (!CreatePipe(&stdout_read, &stdout_write, &sa, 0)) {
+            return -1;
+        }
+        if (!SetHandleInformation(stdout_read, HANDLE_FLAG_INHERIT, 0)) {
+            CloseHandle(stdout_read);
+            CloseHandle(stdout_write);
+            return -1;
+        }
+
+        STARTUPINFOA si;
+        ZeroMemory(&si, sizeof(STARTUPINFOA));
+        si.cb = sizeof(STARTUPINFOA);
+        si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+        si.wShowWindow = SW_HIDE;
+        si.hStdOutput = stdout_write;
+        si.hStdError = stdout_write;
+
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+
+        if (!CreateProcessA(
+            NULL,           // No module name (use cmd line)
+            (LPSTR)cmd,     // Command line
+            NULL,           // Process handle not inheritable
+            NULL,           // Thread handle not inheritable
+            TRUE,           // Set handle inheritance to FALSE
+            CreationFlags,  // Creation flags
+            NULL,           // Use parent's environment block
+            NULL,           // Use parent's starting directory 
+            &si,            // Pointer to STARTUP INFO structure
+            &pi))           // Pointer to PROCESS_INFORMATION structure
+        {
+            CloseHandle(stdout_read);
+            CloseHandle(stdout_write);
+            return -1;
+        }
+        CloseHandle(stdout_write);
+
+        SetFocus(pi.hProcess);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        GetExitCodeProcess(pi.hProcess, &Return);
+
+        DWORD bytes_read;
+        char buffer[WEBUI_CMD_STDOUT_BUF];
+        size_t output_size = 0;
+
+        while (ReadFile(stdout_read, buffer, WEBUI_CMD_STDOUT_BUF, &bytes_read, NULL) && bytes_read > 0) {
+
+            char *new_output = realloc(*output, output_size + bytes_read + 1);
+            if (new_output == NULL) {
+                free(*output);
+                CloseHandle(stdout_read);
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+                return -1;
+            }
+
+            *output = new_output;
+            memcpy(*output + output_size, buffer, bytes_read);
+            output_size += bytes_read;
+        }
+
+        if (*output != NULL)
+            (*output)[output_size] = '\0';
+
+        CloseHandle(stdout_read);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        if(Return == 0)
+            return 0;
+        else
+            return -1;
     }
 
     int _webinix_system_win32(char* cmd, bool show) {
