@@ -80,7 +80,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
  - [TypeScript / JavaScript](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript)
  - [Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go/hello_world)
  - [Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust/hello_world) (*Not Complete*)
- - [V - malisipi/vwebinix](https://github.com/malisipi/vwebinix/tree/main/examples) (*Not Complete*)
+ - [V - malisipi/vwebinix](https://github.com/malisipi/vwebinix/tree/main/examples)
  - [Nim - neroist/webinix](https://github.com/neroist/webinix/tree/main/examples) (*Not Complete*)
  - [Zig - desttinghim/webinix](https://github.com/desttinghim/webinix/tree/main/examples) (*Not Complete*)
 
@@ -130,7 +130,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | TypeScript | ✔️ | [examples/TypeScript/Deno](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript/Deno) |
 | Go | ✔️ | [examples/Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go) |
 | Rust | *Not Complete* | [examples/Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust) |
-| V | *Not Complete* | [malisipi/vwebinix](https://github.com/malisipi/vwebinix) |
+| V | ✔️ | [malisipi/vwebinix](https://github.com/malisipi/vwebinix) |
 | Nim | *Not Complete* | [neroist/webinix](https://github.com/neroist/webinix) |
 | Zig | *Not Complete* | [desttinghim/webinix](https://github.com/desttinghim/webinix) |
 
