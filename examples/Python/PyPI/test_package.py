@@ -53,13 +53,13 @@ html = """
 def all_events(e : webinix.event):
 	print('Function: all_events()')
 	print('Element: ' + e.element)
-	print('Type: ' + str(e.type))
+	print('Type: ' + str(e.event_type))
 	print('Data: ' + e.data)
 
 def python_to_js(e : webinix.event):
 	print('Function: python_to_js()')
 	print('Element: ' + e.element)
-	print('Type: ' + str(e.type))
+	print('Type: ' + str(e.event_type))
 	print('Data: ' + e.data)
 	# Run JavaScript to get the password
 	res = e.window.script("return document.getElementById('MyInput').value;")
@@ -74,7 +74,7 @@ def python_to_js(e : webinix.event):
 def js_to_python(e : webinix.event):
 	print('Function: js_to_python()')
 	print('Element: ' + e.element)
-	print('Type: ' + str(e.type))
+	print('Type: ' + str(e.event_type))
 	print('Data: ' + e.data)
 	v = int(e.data)
 	v = v * 2
@@ -82,9 +82,9 @@ def js_to_python(e : webinix.event):
 
 def exit(e : webinix.event):
 	print('Function: exit()')
-	print('element: ' + e.element)
-	print('type: ' + str(e.type))
-	print('data: ' + e.data)
+	print('Element: ' + e.element)
+	print('Type: ' + str(e.event_type))
+	print('Data: ' + e.data)
 	webinix.exit()
 
 def main():

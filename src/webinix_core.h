@@ -19,7 +19,6 @@
 #define WEBUI_HEADER_CLICK      0xFC        // Click event
 #define WEBUI_HEADER_SWITCH     0xFB        // Frontend refresh
 #define WEBUI_HEADER_CLOSE      0xFA        // Close window
-#define WEBUI_HEADER_CALL_FUNC  0xF9        // Call a backend function
 #define WEBUI_MAX_ARRAY         (512)       // Max threads, servers, windows, pointers..
 #define WEBUI_MIN_PORT          (10000)     // Minimum socket port
 #define WEBUI_MAX_PORT          (65500)     // Should be less than 65535
@@ -33,6 +32,10 @@ typedef struct _webinix_timer_t {
     struct timespec start;
     struct timespec now;
 } _webinix_timer_t;
+
+typedef struct webinix_event_core_t {
+    char* response; // Callback response
+} webinix_event_core_t;
 
 typedef struct _webinix_window_t {
     unsigned int window_number;
@@ -53,6 +56,7 @@ typedef struct _webinix_window_t {
     unsigned int runtime;
     bool has_events;
     char* server_root_path;
+    webinix_event_core_t* event_core[WEBUI_MAX_ARRAY];
     #ifdef _WIN32
         HANDLE server_thread;
     #else
@@ -76,7 +80,7 @@ typedef struct _webinix_core_t {
     struct mg_connection* mg_connections[WEBUI_MAX_ARRAY];
     bool initialized;
     void (*cb[WEBUI_MAX_ARRAY])(webinix_event_t* e);
-    void (*cb_interface[WEBUI_MAX_ARRAY])(void*, unsigned int, char*, char*, char*);
+    void (*cb_interface[WEBUI_MAX_ARRAY])(void*, unsigned int, char*, char*, unsigned int);
     char* executable_path;
     void *ptr_list[WEBUI_MAX_ARRAY];
     unsigned int ptr_position;
@@ -84,14 +88,16 @@ typedef struct _webinix_core_t {
     unsigned int current_browser;
 } _webinix_core_t;
 
-typedef struct _webinix_cb_t {
-    _webinix_window_t* win;
+typedef struct _webinix_cb_arg_t {
+    // Event
+    _webinix_window_t* window;
+    unsigned int event_type;
+    char* element;
+    char* data;
+    unsigned int event_number;
+    // Extras
     char* webinix_internal_id;
-    char* element_name;
-    void* data;
-    unsigned int data_len;
-    int event_type;
-} _webinix_cb_t;
+} _webinix_cb_arg_t;
 
 typedef struct _webinix_mg_handler_t {
     struct mg_connection* c;
@@ -139,7 +145,7 @@ static void _webinix_free_port(unsigned int port);
 char* _webinix_get_current_path(void);
 static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len);
 static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t packets_size);
-static void _webinix_window_event(_webinix_window_t* win, char* element_id, char* element, void* data, unsigned int data_len, int event_type);
+static void _webinix_window_event(_webinix_window_t* win, int event_type, char* element, char* data, unsigned int event_number, char* webinix_internal_id);
 unsigned int _webinix_window_get_number(_webinix_window_t* win);
 static void _webinix_window_open(_webinix_window_t* win, char* link, unsigned int browser);
 int _webinix_cmd_sync(char* cmd, bool show);
@@ -178,6 +184,7 @@ void* _webinix_malloc(int size);
 static void _webinix_sleep(long unsigned int ms);
 unsigned int _webinix_find_the_best_browser(_webinix_window_t* win);
 bool _webinix_is_process_running(const char* process_name);
+unsigned int _webinix_get_free_event_core_pos(_webinix_window_t* win);
 
 WEBUI_SERVER_START;
 WEBUI_CB;

@@ -16,9 +16,9 @@ package webinix
 #cgo darwin LDFLAGS: -L ./ -lwebinix-2-static-x64 -lpthread -lm
 #cgo linux LDFLAGS: -L ./ -lwebinix-2-static-x64 -lpthread -lm
 #include <webinix.h>
-extern void GoWebuiEvent(void* _window, unsigned int _event_type, char* _element, char* _data, char* _response);
+extern void GoWebuiEvent(void* _window, unsigned int _event_type, char* _element, char* _data, unsigned int _event_number);
 static void GoWebuiEvents_handler(webinix_event_t* e) {
-    GoWebuiEvent(e->window, e->type, e->element, e->data, (char*)&e->response);
+    GoWebuiEvent(e->window, e->event_type, e->element, e->data, e->event_number);
 }
 static void go_webinix_bind(void* win, const char* element) {
     webinix_bind(win, element, GoWebuiEvents_handler);
@@ -92,7 +92,7 @@ func Ini() {
 // This function receives all events
 //
 //export GoWebuiEvent
-func GoWebuiEvent(window unsafe.Pointer, _event_type C.uint, _element *C.char, _data *C.char, _response *C.char) {
+func GoWebuiEvent(window unsafe.Pointer, _event_type C.uint, _element *C.char, _data *C.char, _event_number C.uint) {
 	Ini()
 
 	// Create a new event struct
@@ -114,7 +114,7 @@ func GoWebuiEvent(window unsafe.Pointer, _event_type C.uint, _element *C.char, _
 	// Set the response back
 	if len(response) > 0 {
 		c_response := C.CString(response)
-		C.webinix_interface_set_response(_response, c_response)
+		C.webinix_interface_set_response(window, _event_number, c_response)
 	}
 }
 
