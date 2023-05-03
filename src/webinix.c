@@ -2800,6 +2800,12 @@ bool _webinix_browser_exist(_webinix_window_t* win, unsigned int browser) {
                 ChromiumExist = true;
                 return true;
             }
+            else if(_webinix_cmd_sync("chromium --version", false) == 0) {
+
+                sprintf(win->browser_path, "chromium");
+                ChromiumExist = true;
+                return true;
+            }
             else
                 return false;
         #endif
