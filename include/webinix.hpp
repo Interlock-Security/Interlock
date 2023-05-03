@@ -52,8 +52,8 @@ namespace webinix {
 	}
 
 	// Enable/Disable Kiosk Mode (Default=False)
-	void set_kiosk(void* window, bool kiosk) {
-		webinix_set_kiosk(window, kiosk);
+	void set_kiosk(void* window, bool status) {
+		webinix_set_kiosk(window, status);
 	}
 
 	// Close all opened windows. wait() will break.
