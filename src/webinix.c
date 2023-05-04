@@ -443,8 +443,12 @@ void* webinix_new_window(void) {
     return (void*)win;
 }
 
-void webinix_set_kiosk (void* win, bool kiosk){
-    ((_webinix_window_t*)win)->kiosk = kiosk;
+void webinix_set_kiosk(void* window, bool status) {
+
+    // Dereference
+    _webinix_window_t* win = (_webinix_window_t*)window;
+
+    win->kiosk_mode = status;
 }
 
 void webinix_close(void* window) {
@@ -2914,11 +2918,12 @@ bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address) 
         return false;
     
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -2951,11 +2956,12 @@ bool _webinix_browser_start_edge(_webinix_window_t* win, const char* address) {
         return false;
 
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+    
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -2988,11 +2994,12 @@ bool _webinix_browser_start_epic(_webinix_window_t* win, const char* address) {
         return false;
 
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -3025,11 +3032,12 @@ bool _webinix_browser_start_vivaldi(_webinix_window_t* win, const char* address)
         return false;
 
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -3062,11 +3070,12 @@ bool _webinix_browser_start_brave(_webinix_window_t* win, const char* address) {
         return false;
 
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -3099,11 +3108,12 @@ bool _webinix_browser_start_firefox(_webinix_window_t* win, const char* address)
         return false;
 
     char full[1024];
-    if(!win->kiosk){
-        sprintf(full, "%s -P Webinix -purgecaches -new-window %s", win->browser_path, address);
-    } else {
-        sprintf(full, "%s -P Webinix -purgecaches -new-window -kiosk %s", win->browser_path, address);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "-kiosk");
+    
+    sprintf(full, "%s -P Webinix -purgecaches -new-window %s %s", win->browser_path, address, kiosk_arg);
 
     if(_webinix_run_browser(win, full) == 0) {
 
@@ -3133,11 +3143,12 @@ bool _webinix_browser_start_yandex(_webinix_window_t* win, const char* address) 
         return false;
 
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
@@ -3170,11 +3181,12 @@ bool _webinix_browser_start_chromium(_webinix_window_t* win, const char* address
         return false;
     
     char arg[1024];
-    if(!win->kiosk){
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --app=", win->profile_path);
-    } else {
-        sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences --chrome-frame --kiosk ", win->profile_path);
-    }
+
+    char kiosk_arg[16] = {0};
+    if(win->kiosk_mode)
+        sprintf(kiosk_arg, "--chrome-frame --kiosk");
+    
+    sprintf(arg, " --user-data-dir=\"%s\" --no-first-run --disable-gpu --disable-software-rasterizer --no-proxy-server --safe-mode --disable-extensions --disable-background-mode --disable-plugins --disable-plugins-discovery --disable-translate --bwsi --disable-sync --disable-sync-preferences %s ", win->profile_path, kiosk_arg);
 
     char full[1024];
     sprintf(full, "%s%s%s", win->browser_path, arg, address);
