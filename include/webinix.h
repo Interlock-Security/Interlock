@@ -148,6 +148,8 @@ WEBUI_EXPORT unsigned int webinix_bind(void* window, const char* element, void (
 WEBUI_EXPORT bool webinix_show(void* window, const char* content);
 // Same as webinix_show(). But with a specific web browser.
 WEBUI_EXPORT bool webinix_show_browser(void* window, const char* content, unsigned int browser);
+// Set the window in Kiosk mode (Full screen)
+WEBUI_EXPORT void webinix_set_kiosk(void* window, bool status);
 // Wait until all opened windows get closed.
 WEBUI_EXPORT void webinix_wait(void);
 // Close a specific window.

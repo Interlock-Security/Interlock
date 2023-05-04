@@ -51,6 +51,11 @@ namespace webinix {
 		webinix_close(window);
 	}
 
+	// Set the window in Kiosk mode (Full screen)
+	void set_kiosk(void* window, bool status) {
+		webinix_set_kiosk(window, status);
+	}
+
 	// Close all opened windows. wait() will break.
 	void exit(void) {
 		webinix_exit();
