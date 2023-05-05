@@ -28,7 +28,7 @@ void my_function_count(webinix::event* e) {
     //  webinix::script(..., &buffer[0], 32);
 
     // Run JavaScript
-    if(!webinix::script(e->window, "return GetCount();", 0, response, 64)) {
+    if(!e->window.script("return GetCount();", 0, response, 64)) {
 
         std::cout << "JavaScript Error: " << response << std::endl;
         return;
@@ -45,7 +45,7 @@ void my_function_count(webinix::event* e) {
     js << "SetCount(" << count << ");";
 
     // Run JavaScript (Quick Way)
-    webinix::run(e->window, js.str());
+    e->window.run(js.str());
 }
 
 int main() {

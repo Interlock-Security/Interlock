@@ -309,9 +309,9 @@ void my_function(webinix_event_t* e){
         std::cout << "Starting navigation to: " << e->data << std::endl;
 
     // Send back a response to JavaScript
-    webinix::return_int(e, 123); // As integer
-    webinix::return_bool(e, true); // As boolean
-    webinix::return_string(e, "My Response"); // As string
+    e->window.return_int(e, 123); // As integer
+    e->window.return_bool(e, true); // As boolean
+    e->window.return_string(e, "My Response"); // As string
 }
 
 // Empty ID means all events on all elements
@@ -416,7 +416,7 @@ void my_function(webinix_event_t* e){
     std::cout << "JavaScript Response: " << response << std::endl; // 4
 
     // Run JavaScript quickly with no waiting for the response
-    webinix::run(e->window, "alert('Fast!');");
+    e->window.run("alert('Fast!');");
 }
 ```
 
@@ -429,17 +429,17 @@ To call a C++ function from JavaScript and get the result back please use `webin
 void my_function(webinix_event_t* e) {
 
     // Get data from JavaScript
-    std::string str = webinix::get_string(e);
-    // long long number = webinix::get_int(e);
-    // bool status = webinix::get_bool(e);
+    std::string str = e->window.get_string(e);
+    // long long number = e->window.get_int(e);
+    // bool status = e->window.get_bool(e);
 
     // Print the received data
     std::cout << "Data from JavaScript: " << str << std::endl; // Message from JS
 
     // Return back a response to JavaScript
-    webinix::return_string(e, "Message from C++");
-    // webinix::return_int(e, number);
-    // webinix::return_bool(e, true);
+    e->window.return_string(e, "Message from C++");
+    // e->window.return_int(e, number);
+    // e->window.return_bool(e, true);
 }
 
 webinix::bind(my_window, "MyID", my_function);
