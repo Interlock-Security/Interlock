@@ -2,8 +2,8 @@
 #include <iostream>
 
 int main() {
-    size_t my_window = webinix::new_window();
-    webinix::show(my_window, "<html>Hello World!</html>");
+    webinix::window my_window;
+    my_window.show("<html>Hello World!</html>");
     webinix::wait();
     return 0;
 }

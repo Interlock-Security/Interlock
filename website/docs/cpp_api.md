@@ -163,7 +163,7 @@ Please visit [C++ Examples](https://github.com/alifcommunity/webinix/tree/main/e
 To create a new window object, you can use `webinix::new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
 
 ```cpp
-size_t my_window = webinix::new_window();
+webinix::window my_window = webinix::window();
 ```
 
 ---

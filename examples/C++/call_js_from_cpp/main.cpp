@@ -9,13 +9,13 @@
 #include <string>
 #include <stdexcept>
 
-void my_function_exit(webinix_event_t* e) {
+void my_function_exit(webinix::event* e) {
 
     // Close all opened windows
     webinix::exit();
 }
 
-void my_function_count(webinix_event_t* e) {
+void my_function_count(webinix::event* e) {
 
     // This function gets called every time the user clicks on "MyButton1"
 
@@ -91,14 +91,14 @@ int main() {
     )V0G0N";
 
     // Create a window
-    size_t my_window = webinix::new_window();
+    webinix::window my_window;
 
     // Bind HTML elements with C++ functions
-    webinix::bind(my_window, "MyButton1", my_function_count);
-    webinix::bind(my_window, "MyButton2", my_function_exit);
+    my_window.bind("MyButton1", my_function_count);
+    my_window.bind("MyButton2", my_function_exit);
 
     // Show the window
-    webinix::show(my_window, my_html); // webinix::show_browser(my_window, my_html, Chrome);
+    my_window.show(my_html); // webinix::show_browser(my_window, my_html, Chrome);
 
     // Wait until all windows get closed
     webinix::wait();
