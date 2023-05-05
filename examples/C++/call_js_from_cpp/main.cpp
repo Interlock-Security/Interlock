@@ -91,7 +91,7 @@ int main() {
     )V0G0N";
 
     // Create a window
-    void* my_window = webinix::new_window();
+    size_t my_window = webinix::new_window();
 
     // Bind HTML elements with C++ functions
     webinix::bind(my_window, "MyButton1", my_function_count);

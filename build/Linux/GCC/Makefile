@@ -3,21 +3,22 @@
 
 SOURCE=../../../src
 INCLUDE=../../../include
+INCLUDE_CIVETWEB=../../../src/civetweb
 
 all: release
 
 debug:
 #	Static with Debug info
 	@echo "Build Webinix Library (GCC Debug Static)..."
-	@gcc -g -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -g -m64 -o civetweb.o -I "$(INCLUDE)" -c "$(SOURCE)/civetweb/civetweb.c" -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET
 	@gcc -g -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c" -DWEBUI_LOG
-	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ar rc libwebinix-2-static-x64.a webinix.o civetweb.o
 	@ranlib libwebinix-2-static-x64.a
 #	Dynamic with Debug info
 	@echo "Build Webinix Library (GCC Debug Dynamic)..."
-	@gcc -g -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -g -fPIC -m64 -o civetweb.o -I "$(INCLUDE)" -c "$(SOURCE)/civetweb/civetweb.c" -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET
 	@gcc -g -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c" -DWEBUI_LOG
-	@gcc -g -shared -o webinix-2-x64.so webinix.o mongoose.o
+	@gcc -g -shared -o webinix-2-x64.so webinix.o civetweb.o
 #	Clean
 	@- rm -f *.o
 	@echo "Done."
@@ -25,15 +26,15 @@ debug:
 release:
 #	Static Release
 	@echo "Build Webinix Library (GCC Release Static)..."
-	@gcc -Os -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -Os -m64 -o civetweb.o -I "$(INCLUDE)" -c "$(SOURCE)/civetweb/civetweb.c" -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET
 	@gcc -Os -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@ar rc libwebinix-2-static-x64.a webinix.o mongoose.o
+	@ar rc libwebinix-2-static-x64.a webinix.o civetweb.o
 	@ranlib libwebinix-2-static-x64.a
 #	Dynamic Release
 	@echo "Build Webinix Library (GCC Release Dynamic)..."
-	@gcc -O3 -fPIC -m64 -o mongoose.o -I "$(INCLUDE)" -c "$(SOURCE)/mongoose.c" -Wno-stringop-overread
+	@gcc -O3 -fPIC -m64 -o civetweb.o -I "$(INCLUDE)" -c "$(SOURCE)/civetweb/civetweb.c" -DNDEBUG -DNO_CACHING -DNO_CGI -DNO_SSL -DUSE_WEBSOCKET
 	@gcc -O3 -fPIC -m64 -o webinix.o -I "$(INCLUDE)" -c "$(SOURCE)/webinix.c"
-	@gcc -shared -o webinix-2-x64.so webinix.o mongoose.o
+	@gcc -shared -o webinix-2-x64.so webinix.o civetweb.o
 #	Clean
 	@- rm -f *.o
 	@echo "Done."

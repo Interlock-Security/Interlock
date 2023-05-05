@@ -1,4 +1,4 @@
-# Webinix v2.2.0 C++ APIs
+# Webinix v2.3.0 C++ APIs
 
 - [Download](/cpp_api?id=download)
 - [Build From Source](/cpp_api?id=build-from-source)
@@ -24,7 +24,7 @@
 ---
 ### Download
 
-Download Webinix v2.2.0 prebuilt binaries here: https://webinix.me/#download
+Download Webinix v2.3.0 prebuilt binaries here: https://webinix.me/#download
 Download Webinix C++ header file here: https://github.com/alifcommunity/webinix/tree/main/examples/C%2B%2B/minimal
 
 ---
@@ -119,7 +119,7 @@ A minimal C++ example
 
 int main() {
 
-    void* win = webinix::new_window();
+    size_t win = webinix::new_window();
     webinix::show(win, "<html>Hello!</html>");
 	webinix::wait();
     return 0;
@@ -133,7 +133,7 @@ Using a local HTML file. Please not that you need to add `<script src="/webinix.
 
 int main() {
 
-    void* win = webinix::new_window();
+    size_t win = webinix::new_window();
     // Please add <script src="/webinix.js"></script> to your HTML files
     webinix::show(win, "my_file.html");
 	webinix::wait();
@@ -148,7 +148,7 @@ Using a specific web browser
 
 int main() {
 
-    void* win = webinix::new_window();
+    size_t win = webinix::new_window();
     webinix::show_browser(win, "<html>Hello!</html>", Chrome);
 	webinix::wait();
     return 0;
@@ -163,7 +163,7 @@ Please visit [C++ Examples](https://github.com/alifcommunity/webinix/tree/main/e
 To create a new window object, you can use `webinix::new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
 
 ```cpp
-void* my_window = webinix::new_window();
+size_t my_window = webinix::new_window();
 ```
 
 ---
@@ -287,7 +287,7 @@ webinix::bind(my_window, "MyID", my_function_wrapper);
 The *e* corresponds to the word _Event_. `e` is a struct that has these elements:
 
 ```cpp
-void* window; // Pointer to the window struct.
+size_t window; // Pointer to the window struct.
 unsigned int event_type; // Event type (WEBUI_EVENT_MOUSE_CLICK, WEBUI_EVENT_NAVIGATION...).
 char* element; // HTML element ID.
 char* data; // The data are coming from JavaScript, if any.

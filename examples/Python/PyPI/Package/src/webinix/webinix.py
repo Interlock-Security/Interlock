@@ -1,11 +1,11 @@
 
-# webinix_lib Library 2.2.0
+# webinix_lib Library 2.3.0
 #
 # http://webinix.me
 # https://github.com/alifcommunity/webinix
 #
 # Copyright (c) 2020-2023 Hassan Draga.
-# Licensed under GNU General Public License v2.0.
+# Licensed under MIT License.
 # All rights reserved.
 # Canada.
 
@@ -39,7 +39,7 @@ class browser:
 
 # event
 class event:
-    window = None
+    window = 0
     event_type = 0
     element = ""
     data = ""
@@ -61,7 +61,7 @@ class runtime:
 # The window class
 class window:
 
-    window = None
+    window = 0
     window_id = ""
     c_events = None
     cb_fun_list = {}
@@ -79,18 +79,15 @@ class window:
             # Create new webinix_lib window
             webinix_wrapper = None
             webinix_wrapper = webinix_lib.webinix_new_window
-            webinix_wrapper.restype = c_void_p
-            self.window = c_void_p(webinix_wrapper())
+            webinix_wrapper.restype = c_size_t
+            self.window = c_size_t(webinix_wrapper())
             # Get the window unique ID
-            window_unique_id = int(
-                webinix_lib.webinix_interface_get_window_id(
-                self.window))
-            self.window_id = str(window_unique_id)
+            self.window_id = str(self.window)
             # Initializing events() to be used by
             # webinix_lib library as a callback
             py_fun = ctypes.CFUNCTYPE(
                 ctypes.c_void_p, # RESERVED
-                ctypes.c_void_p, # window
+                ctypes.c_size_t, # window
                 ctypes.c_uint, # event type
                 ctypes.c_char_p, # element
                 ctypes.c_char_p, # data
@@ -108,7 +105,7 @@ class window:
     #         webinix_lib.webinix_close(self.window)
 
 
-    def _events(self, window: ctypes.c_void_p,
+    def _events(self, window: ctypes.c_size_t,
                event_type: ctypes.c_uint,
                _element: ctypes.c_char_p,
                data: ctypes.c_char_p,
@@ -120,7 +117,7 @@ class window:
             return
         # Create event
         e = event()
-        e.window = self
+        e.window = self # e.window should refer to this class
         e.event_type = int(event_type)
         e.element = element
         if data is not None:
@@ -133,13 +130,13 @@ class window:
             cb_result_str = str(cb_result)
             cb_result_encode = cb_result_str.encode('utf-8')
             # Set the response
-            webinix_lib.webinix_interface_set_response(self.window, event_number, cb_result_encode)
+            webinix_lib.webinix_interface_set_response(window, event_number, cb_result_encode)
 
 
     # Bind a specific html element click event with a function. Empty element means all events.
     def bind(self, element, func):
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('bind')
             return
         if webinix_lib is None:
@@ -158,7 +155,7 @@ class window:
     # Show a window using a embedded HTML, or a file. If the window is already opened then it will be refreshed.
     def show(self, content="<html></html>", browser:int=0):
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('show')
             return
         if webinix_lib is None:
@@ -171,7 +168,7 @@ class window:
     # Chose between Deno and Nodejs runtime for .js and .ts files.
     def set_runtime(self, rt=runtime.deno):
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('set_runtime')
             return
         if webinix_lib is None:
@@ -183,7 +180,7 @@ class window:
 
     def set_multi_access(self, status=False):
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('set_multi_access')
             return
         if webinix_lib is None:
@@ -213,7 +210,7 @@ class window:
     # Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
     def script(self, script, timeout=0, response_size=(1024 * 8)) -> javascript:
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('script')
             return
         if webinix_lib is None:
@@ -238,7 +235,7 @@ class window:
     # Run JavaScript quickly with no waiting for the response
     def run(self, script):
         global webinix_lib
-        if self.window is None:
+        if self.window == 0:
             _err_window_is_none('run')
             return
         if webinix_lib is None:
@@ -252,7 +249,7 @@ class window:
 def _get_library_path() -> str:
     global webinix_path
     if platform.system() == 'Darwin':
-        file = '/webinix-2-x64.dylib'
+        file = '/webinix-2-x64.dyn'
         path = os.getcwd() + file
         if os.path.exists(path):
             return path

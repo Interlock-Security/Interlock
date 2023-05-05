@@ -104,7 +104,7 @@ int main() {
     "</html>";
 
     // Create a window
-    void* my_window = webinix_new_window();
+    size_t my_window = webinix_new_window();
 
     // Bind HTML elements with C functions
     webinix_bind(my_window, "MyID_One", my_function_string);
