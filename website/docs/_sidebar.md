@@ -3,4 +3,5 @@
   - [Webinix C APIs](/c_api)
   - [Webinix C++ APIs](/cpp_api)
   - [Webinix Python APIs](/python_api)
-  - [Webinix Golang APIs](/golang_api)
+  - [Webinix Go APIs](/go_api)
+  - [Webinix V APIs](/v_api)

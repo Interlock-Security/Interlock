@@ -1,29 +1,29 @@
 # Webinix v2.3.0 Go APIs
 
 - [Build From Source](/c_api?id=build-from-source)
-- [Examples](/golang_api?id=examples)
+- [Examples](/go_api?id=examples)
 - Window
-    - [New Window](/golang_api?id=new-window)
-    - [Show Window](/golang_api?id=show-window)
-    - [Window status](/golang_api?id=window-status)
+    - [New Window](/go_api?id=new-window)
+    - [Show Window](/go_api?id=show-window)
+    - [Window status](/go_api?id=window-status)
 - Binding & Events
-    - [Bind](/golang_api?id=bind)
-    - [Events](/golang_api?id=events)
+    - [Bind](/go_api?id=bind)
+    - [Events](/go_api?id=events)
 - Application
-    - [Wait](/golang_api?id=wait)
-    - [Exit](/golang_api?id=exit)
-    - [Close](/golang_api?id=close)
-    - [Startup Timeout](/golang_api?id=startup-timeout)
-    - [Multi Access](/golang_api?id=multi-access)
+    - [Wait](/go_api?id=wait)
+    - [Exit](/go_api?id=exit)
+    - [Close](/go_api?id=close)
+    - [Startup Timeout](/go_api?id=startup-timeout)
+    - [Multi Access](/go_api?id=multi-access)
 - JavaScript
-    - [Run JavaScript From Go](/golang_api?id=run-javascript-from-go)
-    - [Run Go From JavaScript](/golang_api?id=run-go-from-javascript)
-    - [TypeScript Runtimes](/golang_api?id=typescript-runtimes)
+    - [Run JavaScript From Go](/go_api?id=run-javascript-from-go)
+    - [Run Go From JavaScript](/go_api?id=run-go-from-javascript)
+    - [TypeScript Runtimes](/go_api?id=typescript-runtimes)
 
 ---
 ### Build from Source
 
-You can build Webinix Golang wrapper from source by cloning the Webinix repo and compile it, tested with Go v1.20.3.
+You can build Webinix Go wrapper from source by cloning the Webinix repo and compile it, tested with Go v1.20.3.
 
 ### Windows
 ```sh
@@ -52,12 +52,12 @@ go build -o hello_world
 ./hello_world
 ```
 
-To see the Webinix Golang wrapper source code, please visit [Webinix](https://github.com/alifcommunity/webinix/) in our GitHub repository.
+To see the Webinix Go wrapper source code, please visit [Webinix](https://github.com/alifcommunity/webinix/) in our GitHub repository.
 
 ---
 ### Examples
 
-A minimal Golang example
+A minimal Go example
 
 ```go
 import "github.com/alifcommunity/webinix/webinix"
@@ -88,7 +88,7 @@ webinix.ShowBrowser(my_window, "my_file.html", webinix.Chrome)
 webinix.Wait()
 ```
 
-Please visit [Golang Examples](https://github.com/alifcommunity/webinix/tree/main/examples/Go) in our GitHub repository for more complete examples.
+Please visit [Go Examples](https://github.com/alifcommunity/webinix/tree/main/examples/Go) in our GitHub repository for more complete examples.
 
 ---
 ### New Window
@@ -223,7 +223,7 @@ Data // string: The data are coming from JavaScript, if any.
 ---
 ### Wait
 
-It is essential to call `Wait()` at the end of your main function, after you create/shows all your windows. This will make your application run until the user closes all visible windows or when calling *[Exit()](/golang_api?id=exit)*.
+It is essential to call `Wait()` at the end of your main function, after you create/shows all your windows. This will make your application run until the user closes all visible windows or when calling *[Exit()](/go_api?id=exit)*.
 
 ```go
 // Create windows...
@@ -238,7 +238,7 @@ webinix.Wait()
 ---
 ### Exit
 
-At any moment, you can call `Exit()`, which tries to close all related opened windows and make *[Wait](/golang_api?id=wait)* break.
+At any moment, you can call `Exit()`, which tries to close all related opened windows and make *[Wait](/go_api?id=wait)* break.
 
 ```go
 webinix.Exit()
@@ -247,7 +247,7 @@ webinix.Exit()
 ---
 ### Close
 
-You can call `Close()` to close a specific window, if there is no running window left *[Wait](/golang_api?id=wait)* will break.
+You can call `Close()` to close a specific window, if there is no running window left *[Wait](/go_api?id=wait)* will break.
 
 ```go
 webinix.Close(my_window)

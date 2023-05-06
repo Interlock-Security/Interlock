@@ -1,4 +1,4 @@
-# Webinix Examples - Golang
+# Webinix Examples - Go
 
 ### Windows
 ```sh
