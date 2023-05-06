@@ -187,37 +187,37 @@ Show a window using a specific web browser
 const char* my_html = "<html>Hello!</html>";
 
 // Google Chrome
-webinix::show_browser(my_window, my_html, Chrome);
+my_window.show_browser(my_html, Chrome);
 
 // Mozilla Firefox
-webinix::show_browser(my_window, my_html, Firefox);
+my_window.show_browser(my_html, Firefox);
 
 // Microsoft Edge
-webinix::show_browser(my_window, my_html, Edge);
+my_window.show_browser(my_html, Edge);
 
 // Microsoft Apple Safari (Not Ready)
-webinix::show_browser(my_window, my_html, Safari);
+my_window.show_browser(my_html, Safari);
 
 // The Chromium Project
-webinix::show_browser(my_window, my_html, Chromium);
+my_window.show_browser(my_html, Chromium);
 
 // Microsoft Opera Browser (Not Ready)
-webinix::show_browser(my_window, my_html, Opera);
+my_window.show_browser(my_html, Opera);
 
 // The Brave Browser
-webinix::show_browser(my_window, my_html, Brave);
+my_window.show_browser(my_html, Brave);
 
 // The Vivaldi Browser
-webinix::show_browser(my_window, my_html, Vivaldi);
+my_window.show_browser(my_html, Vivaldi);
 
 // The Epic Browser
-webinix::show_browser(my_window, my_html, Epic);
+my_window.show_browser(my_html, Epic);
 
 // The Yandex Browser
-webinix::show_browser(my_window, my_html, Yandex);
+my_window.show_browser(my_html, Yandex);
 
 // Default recommended web browser
-webinix::show_browser(my_window, my_html, AnyBrowser);
+my_window.show_browser(my_html, AnyBrowser);
 
 // Or simply
 webinix::show(my_window, my_html);
