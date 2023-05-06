@@ -194,7 +194,7 @@ webinix_show_browser(my_window, my_html, Firefox);
 // Microsoft Edge
 webinix_show_browser(my_window, my_html, Edge);
 
-// Microsoft Apple Safari (Not Ready)
+// Apple Safari (Not Ready)
 webinix_show_browser(my_window, my_html, Safari);
 
 // The Chromium Project

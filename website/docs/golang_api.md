@@ -129,7 +129,7 @@ webinix.ShowBrowser(my_window, my_html, webinix.Firefox)
 // Microsoft Edge
 webinix.ShowBrowser(my_window, my_html, webinix.Edge)
 
-// Microsoft Apple Safari (Not Ready)
+// Apple Safari (Not Ready)
 webinix.ShowBrowser(my_window, my_html, webinix.Safari)
 
 // The Chromium Project
