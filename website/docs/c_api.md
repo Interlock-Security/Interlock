@@ -159,7 +159,7 @@ Please visit [C Examples](https://github.com/alifcommunity/webinix/tree/main/exa
 ---
 ### New Window
 
-To create a new window object, you can use `webinix_new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
+To create a new window object, you can use `webinix_new_window()`, which returns a `size_t`.
 
 ```c
 size_t my_window = webinix_new_window();
@@ -194,13 +194,13 @@ webinix_show_browser(my_window, my_html, Firefox);
 // Microsoft Edge
 webinix_show_browser(my_window, my_html, Edge);
 
-// Microsoft Apple Safari (Not Ready)
+// Apple Safari (Not Ready)
 webinix_show_browser(my_window, my_html, Safari);
 
 // The Chromium Project
 webinix_show_browser(my_window, my_html, Chromium);
 
-// Microsoft Opera Browser (Not Ready)
+// Opera Browser (Not Ready)
 webinix_show_browser(my_window, my_html, Opera);
 
 // The Brave Browser

@@ -106,13 +106,13 @@ MyWindow.show(my_html, webinix.browser.firefox)
 # Microsoft Edge
 MyWindow.show(my_html, webinix.browser.edge)
 
-# Microsoft Apple Safari (Not Ready)
+# Apple Safari (Not Ready)
 MyWindow.show(my_html, webinix.browser.safari)
 
 # The Chromium Project
 MyWindow.show(my_html, webinix.browser.chromium)
 
-# Microsoft Opera Browser (Not Ready)
+# Opera Browser (Not Ready)
 MyWindow.show(my_html, webinix.browser.opera)
 
 # The Brave Browser
