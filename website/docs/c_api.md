@@ -200,7 +200,7 @@ webinix_show_browser(my_window, my_html, Safari);
 // The Chromium Project
 webinix_show_browser(my_window, my_html, Chromium);
 
-// Microsoft Opera Browser (Not Ready)
+// Opera Browser (Not Ready)
 webinix_show_browser(my_window, my_html, Opera);
 
 // The Brave Browser

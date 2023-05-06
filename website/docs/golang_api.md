@@ -135,7 +135,7 @@ webinix.ShowBrowser(my_window, my_html, webinix.Safari)
 // The Chromium Project
 webinix.ShowBrowser(my_window, my_html, webinix.Chromium)
 
-// Microsoft Opera Browser (Not Ready)
+// Opera Browser (Not Ready)
 webinix.ShowBrowser(my_window, my_html, webinix.Opera)
 
 // The Brave Browser
