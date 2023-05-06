@@ -1,7 +1,6 @@
 # V-Webinix v2.3.0 APIs
 
-- [Download](/v_api?id=download)
-- [Build From Source](/v_api?id=build-from-source)
+- [Download and Install](/v_api?id=download-and-install)
 - [Examples](/v_api?id=examples)
 - Window
     - [New Window](/v_api?id=new-window)
@@ -22,24 +21,15 @@
     - [TypeScript Runtimes](/v_api?id=typescript-runtimes)
 
 ---
-### Download
+### Download and Install
 
-Download V-Webinix v2.3.0 prebuilt binaries here: https://github.com/malisipi/vwebinix/releases
+Install the Webinix package from vpm (*~1.5 Mb*).
+
+`v install malisipi.vwebinix`
+
+Or from github
 
 `v install https://github.com/malisipi/vwebinix`
-
----
-### Build from Source
-
-You can build V-Webinix from source by cloning the V-Webinix repo and compile it using the V compiler, No need for any external dependencies.
-
-```sh
-git clone https://github.com/malisipi/vwebinix.git
-cd vwebinix
-v build
-```
-
-For more instructions, please visit [Build V-Webinix](https://github.com/malisipi/vwebinix) in our GitHub repository.
 
 ---
 ### Examples
@@ -71,7 +61,7 @@ Using a specific web browser
 import malisipi.vwebinix as webinix
 
 mut my_window := webinix.new_window()
-my_window.showBrowser("<html>Hello</html>", Chrome)
+my_window.show_browser("<html>Hello</html>", webinix.browser_chrome)
 webinix.wait()
 ```
 
@@ -80,10 +70,11 @@ Please visit [V Examples](https://github.com/alifcommunity/webinix/tree/main/exa
 ---
 ### New Window
 
-To create a new window object, you can use `webinix_new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
+To create a new window object, you can use `new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
 
 ```v
 import malisipi.vwebinix as webinix
+
 mut my_window := webinix.new_window()
 ```
 
@@ -94,6 +85,8 @@ To show a window, you can use `webinix_show()`. If the window is already shown, 
 
 ```v
 import malisipi.vwebinix as webinix
+// Create a new window
+mut my_window := webinix.new_window()
 // Show a window using the embedded HTML
 my_window.show("<html>Hello!</html>")
 
@@ -110,49 +103,49 @@ import malisipi.vwebinix as webinix
 my_html := "<html>Hello!</html>";
 
 // Google Chrome
-my_window.showBrowser(my_html, Chrome);
+my_window.show_browser(my_html, webinix.browser_chrome)
 
 // Mozilla Firefox
-my_window.showBrowser(my_html, Firefox);
+my_window.show_browser(my_html, webinix.browser_firefox)
 
 // Microsoft Edge
-my_window.showBrowser(my_html, Edge);
+my_window.show_browser(my_html, webinix.browser_edge)
 
-// Microsoft Apple Safari (Not Ready)
-my_window.showBrowser(my_html, Safari);
+// Apple Safari (Not Ready)
+my_window.show_browser(my_html, webinix.browser_safari)
 
 // The Chromium Project
-my_window.showBrowser(my_html, Chromium);
+my_window.show_browser(my_html, webinix.browser_chromium)
 
-// Microsoft Opera Browser (Not Ready)
-my_window.showBrowser(my_html, Opera);
+// The Opera Browser (Not Ready)
+my_window.show_browser(my_html, webinix.browser_opera)
 
 // The Brave Browser
-my_window.showBrowser(my_html, Brave);
+my_window.show_browser(my_html, webinix.browser_brave)
 
-// The Vivaldi Browser
-my_window.showBrowser(my_html, Vivaldi);
+// The Vivaldi Browsex
+my_window.show_browser(my_html, webinix.browser_vivaldi)
 
 // The Epic Browser
-my_window.showBrowser(my_html, Epic);
+my_window.show_browser(my_html, webinix.browser_epic)
 
 // The Yandex Browser
-my_window.showBrowser(my_html, Yandex);
+my_window.show_browser(my_html, webinix.browser_yandex)
 
 // Default recommended web browser
-my_window.showBrowser(my_html, AnyBrowser);
+my_window.show_browser(my_html, webinix.browser_any)
 
 // Or simply
-webinix_show(my_window, my_html);
+webinix_show(my_window, my_html)
 ```
 
-If you need to update the whole UI content, you can also use the same function `webinix_show()`, which allows you to refresh the window UI with any new HTML content.
+If you need to update the whole UI content, you can also use the same function `show()`, which allows you to refresh the window UI with any new HTML content.
 
 ```v
 import malisipi.vwebinix as webinix
 
-html := "<html>Hello</html>";
-new_html := "<html>New World!</html>";
+html := "<html>Hello</html>"
+new_html := "<html>New World!</html>"
 
 // Open a window
 my_window.show(html)
@@ -166,85 +159,107 @@ my_window.show(new_html)
 ---
 ### Window Status
 
-To know if a specific window is running, you can use `webinix_is_shown()`.
+To know if a specific window is running, you can use `is_shown()`.
 
 ```v
 import malisipi.vwebinix as webinix
 
-if(webinix_is_shown(my_window))
-    printf("The window is still running");
-else
-    printf("The window is closed.");
+if webinix.is_shown(my_window) {
+    println("The window is still running")
+} else {
+    println("The window is closed.")
+}
 ```
 
 ---
 ### Bind
 
-Use `webinix_bind()` to receive click events when the user clicks on any HTML element with a specific ID, for example `<button id="MyID">Hello</button>`.
+Use `bind()` to receive click events when the user clicks on any HTML element with a specific ID, for example `<button id="MyID">Hello</button>`.
 
 ```v
 import malisipi.vwebinix as webinix
-void my_function(webinix_event_t* e) {
+fn my_function_string(e &webinix.Event) {
     // <button id="MyID">Hello</button> gets clicked!
 }
 
-webinix_bind(my_window, "MyID", my_function);
+my_window.bind("MyID", my_function)
 ```
 
 ### Events
 
-The *e* corresponds to the word _Event_. `e` is a struct that has these elements:
+`Event` is a struct that has these elements:
 
 ```v
 import malisipi.vwebinix as webinix
-size_t window; // Pointer to the window struct.
-unsigned int event_type; // Event type (WEBUI_EVENT_MOUSE_CLICK, WEBUI_EVENT_NAVIGATION...).
-char* element; // HTML element ID.
-char* data; // The data are coming from JavaScript, if any.
-char* response; // Internally used by webinix_return_xxx().
+pub struct Event {
+	pub mut:
+		window			Window // Pointer to the window object
+		event_type		u64 // Event type
+		element			&char // HTML element ID
+		data			&char // JavaScript data
+		event_number	u64 // To set the callback response
+}
+```
+
+Also you can see the `element` and `data` is not native V string. So you can use these functions to get values as native string without requiring a conversion steps.
+
+```v
+import malisipi.vwebinix as webinix
+
+fn my_function(e &webinix.Event) {
+    // Get data
+    str := e.get().str // As a string
+    number := e.get().int // As an int
+    status := e.get().bool // As a boolean
+    // Also you can use `json` module from V standart library to parse json
+
+    // Get target element
+    target_element := e.element()
+}
 ```
 
 ```v
 import malisipi.vwebinix as webinix
-void my_function(webinix_event_t* e){
 
-    printf("Hi!, You clicked on %s element\n", e.element);
-
-    if(e->event_type == WEBUI_EVENT_CONNECTED)
-        printf("Connected. \n");
-    else if(e->event_type == WEBUI_EVENT_DISCONNECTED)
-        printf("Disconnected. \n");
-    else if(e->event_type == WEBUI_EVENT_MOUSE_CLICK)
-        printf("Click. \n");
-    else if(e->event_type == WEBUI_EVENT_NAVIGATION)
-        printf("Starting navigation to: %s \n", e->data);    
+fn my_function(e &webinix.Event) { 
+    // This function gets called every time
+    // there is an event
+    if e.event_type == webinix.event_connected {
+        println("Connected.")
+    } else if e.event_type == webinix.event_disconnected {
+        println("Disconnected.")
+    } else if e.event_type == webinix.event_mouse_click {
+        println("Click.")
+    } else if e.event_type == webinix.event_navigation {
+        //println("Starting navigation to: ${e.data}")
+    }
 
     // Send back a response to JavaScript
-    webinix_return_int(e, 123); // As integer
-    webinix_return_bool(e, true); // As boolean
-    webinix_return_string(e, "My Response"); // As string
+    e.@return("Hi!") // Webinix will handle type automatically
+    // string, int, bool is supported
 }
 
 // Empty ID means all events on all elements
-webinix_bind(my_window, "", my_function);
+webinix_bind(my_window, "", my_function)
 ```
 
 ---
 ### Wait
 
-It is essential to call `webinix_wait()` at the end of your main function, after you create/shows all your windows. This will make your application run until the user closes all visible windows or when calling *[webinix_exit()](/v_api?id=exit)*.
+It is essential to call `wait()` at the end of your main function, after you create/shows all your windows. This will make your application run until the user closes all visible windows or when calling *[exit()](/v_api?id=exit)*.
 
 ```v
 import malisipi.vwebinix as webinix
 int main() {
 
-	// Create windows...
+	mut my_window := webinix.new_window() // Create windows...
 	// Bind HTML elements...
     // Show the windows...
+    // Show a window using the embedded HTML
 
     // Wait until all windows get closed
-    // or when calling webinix_exit()
-	webinix_wait();
+    // or when calling webinix.exit()
+	my_window.wait()
 
     return 0;
 }
@@ -253,45 +268,50 @@ int main() {
 ---
 ### Exit
 
-At any moment, you can call `webinix_exit()`, which tries to close all related opened windows and make *[webinix_wait](/v_api?id=wait)* break.
+At any moment, you can call `exit()`, which tries to close all related opened windows and make *[webinix.wait](/v_api?id=wait)* break.
 
 ```v
 import malisipi.vwebinix as webinix
-webinix_exit();
+webinix.exit()
 ```
 
 ---
 ### Close
 
-You can call `webinix_close()` to close a specific window, if there is no running window left *[webinix_wait](/v_api?id=wait)* will break.
+You can call `webinix.close()` to close a specific window, if there is no running window left *[webinix_wait](/v_api?id=wait)* will break.
 
 ```v
 import malisipi.vwebinix as webinix
-webinix_close(my_window);
+mut my_window := webinix.new_window() 
+my_window.close()
 ```
 
 ---
 ### Startup Timeout
 
-V-Webinix waits a couple of seconds (_Default is 30 seconds_) to let the web browser start and connect. You can control this behavior by using `webinix_set_timeout()`.
+Webinix waits a couple of seconds (_Default is 30 seconds_) to let the web browser start and connect. You can control this behavior by using `webinix.set_timeout()`.
 
 ```v
 import malisipi.vwebinix as webinix
 // Wait 10 seconds for the browser to start
-webinix_set_timeout(10);
+webinix.set_timeout(10)
+
+mut my_window := webinix.new_window() 
 
 // Now, After 10 seconds, if the browser did
 // not get started, wait() will break
-webinix_wait();
+my_window.wait()
 ```
 
 ```v
 import malisipi.vwebinix as webinix
 // Wait forever.
-webinix_set_timeout(0);
+webinix.set_timeout(0)
+
+mut my_window := webinix.new_window() 
 
 // webinix_wait() will never end
-webinix_wait();
+my_window.wait()
 ```
 
 ---
@@ -303,7 +323,9 @@ After the window is loaded, the URL is not valid anymore for safety. V-Webinix w
 
 ```v
 import malisipi.vwebinix as webinix
-webinix_set_multi_access(my_window, true);
+mut my_window := webinix.new_window() 
+
+my_window.set_multi_access(true)
 ```
 
 ---
@@ -313,28 +335,17 @@ You can run JavaScript on any window to read values, update the view, or anythin
 
 ```v
 import malisipi.vwebinix as webinix
-void my_function(webinix_event_t* e){
 
-	// Create a buffer to hold the response
-    char response[64];
+fn my_function(e &webinix.Event) {
 
     // Run JavaScript
-    if(!webinix_script(
-        e->window, // Window
-        "return 2*2;", // JavaScript to be executed
-        0, // Maximum waiting time in second
-        response, // Local buffer to hold the JavaScript response
-        64) // Size of the local buffer
-    ) {
-        printf("JavaScript Error: %s\n", response);
-        return;
-    }
+    response := e.window.script("return 2*2;", 0, 64)
 
     // Print the result
-    printf("JavaScript Response: %s\n", response); // 4
+    println("JavaScript Response: ${response.int()}") // 4
 
     // Run JavaScript quickly with no waiting for the response
-    webinix_run(e->window, "alert('Fast!');");
+    e.window.run("alert('Fast!');")
 }
 ```
 
@@ -345,23 +356,26 @@ To call a V function from JavaScript and get the result back please use `webinix
 
 ```v
 import malisipi.vwebinix as webinix
-void my_function(webinix_event_t* e) {
 
+mut my_window := webinix.new_window() 
+
+void my_function(webinix_event_t* e) {
     // Get data from JavaScript
-    str = webinix_get_string(e);
-    // long long number = webinix_get_int(e);
-    // bool status = webinix_get_bool(e);
+    str = e.get().str
+    // number = e.get().int
+    // status = e.get().bool
 
     // Print the received data
-    printf("Data from JavaScript: %s\n", str); // Message from JS
+    println("Data from JavaScript: ${str}") // Message from JS
 
     // Return back a response to JavaScript
-    webinix_return_string(e, "Message from V");
-    // webinix_return_int(e, number);
-    // webinix_return_bool(e, true);
+    e.@return(e, "Message from V")
+    // e.@return(e, number)
+    // e.@return(e, true)
+    // Webinix will handle type automatically
 }
 
-webinix_bind(my_window, "MyID", my_function);
+my_window.bind("MyID", my_function)
 ```
 
 JavsScript:
@@ -375,15 +389,18 @@ webinix_fn('MyID', 'Message from JS').then((response) => {
 ---
 ### TypeScript Runtimes
 
-You may want to interpret JavaScript & TypeScript files and show the output in the UI. You can use `webinix_set_runtime()` and choose between `Deno` or `Nodejs` as your runtimes.
+You may want to interpret JavaScript & TypeScript files and show the output in the UI. You can use `set_runtime()` and choose between `runtime_deno` or `runtime_nodejs` as your runtimes.
 
 ```v
 import malisipi.vwebinix as webinix
+
+mut my_window := webinix.new_window()
+
 // Deno
-webinix_set_runtime(my_window, Deno);
-webinix_show(my_window, "my_file.ts");
+my_window.set_runtime(webinix.runtime_deno)
+my_window.show("my_file.ts")
 
 // Nodejs
-webinix_set_runtime(my_window, Nodejs);
-webinix_show(my_window, "my_file.js");
+my_window.set_runtime(webinix.runtime_nodejs)
+my_window.show("my_file.js")
 ```
