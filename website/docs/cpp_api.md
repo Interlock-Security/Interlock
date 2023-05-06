@@ -25,7 +25,6 @@
 ### Download
 
 Download Webinix v2.3.0 prebuilt binaries here: https://webinix.me/#download
-Download Webinix C++ header file here: https://github.com/alifcommunity/webinix/tree/main/examples/C%2B%2B/minimal
 
 ---
 ### Build from Source
@@ -119,8 +118,8 @@ A minimal C++ example
 
 int main() {
 
-    size_t win = webinix::new_window();
-    webinix::show(win, "<html>Hello!</html>");
+    webinix::window my_window;
+    my_window.show("<html>Hello!</html>");
 	webinix::wait();
     return 0;
 }
@@ -133,9 +132,9 @@ Using a local HTML file. Please not that you need to add `<script src="/webinix.
 
 int main() {
 
-    size_t win = webinix::new_window();
+    webinix::window my_window;
     // Please add <script src="/webinix.js"></script> to your HTML files
-    webinix::show(win, "my_file.html");
+    my_window.show("my_file.html");
 	webinix::wait();
     return 0;
 }
@@ -148,8 +147,8 @@ Using a specific web browser
 
 int main() {
 
-    size_t win = webinix::new_window();
-    webinix::show_browser(win, "<html>Hello!</html>", Chrome);
+    webinix::window my_window;
+    my_window.show_browser("<html>Hello!</html>", Chrome);
 	webinix::wait();
     return 0;
 }
@@ -160,31 +159,31 @@ Please visit [C++ Examples](https://github.com/alifcommunity/webinix/tree/main/e
 ---
 ### New Window
 
-To create a new window object, you can use `webinix::new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
+To create a new window object, you can use `webinix::window()` class, which create an object.
 
 ```cpp
-webinix::window my_window = webinix::window();
+webinix::window my_window;
 ```
 
 ---
 ### Show Window
 
-To show a window, you can use `webinix::show()`. If the window is already shown, the UI will get refreshed in the same window.
+To show a window, you can use `my_window.show()`. If the window is already shown, the UI will get refreshed in the same window.
 
 ```cpp
 // Show a window using the embedded HTML
-const char* my_html = "<html>Hello!</html>";
-webinix::show(my_window, my_html);
+std::string my_html = "<html>Hello!</html>";
+my_window.show(my_html);
 
 // Show a window using an .html local file
 // Please add <script src="/webinix.js"></script> to your HTML files
-webinix::show(my_window, "my_file.html");
+my_window.show("my_file.html");
 ```
 
 Show a window using a specific web browser
 
 ```cpp
-const char* my_html = "<html>Hello!</html>";
+std::string my_html = "<html>Hello!</html>";
 
 // Google Chrome
 my_window.show_browser(my_html, Chrome);
@@ -220,31 +219,31 @@ my_window.show_browser(my_html, Yandex);
 my_window.show_browser(my_html, AnyBrowser);
 
 // Or simply
-webinix::show(my_window, my_html);
+my_window.show(my_html);
 ```
 
-If you need to update the whole UI content, you can also use the same function `webinix::show()`, which allows you to refresh the window UI with any new HTML content.
+If you need to update the whole UI content, you can also use the same function `my_window.show()()`, which allows you to refresh the window UI with any new HTML content.
 
 ```cpp
-const char* html = "<html>Hello</html>";
-const char* new_html = "<html>New World!</html>";
+std::string html = "<html>Hello</html>";
+std::string new_html = "<html>New World!</html>";
 
 // Open a window
-webinix::show(my_window, html);
+my_window.show(html);
 
 // Later...
 
 // Refresh the same window with the new content
-webinix::show(my_window, new_html);
+my_window.show(new_html);
 ```
 
 ---
 ### Window Status
 
-To know if a specific window is running, you can use `webinix::is_shown()`.
+To know if a specific window is running, you can use `my_window.is_shown()`.
 
 ```cpp
-if(webinix::is_shown(my_window))
+if(my_window.is_shown())
     std::cout << "The window is still running" << std::endl;
 else
     std::cout << "The window is closed." << std::endl;
@@ -253,21 +252,21 @@ else
 ---
 ### Bind
 
-Use `webinix::bind()` to receive click events when the user clicks on any HTML element with a specific ID, for example `<button id="MyID">Hello</button>`.
+Use `my_window.bind()` to receive click events when the user clicks on any HTML element with a specific ID, for example `<button id="MyID">Hello</button>`.
 
 ```cpp
-void my_function(webinix_event_t* e) {
+void my_function(webinix::event* e) {
     // <button id="MyID">Hello</button> gets clicked!
 }
 
-webinix::bind(my_window, "MyID", my_function);
+my_window.bind("MyID", my_function);
 ```
 
 Using `webinix::bind()` to call a class member method
 
 ```cpp
 class MyClass {
-    public: void my_function(webinix_event_t* e) {
+    public: void my_function(webinix::event* e) {
         // <button id="MyID">Hello</button> gets clicked!
     }
 };
@@ -277,9 +276,9 @@ class MyClass {
 // access `MyClass` directly. That's why we should
 // create a simple C++ wrapper.
 MyClass obj;
-void my_function_wrapper(webinix_event_t* e) { obj.my_function(e); }
+void my_function_wrapper(webinix::event* e) { obj.my_function(e); }
 
-webinix::bind(my_window, "MyID", my_function_wrapper);
+my_window.bind("MyID", my_function_wrapper);
 ```
 
 ### Events
@@ -287,25 +286,25 @@ webinix::bind(my_window, "MyID", my_function_wrapper);
 The *e* corresponds to the word _Event_. `e` is a struct that has these elements:
 
 ```cpp
-size_t window; // Pointer to the window struct.
-unsigned int event_type; // Event type (WEBUI_EVENT_MOUSE_CLICK, WEBUI_EVENT_NAVIGATION...).
-char* element; // HTML element ID.
-char* data; // The data are coming from JavaScript, if any.
-char* response; // Internally used by webinix::return_xxx().
+webinix::window& window; // The window object
+unsigned int event_type; // Event type
+std::string element; // HTML element ID
+std::string data; // JavaScript data
+unsigned int event_number; // Internal Webinix
 ```
 
 ```cpp
-void my_function(webinix_event_t* e){
+void my_function(webinix::event* e){
 
     std::cout << "Hi!, You clicked on " << e.element << std::endl;
 
-    if (e->event_type == WEBUI_EVENT_CONNECTED)
+    if (e->event_type == webinix::CONNECTED)
         std::cout << "Connected." << std::endl;
-    else if (e->event_type == WEBUI_EVENT_DISCONNECTED)
+    else if (e->event_type == webinix::DISCONNECTED)
         std::cout << "Disconnected." << std::endl;
-    else if (e->event_type == WEBUI_EVENT_MOUSE_CLICK)
+    else if (e->event_type == webinix::MOUSE_CLICK)
         std::cout << "Click." << std::endl;
-    else if (e->event_type == WEBUI_EVENT_NAVIGATION)
+    else if (e->event_type == webinix::NAVIGATION)
         std::cout << "Starting navigation to: " << e->data << std::endl;
 
     // Send back a response to JavaScript
@@ -314,8 +313,8 @@ void my_function(webinix_event_t* e){
     e->window.return_string(e, "My Response"); // As string
 }
 
-// Empty ID means all events on all elements
-webinix::bind(my_window, "", my_function);
+// Empty ID means all events
+my_window.bind("", my_function);
 ```
 
 ---
@@ -350,10 +349,10 @@ webinix::exit();
 ---
 ### Close
 
-You can call `webinix::close()` to close a specific window, if there is no running window left *[webinix::wait](/cpp_api?id=wait)* will break.
+You can call `my_window.close()` to close a specific window, if there is no running window left *[webinix::wait](/cpp_api?id=wait)* will break.
 
 ```cpp
-webinix::close(my_window);
+my_window.close();
 ```
 
 ---
@@ -381,28 +380,32 @@ webinix::wait();
 ---
 ### Multi Access
 
-![webinix::access_denied](data/webinix::access_denied.png)
+![webinix_access_denied](data/webinix_access_denied.png)
 
-After the window is loaded, the URL is not valid anymore for safety. Webinix will show an error if someone else tries to access the URL. To allow multi-user access to the same URL, you can use `webinix::set_multi_access()`.
+After the window is loaded, the URL is not valid anymore for safety. Webinix will show an error if someone else tries to access the URL. To allow multi-user access to the same URL, you can use `my_window.set_multi_access()`.
 
 ```cpp
-webinix::set_multi_access(my_window, true);
+my_window.set_multi_access(true);
 ```
 
 ---
 ### Run JavaScript From C++
 
-You can run JavaScript on any window to read values, update the view, or anything else. In addition, you can check if the script execution has errors, as well as receive data.
+You can run JavaScript on any window by using `my_window.script()`. In addition, you can check if the script execution has any errors, as well as receiving the result. Or use `my_window.run()` to run JavaScript quickly with no response (_fire and forget_).
 
 ```cpp
-void my_function(webinix_event_t* e){
+void my_function(webinix::event* e){
 
 	// Create a buffer to hold the response
     char response[64];
 
+    // This is another way to create a buffer:
+    //  std::string buffer;
+    //  buffer.reserve(64);
+    //  my_window.script(..., ..., &buffer[0], 64);
+
     // Run JavaScript
-    if(!webinix::script(
-        e->window, // Window
+    if(!e->window.script(
         "return 2*2;", // JavaScript to be executed
         0, // Maximum waiting time in second
         response, // Local buffer to hold the JavaScript response
@@ -426,10 +429,12 @@ void my_function(webinix_event_t* e){
 To call a C++ function from JavaScript and get the result back please use `webinix_fn('MyID', 'My Data').then((response) => { ... });`. If the function does not have a response then it's safe to remove the `then` method like this `webinix_fn('MyID_NoResponse', 'My Data');`.
 
 ```c
-void my_function(webinix_event_t* e) {
+void my_function(webinix::event* e) {
 
     // Get data from JavaScript
-    std::string str = e->window.get_string(e);
+    std::string str = e->data;
+    // Or 
+    // std::string str = e->window.get_string(e);
     // long long number = e->window.get_int(e);
     // bool status = e->window.get_bool(e);
 
@@ -442,7 +447,7 @@ void my_function(webinix_event_t* e) {
     // e->window.return_bool(e, true);
 }
 
-webinix::bind(my_window, "MyID", my_function);
+my_window.bind("MyID", my_function);
 ```
 
 JavsScript:
@@ -456,14 +461,14 @@ webinix_fn('MyID', 'Message from JS').then((response) => {
 ---
 ### TypeScript Runtimes
 
-You may want to interpret JavaScript & TypeScript files and show the output in the UI. You can use `webinix::set_runtime()` and choose between `Deno` or `Nodejs` as your runtimes.
+You may want to interpret JavaScript & TypeScript files and show the output in the UI. You can use `my_window.set_runtime()` and choose between `Deno` or `Nodejs` as your runtimes.
 
 ```cpp
 // Deno
-webinix::set_runtime(my_window, Deno);
-webinix::show(my_window, "my_file.ts");
+my_window.set_runtime(Deno);
+my_window.show("my_file.ts");
 
 // Nodejs
-webinix::set_runtime(my_window, Nodejs);
-webinix::show(my_window, "my_file.js");
+my_window.set_runtime(Nodejs);
+my_window.show("my_file.js");
 ```
