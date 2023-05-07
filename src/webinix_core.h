@@ -39,27 +39,28 @@ typedef struct webinix_event_core_t {
 } webinix_event_core_t;
 
 typedef struct _webinix_window_t {
-    unsigned int window_number;
+    size_t window_number;
     bool server_running;
     volatile bool connected;
     bool html_handled;
     bool server_handled;
     bool multi_access;
     bool is_embedded_html;
-    unsigned int server_port;
-    unsigned int ws_port;
+    size_t server_port;
+    size_t ws_port;
     char* url;
     const char* html;
     const char* icon;
     const char* icon_type;
-    unsigned int current_browser;
+    size_t current_browser;
     char* browser_path;
     char* profile_path;
-    unsigned int connections;
-    unsigned int runtime;
+    size_t connections;
+    size_t runtime;
     bool has_events;
     char* server_root_path;
     bool kiosk_mode;
+    size_t process_id;
     webinix_event_core_t* event_core[WEBUI_MAX_ARRAY];
     #ifdef _WIN32
         HANDLE server_thread;
@@ -69,12 +70,11 @@ typedef struct _webinix_window_t {
 } _webinix_window_t;
 
 typedef struct _webinix_core_t {
-    volatile unsigned int servers;
-    volatile unsigned int connections;
+    volatile size_t servers;
+    volatile size_t connections;
     char* html_elements[WEBUI_MAX_ARRAY];
-    unsigned int used_ports[WEBUI_MAX_ARRAY];
-    unsigned int last_window;
-    unsigned int startup_timeout;
+    size_t used_ports[WEBUI_MAX_ARRAY];
+    size_t startup_timeout;
     volatile bool exit_now;
     const char* run_responses[WEBUI_MAX_ARRAY];
     volatile bool run_done[WEBUI_MAX_ARRAY];
@@ -82,12 +82,12 @@ typedef struct _webinix_core_t {
     unsigned char run_last_id;
     bool initialized;
     void (*cb[WEBUI_MAX_ARRAY])(webinix_event_t* e);
-    void (*cb_interface[WEBUI_MAX_ARRAY])(size_t, unsigned int, char*, char*, unsigned int);
+    void (*cb_interface[WEBUI_MAX_ARRAY])(size_t, size_t, char*, char*, size_t);
     char* executable_path;
     void *ptr_list[WEBUI_MAX_ARRAY];
-    unsigned int ptr_position;
+    size_t ptr_position;
     size_t ptr_size[WEBUI_MAX_ARRAY];
-    unsigned int current_browser;
+    size_t current_browser;
     struct mg_connection* mg_connections[WEBUI_MAX_ARRAY];
     _webinix_window_t* wins[WEBUI_MAX_ARRAY];
     bool server_handled;
@@ -96,10 +96,10 @@ typedef struct _webinix_core_t {
 typedef struct _webinix_cb_arg_t {
     // Event
     _webinix_window_t* window;
-    unsigned int event_type;
+    size_t event_type;
     char* element;
     char* data;
-    unsigned int event_number;
+    size_t event_number;
     // Extras
     char* webinix_internal_id;
 } _webinix_cb_arg_t;
@@ -114,9 +114,9 @@ typedef struct _webinix_cmd_async_t {
     static const char* webinix_sep = "\\";
     static DWORD WINAPI _webinix_cb(LPVOID _arg);
     static DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
-    static int _webinix_system_win32(char* cmd, bool show);
+    static int _webinix_system_win32(_webinix_window_t* win, char* cmd, bool show);
     static int _webinix_system_win32_out(const char *cmd, char **output, bool show);
-    static bool _webinix_socket_test_listen_win32(unsigned int port_num);
+    static bool _webinix_socket_test_listen_win32(size_t port_num);
     static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
 
     #define WEBUI_CB DWORD WINAPI _webinix_cb(LPVOID _arg)
@@ -133,27 +133,25 @@ typedef struct _webinix_cmd_async_t {
 #endif
 
 static void _webinix_init(void);
-static bool _webinix_show(_webinix_window_t* window, const char* content, unsigned int browser);
-static unsigned int _webinix_get_cb_index(char* webinix_internal_id);
-static unsigned int _webinix_set_cb_index(char* webinix_internal_id);
-static unsigned int _webinix_get_free_port(void);
-static unsigned int _webinix_get_new_window_number(void);
+static bool _webinix_show(_webinix_window_t* win, const char* content, size_t browser);
+static size_t _webinix_get_cb_index(char* webinix_internal_id);
+static size_t _webinix_set_cb_index(char* webinix_internal_id);
+static size_t _webinix_get_free_port(void);
+static size_t _webinix_get_new_window_number(void);
 static void _webinix_wait_for_startup(void);
-static void _webinix_free_port(unsigned int port);
+static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
 static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len);
 static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t packets_size);
-static void _webinix_window_event(_webinix_window_t* win, int event_type, char* element, char* data, unsigned int event_number, char* webinix_internal_id);
-static unsigned int _webinix_window_get_number(_webinix_window_t* win);
-static void _webinix_window_open(_webinix_window_t* win, char* link, unsigned int browser);
-static int _webinix_cmd_sync(char* cmd, bool show);
-static int _webinix_cmd_async(char* cmd, bool show);
+static void _webinix_window_event(_webinix_window_t* win, int event_type, char* element, char* data, size_t event_number, char* webinix_internal_id);
+static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show);
+static int _webinix_cmd_async(_webinix_window_t* win, char* cmd, bool show);
 static int _webinix_run_browser(_webinix_window_t* win, char* cmd);
 static void _webinix_clean(void);
-static bool _webinix_browser_exist(_webinix_window_t* win, unsigned int browser);
-static const char* _webinix_browser_get_temp_path(unsigned int browser);
+static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser);
+static const char* _webinix_browser_get_temp_path(size_t browser);
 static bool _webinix_folder_exist(char* folder);
-static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, unsigned int browser);
+static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_t browser);
 static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address);
 static bool _webinix_browser_start_edge(_webinix_window_t* win, const char* address);
 static bool _webinix_browser_start_epic(_webinix_window_t* win, const char* address);
@@ -162,10 +160,10 @@ static bool _webinix_browser_start_brave(_webinix_window_t* win, const char* add
 static bool _webinix_browser_start_firefox(_webinix_window_t* win, const char* address);
 static bool _webinix_browser_start_yandex(_webinix_window_t* win, const char* address);
 static bool _webinix_browser_start_chromium(_webinix_window_t* win, const char* address);
-static bool _webinix_browser_start(_webinix_window_t* win, const char* address, unsigned int browser);
+static bool _webinix_browser_start(_webinix_window_t* win, const char* address, size_t browser);
 static long _webinix_timer_diff(struct timespec *start, struct timespec *end);
 static void _webinix_timer_start(_webinix_timer_t* t);
-static bool _webinix_timer_is_end(_webinix_timer_t* t, unsigned int ms);
+static bool _webinix_timer_is_end(_webinix_timer_t* t, size_t ms);
 static void _webinix_timer_clock_gettime(struct timespec *spec);
 static bool _webinix_set_root_folder(_webinix_window_t* win, const char* path);
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win);
@@ -174,20 +172,29 @@ static void _webinix_free_mem(void* ptr);
 static bool _webinix_file_exist_mg(struct mg_connection *conn);
 static bool _webinix_file_exist(char* file);
 static void _webinix_free_all_mem(void);
-static bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_embedded_html, unsigned int browser);
+static bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_embedded_html, size_t browser);
 static char* _webinix_generate_internal_id(_webinix_window_t* win, const char* element);
 static bool _webinix_is_empty(const char* s);
 static size_t _webinix_strlen(const char* s);
 static unsigned char _webinix_get_run_id(void);
-static void* _webinix_malloc(int size);
+static void* _webinix_malloc(size_t size);
 static void _webinix_sleep(long unsigned int ms);
-static unsigned int _webinix_find_the_best_browser(_webinix_window_t* win);
+static size_t _webinix_find_the_best_browser(_webinix_window_t* win);
 static bool _webinix_is_process_running(const char* process_name);
-static unsigned int _webinix_get_free_event_core_pos(_webinix_window_t* win);
-static void _webinix_http_send(struct mg_connection *conn, const char *mime_type, const char* body);
+static size_t _webinix_get_free_event_core_pos(_webinix_window_t* win);
 static void _webinix_print_hex(const char* data, size_t len);
 static void _webinix_print_ascii(const char* data, size_t len);
 static void _webinix_panic(void);
+static void _webinix_kill_pid(size_t pid);
+static _webinix_window_t* _webinix_dereference_win_ptr(void* ptr);
+
+static void _webinix_http_send(struct mg_connection *conn, const char* mime_type, const char* body);
+static int _webinix_http_log(const struct mg_connection *conn, const char* message);
+static int _webinix_http_handler(struct mg_connection *conn, void *_win);
+static int _webinix_ws_connect_handler(const struct mg_connection *conn, void *_win);
+static void _webinix_ws_ready_handler(struct mg_connection *conn, void *_win);
+static int _webinix_ws_data_handler(struct mg_connection *conn, int opcode, char* data, size_t datasize, void *_win);
+static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_win);
 
 static WEBUI_SERVER_START;
 static WEBUI_CB;

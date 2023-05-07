@@ -51,16 +51,6 @@ namespace webinix {
     // List of window objects: webinix::window
     webinix::window* window_list[512];
 
-    // Wait until all opened windows get closed.
-    void wait(void) {
-        webinix_wait();
-    }
-
-    // Close all opened windows. wait() will break.
-    void exit(void) {
-        webinix_exit();
-    }
-
     // Event handler
     // Webinix is written in C. So there is no way
     // to make C call a C++ class member. That's
@@ -151,11 +141,6 @@ namespace webinix {
             return webinix_is_shown(this->webinix_window);
         }
 
-        // Set the maximum time in seconds to wait for browser to start
-        void set_timeout(unsigned int second) {
-            webinix_set_timeout(second);
-        }
-
         // Set the default embedded HTML favicon
         void set_icon(std::string icon, std::string icon_type) {
             webinix_set_icon(this->webinix_window, icon.c_str(), icon_type.c_str());
@@ -227,6 +212,21 @@ namespace webinix {
             delete c_e;
         }
     };
+
+    // Wait until all opened windows get closed.
+    void wait(void) {
+        webinix_wait();
+    }
+
+    // Close all opened windows. wait() will break.
+    void exit(void) {
+        webinix_exit();
+    }
+
+    // Set the maximum time in seconds to wait for browser to start
+    void set_timeout(unsigned int second) {
+        webinix_set_timeout(second);
+    }
 }
 
 #endif /* _WEBUI_HPP */

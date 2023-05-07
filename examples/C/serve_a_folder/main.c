@@ -2,8 +2,11 @@
 
 #include "webinix.h"
 
-size_t my_window;
-size_t my_second_window;
+// Those defines is to avoid using global variables
+// you can also use `const size_t MyWindow;`.
+// A window ID can be between 1 and 512 (WEBUI_MAX_IDS)
+#define MyWindow (1)
+#define MySecondWindow (2)
 
 void exit_app(webinix_event_t* e) {
 
@@ -42,29 +45,29 @@ void show_second_window(webinix_event_t* e) {
 
     // Show a new window, and navigate to `/second.html`
     // if it's already open, then switch in the same window
-    webinix_show(my_second_window, "second.html");
+    webinix_show(MySecondWindow, "second.html");
 }
 
 int main() {
 
     // Create new windows
-    my_window = webinix_new_window();
-    my_second_window = webinix_new_window();
+    webinix_new_window_id(MyWindow);
+    webinix_new_window_id(MySecondWindow);
 
     // Bind HTML element IDs with a C functions
-    webinix_bind(my_window, "SwitchToSecondPage", switch_to_second_page);
-    webinix_bind(my_window, "OpenNewWindow", show_second_window);
-    webinix_bind(my_window, "Exit", exit_app);
-    webinix_bind(my_second_window, "Exit", exit_app);
+    webinix_bind(MyWindow, "SwitchToSecondPage", switch_to_second_page);
+    webinix_bind(MyWindow, "OpenNewWindow", show_second_window);
+    webinix_bind(MyWindow, "Exit", exit_app);
+    webinix_bind(MySecondWindow, "Exit", exit_app);
 
     // Bind events
-    webinix_bind(my_window, "", events);
+    webinix_bind(MyWindow, "", events);
 
     // Make Deno as the `.ts` and `.js` interpreter
-    webinix_set_runtime(my_window, Deno);
+    webinix_set_runtime(MyWindow, Deno);
 
     // Show a new window
-    webinix_show(my_window, "index.html"); // webinix_show_browser(my_window, "index.html", Chrome);
+    webinix_show(MyWindow, "index.html"); // webinix_show_browser(MyWindow, "index.html", Chrome);
 
     // Wait until all windows get closed
     webinix_wait();
