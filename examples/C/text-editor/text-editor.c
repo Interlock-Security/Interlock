@@ -7,15 +7,16 @@
 #include <stdlib.h>
 
 void Close(webinix_event_t* e) {
-    // Close all opened windows
     printf("Exit.\n");
+
+    // Close all opened windows
     webinix_exit();
 }
 
 void Save(webinix_event_t* e) {
+    printf("Save.\n");
 
     // Save data received from the UI
-
     FILE *file = fopen(FILE_PATH, "w");
     int results = fputs(e->data, file);
     if(results == EOF) {
@@ -25,6 +26,7 @@ void Save(webinix_event_t* e) {
 }
 
 void Open(webinix_event_t* e) {
+    printf("Open.\n");
 
     // Open a new file
 
