@@ -153,8 +153,8 @@ namespace webinix {
 
         // -- JavaScript ----------------------
         // Quickly run a JavaScript (no response waiting).
-        bool run(std::string script) {
-            return webinix_run(this->webinix_window, script.c_str());
+        void run(std::string script) {
+            webinix_run(this->webinix_window, script.c_str());
         }
 
         // Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
@@ -226,6 +226,23 @@ namespace webinix {
     // Set the maximum time in seconds to wait for browser to start
     void set_timeout(unsigned int second) {
         webinix_set_timeout(second);
+    }
+
+    // Base64 encoding. Use this to safely send text based data to the UI. If it fails it will return NULL.
+    std::string encode(std::string str) {
+        std::string ret = std::string(webinix_encode(str.c_str()));
+        return ret;
+    }
+
+    // Base64 decoding. Use this to safely decode received Base64 text from the UI. If it fails it will return NULL.
+    std::string decode(std::string str) {
+        std::string ret = std::string(webinix_decode(str.c_str()));
+        return ret;
+    }
+
+    // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
+    void free(void* ptr) {
+        webinix_free(ptr);
     }
 }
 

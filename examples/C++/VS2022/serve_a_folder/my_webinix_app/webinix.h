@@ -145,6 +145,8 @@ typedef struct webinix_event_t {
 WEBUI_EXPORT size_t webinix_new_window(void);
 // Create a new webinix window object.
 WEBUI_EXPORT void webinix_new_window_id(size_t window_number);
+// Get a free window ID that can be used with `webinix_new_window_id()`
+WEBUI_EXPORT size_t webinix_get_new_window_id(void);
 // Bind a specific html element click event with a function. Empty element means all events.
 WEBUI_EXPORT size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_event_t* e));
 // Show a window using a embedded HTML, or a file. If the window is already opened then it will be refreshed.

@@ -138,7 +138,6 @@ static bool _webinix_show(_webinix_window_t* win, const char* content, size_t br
 static size_t _webinix_get_cb_index(char* webinix_internal_id);
 static size_t _webinix_set_cb_index(char* webinix_internal_id);
 static size_t _webinix_get_free_port(void);
-static size_t _webinix_get_new_window_number(void);
 static void _webinix_wait_for_startup(void);
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
