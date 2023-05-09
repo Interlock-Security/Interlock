@@ -1,43 +1,13 @@
 
-# Webinix C - Minimal Example
+# Webinix C - Text Editor (Not Complete)
 
-Example of how to create the minimal Webinix application in C. To build this example, you will need one of those C compilers (*no dependencies are required*).
+A text editor application in C using Webinix.
 
 ### Windows
-
-- **Build Tools for Microsoft Visual Studio**
-```sh
-git clone https://github.com/alifcommunity/webinix.git
-cd webinix\examples\C\minimal\Windows\MSVC
-nmake
-```
 
 - **MinGW**
 ```sh
 git clone https://github.com/alifcommunity/webinix.git
-cd webinix\examples\C\minimal\Windows\GCC
-mingw32-make
-```
-
-- **TCC**
-```sh
-git clone https://github.com/alifcommunity/webinix.git
-cd webinix\examples\C\minimal\Windows\TCC
-mingw32-make
-```
-
-### Linux
-
-- **GCC**
-```sh
-git clone https://github.com/alifcommunity/webinix.git
-cd webinix/examples/C/minimal/Linux/GCC
-make
-```
-
-- **Clang**
-```sh
-git clone https://github.com/alifcommunity/webinix.git
-cd webinix/examples/C/minimal/Linux/Clang
-make
+cd webinix\examples\C\text-editor
+gcc -o text-editor.exe text-editor.c webinix-2-x64.dll -Wl,-subsystem=windows -lcomdlg32
 ```

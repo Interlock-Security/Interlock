@@ -44,6 +44,10 @@ cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/TypeScript/Deno/webinix-2-
 # Python
 cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.dyn"
 
+# C - Text Editor
+cp -f "include/webinix.h" "examples/C/text-editor/webinix.h"
+cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/C/text-editor/webinix-2-x64.dyn"
+
 echo "";
 if [ "$ARG1" = "" ]; then
 

@@ -71,6 +71,10 @@ copy /Y "include\webinix.h" "examples\C++\VS2019\serve_a_folder\my_webinix_app\w
 copy /Y "include\webinix.hpp" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix.hpp"
 copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
 
+REM C - Text Editor
+copy /Y "include\webinix.h" "examples\C\text-editor\webinix.h"
+copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\C\text-editor\webinix-2-x64.dll"
+
 echo.
 IF "%ARG1%"=="" (
 
@@ -90,9 +94,9 @@ IF "%ARG1%"=="" (
     copy /Y "build\Windows\GCC\libwebinix-2-static-x64.a" "Release\Windows\GCC\libwebinix-2-static-x64.a"
 
     REM Release Windows TCC
-    copy /Y "build\Windows\TCC\webinix-2-x64.dll" "Release\Windows\TCC\webinix-2-x64.dll"
+    REM copy /Y "build\Windows\TCC\webinix-2-x64.dll" "Release\Windows\TCC\webinix-2-x64.dll"
+    REM copy /Y "build\Windows\TCC\webinix-2-x64.def" "Release\Windows\TCC\webinix-2-x64.def"    
     copy /Y "build\Windows\TCC\libwebinix-2-static-x64.a" "Release\Windows\TCC\libwebinix-2-static-x64.a"
-    copy /Y "build\Windows\TCC\webinix-2-x64.def" "Release\Windows\TCC\webinix-2-x64.def"
 
     echo.
     echo Compressing the release folder...

@@ -53,6 +53,10 @@ cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/TypeScript/Deno/webinix-2-x64
 # Python
 cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.so"
 
+# C - Text Editor
+cp -f "include/webinix.h" "examples/C/text-editor/webinix.h"
+cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/C/text-editor/webinix-2-x64.so"
+
 echo "";
 if [ "$ARG1" = "" ]; then
 
