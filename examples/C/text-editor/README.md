@@ -1,7 +1,9 @@
 
-# Webinix C - Text Editor (Not Complete)
+# Webinix C - Text Editor
 
-A text editor application in C using Webinix.
+This [text editor example](https://github.com/alifcommunity/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
+
+![ScreenShot](webinix_c_example.png)
 
 ### Windows
 
