@@ -1,3 +1,5 @@
+![ScreenShot](logo/webinix_240_shadow.png)
+
 # Webinix v2.3.0
 
 [![Website](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/alifcommunity/webinix) [![Website](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/alifcommunity/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
