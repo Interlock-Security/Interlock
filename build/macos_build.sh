@@ -34,16 +34,6 @@ echo "";
 
 cd "$RootPath"
 
-# Golang
-cp -f "include/webinix.h" "examples/Go/hello_world/webinix/webinix.h"
-cp -f "build/macOS/Clang/libwebinix-2-static-x64.a" "examples/Go/hello_world/webinix/libwebinix-2-static-x64.a"
-
-# Deno
-cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/TypeScript/Deno/webinix-2-x64.dyn"
-
-# Python
-cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.dyn"
-
 # C - Text Editor
 cp -f "include/webinix.h" "examples/C/text-editor/webinix.h"
 cp -f "build/macOS/Clang/webinix-2-x64.dyn" "examples/C/text-editor/webinix-2-x64.dyn"

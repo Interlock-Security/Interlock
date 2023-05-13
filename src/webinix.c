@@ -904,7 +904,7 @@ char* webinix_encode(const char* str) {
     size_t buf_len = (((len + 2) / 3) * 4) + 8;
     char* buf = (char*) _webinix_malloc(buf_len);
 
-    int ret = mg_base64_encode(str, len, buf, &buf_len);
+    int ret = mg_base64_encode((const unsigned char*)str, len, buf, &buf_len);
 
     if(ret > (-1)) {
         
@@ -939,7 +939,7 @@ char* webinix_decode(const char* str) {
     #endif
 
     size_t buf_len = (((len + 2) / 3) * 4) + 8;
-    char* buf = (char*) _webinix_malloc(buf_len);
+    unsigned char* buf = (unsigned char*) _webinix_malloc(buf_len);
 
     int ret = mg_base64_decode(str, len, buf, &buf_len);
 
@@ -958,7 +958,7 @@ char* webinix_decode(const char* str) {
     #endif
 
     // Success
-    return buf;
+    return (char*)buf;
 }
 
 void webinix_free(void* ptr) {
@@ -1792,7 +1792,7 @@ static int _webinix_serve_file(struct mg_connection *conn) {
 
         mg_send_http_error(
             conn, 404,
-            webinix_html_res_not_available
+            "%s", webinix_html_res_not_available
         );
         // _webinix_http_send(
         //     conn, // 200
@@ -1929,7 +1929,7 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 
             mg_send_http_error(
                 conn, 404,
-                webinix_html_res_not_available
+                "%s", webinix_html_res_not_available
             );
             // _webinix_http_send(
             //     conn, // 200
@@ -1995,7 +1995,7 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 
                 mg_send_http_error(
                     conn, 500,
-                    webinix_deno_not_found
+                    "%s", webinix_deno_not_found
                 );
                 // _webinix_http_send(
                 //     conn, // 200
@@ -2044,7 +2044,7 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 
                 mg_send_http_error(
                     conn, 500,
-                    webinix_nodejs_not_found
+                    "%s", webinix_nodejs_not_found
                 );
                 // _webinix_http_send(
                 //     conn, // 200
@@ -4347,7 +4347,7 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
 
                     mg_send_http_error(
                         conn, 403,
-                        webinix_html_served
+                        "%s", webinix_html_served
                     );
                     // _webinix_http_send(
                     //     conn, // 200
@@ -4376,7 +4376,7 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
                         // Inject Webinix JS-Bridge into HTML
                         size_t len = _webinix_strlen(win->html) + _webinix_strlen(js) + 128;
                         html = (char*) _webinix_malloc(len);
-                        if(html != NULL) {
+                        if(win->html != NULL && js != NULL) {
                             sprintf(html, 
                                 "%s \n <script type = \"text/javascript\"> \n %s \n </script>",
                                 win->html, js

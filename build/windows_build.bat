@@ -51,16 +51,6 @@ echo.
 
 cd "%RootPath%"
 
-REM Golang
-copy /Y "include\webinix.h" "examples\Go\hello_world\webinix\webinix.h"
-copy /Y "build\Windows\GCC\libwebinix-2-static-x64.a" "examples\Go\hello_world\webinix\libwebinix-2-static-x64.a"
-
-REM Deno
-copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\TypeScript\Deno\webinix-2-x64.dll"
-
-REM Python
-copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\Python\PyPI\Package\src\webinix\webinix-2-x64.dll"
-
 REM C++ (Visual Studio 2022)
 copy /Y "include\webinix.h" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.h"
 copy /Y "include\webinix.hpp" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.hpp"

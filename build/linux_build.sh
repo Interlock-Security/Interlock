@@ -43,16 +43,6 @@ echo "";
 
 cd "$RootPath"
 
-# Golang
-cp -f "include/webinix.h" "examples/Go/hello_world/webinix/webinix.h"
-cp -f "build/Linux/GCC/libwebinix-2-static-x64.a" "examples/Go/hello_world/webinix/libwebinix-2-static-x64.a"
-
-# Deno
-cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/TypeScript/Deno/webinix-2-x64.so"
-
-# Python
-cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/Python/PyPI/Package/src/webinix/webinix-2-x64.so"
-
 # C - Text Editor
 cp -f "include/webinix.h" "examples/C/text-editor/webinix.h"
 cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/C/text-editor/webinix-2-x64.so"
