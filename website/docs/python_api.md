@@ -29,7 +29,7 @@ Install the Webinix package from PyPI (*~360 Kb*).
 pip install webinix2
 ```
 
-To see the Webinix Python wrapper source code, please visit [Webinix](https://github.com/alifcommunity/webinix/) in our GitHub repository.
+To see the Webinix Python wrapper source code, please visit [Webinix](https://github.com/webinix-dev/python-webinix/) in our GitHub repository.
 
 ---
 ### Examples
@@ -65,7 +65,7 @@ MyWindow.show('<html>Hello World</html>', webinix.browser.chrome)
 webinix.wait()
 ```
 
-Please visit [Python Examples](https://github.com/alifcommunity/webinix/tree/main/examples/Python) in our GitHub repository for more complete examples.
+Please visit [Python Examples](https://github.com/webinix-dev/python-webinix/tree/main/examples/Python) in our GitHub repository for more complete examples.
 
 ---
 ### New Window

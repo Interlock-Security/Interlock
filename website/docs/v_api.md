@@ -25,11 +25,11 @@
 
 Install the Webinix package from vpm (*~1.5 Mb*).
 
-`v install malisipi.vwebinix`
+`v install webinix-dev.v-webinix`
 
 Or from github
 
-`v install https://github.com/malisipi/vwebinix`
+`v install https://github.com/webinix-dev/v-webinix`
 
 ---
 ### Examples
@@ -37,7 +37,7 @@ Or from github
 A minimal V example
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 mut my_window := webinix.new_window()
 my_window.show("<html>Hello</html>")
@@ -47,7 +47,7 @@ webinix.wait()
 Using a local HTML file. Please not that you need to add `<script src="/webinix.js"></script>` to all your HTML files
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 // Please add <script src="/webinix.js"></script> to your HTML files
 mut my_window := webinix.new_window()
@@ -58,14 +58,14 @@ webinix.wait()
 Using a specific web browser
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 mut my_window := webinix.new_window()
 my_window.show_browser("<html>Hello</html>", webinix.browser_chrome)
 webinix.wait()
 ```
 
-Please visit [V Examples](https://github.com/alifcommunity/webinix/tree/main/examples/V) in our GitHub repository for instructions on compiling this example or finding more complete examples.
+Please visit [V Examples](https://github.com/webinix-dev/v-webinix/tree/main/examples/V) in our GitHub repository for instructions on compiling this example or finding more complete examples.
 
 ---
 ### New Window
@@ -73,7 +73,7 @@ Please visit [V Examples](https://github.com/alifcommunity/webinix/tree/main/exa
 To create a new window object, you can use `new_window()`, which returns a void pointer. Please note that this pointer does *NOT* need to be freed.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 mut my_window := webinix.new_window()
 ```
@@ -84,7 +84,7 @@ mut my_window := webinix.new_window()
 To show a window, you can use `webinix_show()`. If the window is already shown, the UI will get refreshed in the same window.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 // Create a new window
 mut my_window := webinix.new_window()
 // Show a window using the embedded HTML
@@ -98,7 +98,7 @@ my_window.show("my_file.html")
 Show a window using a specific web browser
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 my_html := "<html>Hello!</html>";
 
@@ -142,7 +142,7 @@ webinix_show(my_window, my_html)
 If you need to update the whole UI content, you can also use the same function `show()`, which allows you to refresh the window UI with any new HTML content.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 html := "<html>Hello</html>"
 new_html := "<html>New World!</html>"
@@ -162,7 +162,7 @@ my_window.show(new_html)
 To know if a specific window is running, you can use `is_shown()`.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 if webinix.is_shown(my_window) {
     println("The window is still running")
@@ -177,7 +177,7 @@ if webinix.is_shown(my_window) {
 Use `bind()` to receive click events when the user clicks on any HTML element with a specific ID, for example `<button id="MyID">Hello</button>`.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 fn my_function_string(e &webinix.Event) {
     // <button id="MyID">Hello</button> gets clicked!
 }
@@ -190,7 +190,7 @@ my_window.bind("MyID", my_function)
 `Event` is a struct that has these elements:
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 pub struct Event {
 	pub mut:
 		window			Window // Pointer to the window object
@@ -204,7 +204,7 @@ pub struct Event {
 Also you can see the `element` and `data` is not native V string. So you can use these functions to get values as native string without requiring a conversion steps.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 fn my_function(e &webinix.Event) {
     // Get data
@@ -219,7 +219,7 @@ fn my_function(e &webinix.Event) {
 ```
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 fn my_function(e &webinix.Event) { 
     // This function gets called every time
@@ -249,7 +249,7 @@ webinix_bind(my_window, "", my_function)
 It is essential to call `wait()` at the end of your main function, after you create/shows all your windows. This will make your application run until the user closes all visible windows or when calling *[exit()](/v_api?id=exit)*.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 int main() {
 
 	mut my_window := webinix.new_window() // Create windows...
@@ -271,7 +271,7 @@ int main() {
 At any moment, you can call `exit()`, which tries to close all related opened windows and make *[webinix.wait](/v_api?id=wait)* break.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 webinix.exit()
 ```
 
@@ -281,7 +281,7 @@ webinix.exit()
 You can call `webinix.close()` to close a specific window, if there is no running window left *[webinix_wait](/v_api?id=wait)* will break.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 mut my_window := webinix.new_window() 
 my_window.close()
 ```
@@ -292,7 +292,7 @@ my_window.close()
 Webinix waits a couple of seconds (_Default is 30 seconds_) to let the web browser start and connect. You can control this behavior by using `webinix.set_timeout()`.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 // Wait 10 seconds for the browser to start
 webinix.set_timeout(10)
 
@@ -304,7 +304,7 @@ my_window.wait()
 ```
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 // Wait forever.
 webinix.set_timeout(0)
 
@@ -322,7 +322,7 @@ my_window.wait()
 After the window is loaded, the URL is not valid anymore for safety. V-Webinix will show an error if someone else tries to access the URL. To allow multi-user access to the same URL, you can use `webinix_set_multi_access()`.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 mut my_window := webinix.new_window() 
 
 my_window.set_multi_access(true)
@@ -334,7 +334,7 @@ my_window.set_multi_access(true)
 You can run JavaScript on any window to read values, update the view, or anything else. In addition, you can check if the script execution has errors, as well as receive data.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 fn my_function(e &webinix.Event) {
 
@@ -355,7 +355,7 @@ fn my_function(e &webinix.Event) {
 To call a V function from JavaScript and get the result back please use `webinix_fn('MyID', 'My Data').then((response) => { ... });`. If the function does not have a response then it's safe to remove the `then` method like this `webinix_fn('MyID_NoResponse', 'My Data');`.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 mut my_window := webinix.new_window() 
 
@@ -392,7 +392,7 @@ webinix_fn('MyID', 'Message from JS').then((response) => {
 You may want to interpret JavaScript & TypeScript files and show the output in the UI. You can use `set_runtime()` and choose between `runtime_deno` or `runtime_nodejs` as your runtimes.
 
 ```v
-import malisipi.vwebinix as webinix
+import webinix-dev.v-webinix as webinix
 
 mut my_window := webinix.new_window()
 

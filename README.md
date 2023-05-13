@@ -2,7 +2,7 @@
 
 # Webinix v2.3.0
 
-[![Website](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/alifcommunity/webinix) [![Website](https://img.shields.io/github/issues/alifcommunity/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/alifcommunity/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
+[![Website](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/webinix-dev/webinix) [![Website](https://img.shields.io/github/issues/webinix-dev/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/webinix-dev/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
 
 > Use any web browser as GUI, with your preferred language in the backend and HTML5 in the frontend, all in a lightweight portable lib.
 
@@ -26,7 +26,7 @@
 
 ## Screenshot
 
-This [text editor example](https://github.com/alifcommunity/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
+This [text editor example](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
 
 ![ScreenShot](webinix_c_example.png)
 
@@ -66,31 +66,27 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
  - [Online Documentation - C](https://webinix.me/docs/#/c_api)
  - [Online Documentation - C++](https://webinix.me/docs/#/cpp_api)
- - [Online Documentation - Python](https://webinix.me/docs/#/python_api)
- - Online Documentation - TypeScript / JavaScript (*Not Complete*)
- - [Online Documentation - Go](https://webinix.me/docs/#/go_api)
- - Online Documentation - Rust (*Not Complete*)
- - [Online Documentation - V](https://webinix.me/docs/#/v_api)
- - [Online Documentation - Nim](https://neroist.github.io/webinix-docs/) (*Not Complete*)
- - Online Documentation - Zig (*Not Complete*)
 
 ## Build
 
- - [Windows](https://github.com/alifcommunity/webinix/tree/main/build/Windows)
- - [Linux](https://github.com/alifcommunity/webinix/tree/main/build/Linux)
- - [macOS](https://github.com/alifcommunity/webinix/tree/main/build/macOS)
+ - [Windows](https://github.com/webinix-dev/webinix/tree/main/build/Windows)
+ - [Linux](https://github.com/webinix-dev/webinix/tree/main/build/Linux)
+ - [macOS](https://github.com/webinix-dev/webinix/tree/main/build/macOS)
 
 ## Examples
 
- - [C](https://github.com/alifcommunity/webinix/tree/main/examples/C)
- - [C++](https://github.com/alifcommunity/webinix/tree/main/examples/C++)
- - [Python](https://github.com/alifcommunity/webinix/tree/main/examples/Python)
- - [TypeScript / JavaScript](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript)
- - [Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go/hello_world)
- - [Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust/hello_world) (*Not Complete*)
- - [V - malisipi/vwebinix](https://github.com/malisipi/vwebinix/tree/main/examples)
- - [Nim - neroist/webinix](https://github.com/neroist/webinix/tree/main/examples) (*Not Complete*)
- - [Zig - desttinghim/webinix](https://github.com/desttinghim/webinix/tree/main/examples) (*Not Complete*)
+ - [C](https://github.com/webinix-dev/webinix/tree/main/examples/C)
+ - [C++](https://github.com/webinix-dev/webinix/tree/main/examples/C++)
+
+ ## Wrappers
+
+ - [Python](https://github.com/webinix-dev/python-webinix)
+ - [TypeScript / JavaScript](https://github.com/webinix-dev/deno-webinix)
+ - [Go](https://github.com/webinix-dev/go-webinix)
+ - [Rust](https://github.com/webinix-dev/rust-webinix) (*Not Complete*)
+ - [V](https://github.com/webinix-dev/v-webinix)
+ - [Nim](https://github.com/webinix-dev/nim-webinix)
+ - [Zig](https://github.com/webinix-dev/zig-webinix) (*Not Complete*)
 
 ## Supported Web Browsers
 
@@ -131,16 +127,14 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 | Language | Status | Link |
 | ------ | ------ | ------ |
-| C | ✔️ | [examples/C](https://github.com/alifcommunity/webinix/tree/main/examples/C) |
-| C++ |  ✔️ | [examples/C++](https://github.com/alifcommunity/webinix/tree/main/examples/C%2B%2B) |
-| Python | ✔️ | [examples/Python](https://github.com/alifcommunity/webinix/tree/main/examples/Python) |
-| JavaScript | ✔️ | [examples/TypeScript/Nodejs](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript/Nodejs) |
-| TypeScript | ✔️ | [examples/TypeScript/Deno](https://github.com/alifcommunity/webinix/tree/main/examples/TypeScript/Deno) |
-| Go | ✔️ | [examples/Go](https://github.com/alifcommunity/webinix/tree/main/examples/Go) |
-| Rust | *Not Complete* | [examples/Rust](https://github.com/alifcommunity/webinix/tree/main/examples/Rust) |
-| V | ✔️ | [malisipi/vwebinix](https://github.com/malisipi/vwebinix) |
-| Nim | *Not Complete* | [neroist/webinix](https://github.com/neroist/webinix) |
-| Zig | *Not Complete* | [desttinghim/webinix](https://github.com/desttinghim/webinix) |
+| C/C++ | ✔️ | [Webinix](https://github.com/webinix-dev/webinix) |
+| Python | ✔️ | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
+| TypeScript / JavaScript | ✔️ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix) |
+| Go | ✔️ | [Go-Webinix](https://github.com/webinix-dev/go-webinix) |
+| Rust | *Not Complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
+| V | ✔️ | [V-Webinix](https://github.com/webinix-dev/v-webinix) |
+| Nim | ✔️ | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix) |
+| Zig | *Not Complete* | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix) |
 
 ### License
 
@@ -148,4 +142,4 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ### Stargazers
 
-[![Stargazers repo roster for @alifcommunity/webinix](https://reporoster.com/stars/alifcommunity/webinix)](https://github.com/alifcommunity/webinix/stargazers)
+[![Stargazers repo roster for @webinix-dev/webinix](https://reporoster.com/stars/webinix-dev/webinix)](https://github.com/webinix-dev/webinix/stargazers)

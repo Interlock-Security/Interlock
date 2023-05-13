@@ -27,7 +27,7 @@ You can build Webinix Go wrapper from source by cloning the Webinix repo and com
 
 ### Windows
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/go-webinix.git
 cd webinix\examples\Go\hello_world
 go clean
 go build -o hello_world.exe
@@ -36,7 +36,7 @@ hello_world
 
 ### Linux
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/go-webinix.git
 cd webinix/examples/Go/hello_world
 go clean
 go build -o hello_world
@@ -45,14 +45,14 @@ go build -o hello_world
 
 ### macOS
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/go-webinix.git
 cd webinix/examples/Go/hello_world
 go clean
 go build -o hello_world
 ./hello_world
 ```
 
-To see the Webinix Go wrapper source code, please visit [Webinix](https://github.com/alifcommunity/webinix/) in our GitHub repository.
+To see the Webinix Go wrapper source code, please visit [Webinix](https://github.com/webinix-dev/go-webinix/) in our GitHub repository.
 
 ---
 ### Examples
@@ -60,7 +60,7 @@ To see the Webinix Go wrapper source code, please visit [Webinix](https://github
 A minimal Go example
 
 ```go
-import "github.com/alifcommunity/webinix/webinix"
+import "github.com/webinix-dev/go-webinix/webinix"
 
 var my_window = webinix.NewWindow()
 webinix.Show(my_window, "<html>Hello World</html>")
@@ -70,7 +70,7 @@ webinix.Wait()
 Using a local HTML file. Please not that you need to add `<script src="/webinix.js"></script>` to all your HTML files
 
 ```go
-import "github.com/alifcommunity/webinix/webinix"
+import "github.com/webinix-dev/go-webinix/webinix"
 
 var my_window = webinix.NewWindow()
 webinix.Show(my_window, "my_file.html")
@@ -80,7 +80,7 @@ webinix.Wait()
 Using a specific web browser
 
 ```go
-import "github.com/alifcommunity/webinix/webinix"
+import "github.com/webinix-dev/go-webinix/webinix"
 
 var my_window = webinix.NewWindow()
 // Please add <script src="/webinix.js"></script> to your HTML files
@@ -88,7 +88,7 @@ webinix.ShowBrowser(my_window, "my_file.html", webinix.Chrome)
 webinix.Wait()
 ```
 
-Please visit [Go Examples](https://github.com/alifcommunity/webinix/tree/main/examples/Go) in our GitHub repository for more complete examples.
+Please visit [Go Examples](https://github.com/webinix-dev/go-webinix/tree/main/examples/Go) in our GitHub repository for more complete examples.
 
 ---
 ### New Window

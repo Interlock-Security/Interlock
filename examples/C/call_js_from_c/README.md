@@ -7,21 +7,21 @@ Example of how to call JavaScript from C. To build this example, you will need o
 
 - **Build Tools for Microsoft Visual Studio**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\call_js_from_c\Windows\MSVC
 nmake
 ```
 
 - **MinGW**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\call_js_from_c\Windows\GCC
 mingw32-make
 ```
 
 - **TCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\call_js_from_c\Windows\TCC
 mingw32-make
 ```
@@ -30,14 +30,14 @@ mingw32-make
 
 - **GCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/call_js_from_c/Linux/GCC
 make
 ```
 
 - **Clang**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/call_js_from_c/Linux/Clang
 make
 ```

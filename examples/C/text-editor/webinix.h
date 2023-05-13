@@ -1,7 +1,7 @@
 /*
   Webinix Library 2.3.0
   http://webinix.me
-  https://github.com/alifcommunity/webinix
+  https://github.com/webinix-dev/webinix
   Copyright (c) 2020-2023 Hassan Draga.
   Licensed under MIT License.
   All rights reserved.

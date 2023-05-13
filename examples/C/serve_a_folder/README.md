@@ -7,21 +7,21 @@ Example of using Webinix to serve a folder that contains `.html`, `.css`, `.js`,
 
 - **Build Tools for Microsoft Visual Studio**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\serve_a_folder\Windows\MSVC
 nmake
 ```
 
 - **MinGW**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\serve_a_folder\Windows\GCC
 mingw32-make
 ```
 
 - **TCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\serve_a_folder\Windows\TCC
 mingw32-make
 ```
@@ -30,14 +30,14 @@ mingw32-make
 
 - **GCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/serve_a_folder/Linux/GCC
 make
 ```
 
 - **Clang**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/serve_a_folder/Linux/Clang
 make
 ```

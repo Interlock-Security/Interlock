@@ -33,7 +33,7 @@ You can build Webinix from source by cloning the Webinix repo and compile it usi
 
 Windows MSVC (_Using x64 Native Tools Command Prompt for VS 20xx_)
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\build\Windows\MSVC
 nmake
 nmake debug
@@ -41,7 +41,7 @@ nmake debug
 
 Windows MinGW
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\build\Windows\GCC
 mingw32-make
 mingw32-make debug
@@ -49,7 +49,7 @@ mingw32-make debug
 
 Windows TCC
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\build\Windows\TCC
 mingw32-make
 mingw32-make debug
@@ -57,7 +57,7 @@ mingw32-make debug
 
 Linux GCC
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/build/Linux/GCC
 make
 make debug
@@ -65,7 +65,7 @@ make debug
 
 Linux Clang
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/build/Linux/Clang
 make
 make debug
@@ -73,7 +73,7 @@ make debug
 
 macOS Clang
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/build/macOS/Clang
 make
 make debug
@@ -84,7 +84,7 @@ You can also use the build script to automatically build Webinix and copy binari
 
 Windows
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\build\
 windows_build
 windows_build debug
@@ -92,7 +92,7 @@ windows_build debug
 
 Linux
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/build
 sh linux_build.sh
 sh linux_build.sh debug
@@ -100,13 +100,13 @@ sh linux_build.sh debug
 
 macOS
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/build
 sh macos_build.sh
 sh macos_build.sh debug
 ```
 
-For more instructions, please visit [Build Webinix](https://github.com/alifcommunity/webinix/tree/main/build) in our GitHub repository.
+For more instructions, please visit [Build Webinix](https://github.com/webinix-dev/webinix/tree/main/build) in our GitHub repository.
 
 ---
 ### Examples
@@ -154,7 +154,7 @@ int main() {
 }
 ```
 
-Please visit [C Examples](https://github.com/alifcommunity/webinix/tree/main/examples/C) in our GitHub repository for instructions on compiling this example or finding more complete examples.
+Please visit [C Examples](https://github.com/webinix-dev/webinix/tree/main/examples/C) in our GitHub repository for instructions on compiling this example or finding more complete examples.
 
 ---
 ### New Window

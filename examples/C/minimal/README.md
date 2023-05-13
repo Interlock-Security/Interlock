@@ -7,21 +7,21 @@ Example of how to create the minimal Webinix application in C. To build this exa
 
 - **Build Tools for Microsoft Visual Studio**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\minimal\Windows\MSVC
 nmake
 ```
 
 - **MinGW**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\minimal\Windows\GCC
 mingw32-make
 ```
 
 - **TCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix\examples\C\minimal\Windows\TCC
 mingw32-make
 ```
@@ -30,14 +30,14 @@ mingw32-make
 
 - **GCC**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/minimal/Linux/GCC
 make
 ```
 
 - **Clang**
 ```sh
-git clone https://github.com/alifcommunity/webinix.git
+git clone https://github.com/webinix-dev/webinix.git
 cd webinix/examples/C/minimal/Linux/Clang
 make
 ```
