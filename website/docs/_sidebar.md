@@ -5,3 +5,4 @@
   - [Webinix Python APIs](/python_api)
   - [Webinix Go APIs](/go_api)
   - [Webinix V APIs](/v_api)
+  - [Webinix Nim APIs](/nim_api)
