@@ -103,7 +103,7 @@ namespace webinix {
         }
 
         // Bind a specific html element click event with a function. Empty element means all events.
-        void bind(std::string element, void (*func)(webinix::event* e)) {
+        void bind(const std::string& element, void (*func)(webinix::event* e)) {
 
             // Get unique ID
             unsigned int id = webinix_bind(this->webinix_window, element.c_str(), webinix::event_handler);
@@ -116,12 +116,12 @@ namespace webinix {
         }
 
         // Show a window using a embedded HTML, or a file. If the window is already opened then it will be refreshed.
-        bool show(std::string content) {
+        bool show(const std::string& content) {
             return webinix_show(this->webinix_window, content.c_str());
         }
 
         // Same as show(). But with a specific web browser.
-        bool show_browser(std::string content, unsigned int browser) {
+        bool show_browser(const std::string& content, unsigned int browser) {
             return webinix_show_browser(this->webinix_window, content.c_str(), browser);
         }
 
@@ -142,7 +142,7 @@ namespace webinix {
         }
 
         // Set the default embedded HTML favicon
-        void set_icon(std::string icon, std::string icon_type) {
+        void set_icon(const std::string& icon, const std::string& icon_type) {
             webinix_set_icon(this->webinix_window, icon.c_str(), icon_type.c_str());
         }
 
@@ -153,12 +153,12 @@ namespace webinix {
 
         // -- JavaScript ----------------------
         // Quickly run a JavaScript (no response waiting).
-        void run(std::string script) {
+        void run(const std::string& script) {
             webinix_run(this->webinix_window, script.c_str());
         }
 
         // Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
-        bool script(std::string script, unsigned int timeout, char* buffer, size_t buffer_length) {
+        bool script(const std::string& script, unsigned int timeout, char* buffer, size_t buffer_length) {
             return webinix_script(this->webinix_window, script.c_str(), timeout, buffer, buffer_length);
         }
 
@@ -199,9 +199,9 @@ namespace webinix {
         }
 
         // Return the response to JavaScript as string.
-        void return_string(webinix::event* e, std::string s) {
+        void return_string(webinix::event* e, const std::string& s) {
             webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            webinix_return_string(c_e, &s[0]);
+            webinix_return_string(c_e, s.c_str());
             delete c_e;
         }
 
@@ -229,13 +229,13 @@ namespace webinix {
     }
 
     // Base64 encoding. Use this to safely send text based data to the UI. If it fails it will return NULL.
-    std::string encode(std::string str) {
+    std::string encode(const std::string& str) {
         std::string ret = std::string(webinix_encode(str.c_str()));
         return ret;
     }
 
     // Base64 decoding. Use this to safely decode received Base64 text from the UI. If it fails it will return NULL.
-    std::string decode(std::string str) {
+    std::string decode(const std::string& str) {
         std::string ret = std::string(webinix_decode(str.c_str()));
         return ret;
     }
