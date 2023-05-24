@@ -2624,8 +2624,6 @@ static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser) {
                 VivaldiExist = true;
                 return true;
             }
-
-            // Vivaldi on Arch Linux
             else if(_webinix_cmd_sync(win, "vivaldi-stable --version", false) == 0) {
 
                 sprintf(win->browser_path, "vivaldi-stable");

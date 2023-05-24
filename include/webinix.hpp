@@ -33,21 +33,26 @@ namespace webinix {
 
     class window {
     private:
-        size_t webinix_window {webinix_new_window()};
+        size_t webinix_window {
+            webinix_new_window()
+        };
 
     public:
-    // Event struct
-        struct event : public webinix_event_t{
+        // Event Struct
+        struct event : public webinix_event_t {
+
             using webinix_event_t::webinix_event_t;
 
             // Window object constructor that
             // initializes the reference, This
             // is to avoid creating copies.
-            event(webinix::window& window_obj, webinix_event_t c_e) : webinix_event_t(c_e){
+            event(webinix::window& window_obj, webinix_event_t c_e) : webinix_event_t(c_e) {
+
                 reinterpret_cast<webinix_event_t*>(this)->window = window_obj.webinix_window;
             }
 
-            class handler{
+            class handler {
+
                 public:
                 using callback_t = void(*)(event*);
 
@@ -61,11 +66,12 @@ namespace webinix {
                 handler() = delete;
                 handler(const handler&) = delete;
                 handler(handler&&) = delete;
-                handler& operator=(const handler&) = delete;
-                handler& operator=(handler&&) = delete;
+                handler& operator = (const handler&) = delete;
+                handler& operator = (handler&&) = delete;
                 ~handler() = delete;
 
-                static void add(size_t id, webinix::window* win, callback_t func){
+                static void add(size_t id, webinix::window* win, callback_t func) {
+
                     window_list[id] = win;
 
                     // Save callback
@@ -91,7 +97,7 @@ namespace webinix {
             };
 
             // Parse argument as integer.
-            long long int get_int()  {
+            long long int get_int() {
                 return webinix_get_int(this);
             }
 
@@ -106,17 +112,17 @@ namespace webinix {
             }
 
             // Return the response to JavaScript as integer.
-            void return_int(long long int n)  {
+            void return_int(long long int n) {
                 webinix_return_int(this, n);
             }
 
             // Return the response to JavaScript as string.
-            void return_string(const std::string_view s)  {
+            void return_string(const std::string_view s) {
                 webinix_return_string(this, s.data());
             }
 
             // Return the response to JavaScript as boolean.
-            void return_bool(bool b)  {
+            void return_bool(bool b) {
                 webinix_return_bool(this, b);
             }
         };
@@ -189,7 +195,7 @@ namespace webinix {
     }
 
     // Close all opened windows. wait() will break.
-    inline void exit(){
+    inline void exit() {
         webinix_exit();
     }
 
