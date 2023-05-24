@@ -39,15 +39,13 @@ namespace webinix {
     // Event struct
         struct event : public webinix_event_t{
             using webinix_event_t::webinix_event_t;
-            webinix::window& window; // The window object
 
             // Window object constructor that
             // initializes the reference, This
             // is to avoid creating copies.
-            event(webinix::window& window_obj, webinix_event_t c_e = {}) : webinix_event_t(c_e),
-                window(window_obj) {
-                    reinterpret_cast<webinix_event_t*>(this)->window = window_obj.webinix_window;
-                }
+            event(webinix::window& window_obj, webinix_event_t c_e) : webinix_event_t(c_e){
+                reinterpret_cast<webinix_event_t*>(this)->window = window_obj.webinix_window;
+            }
 
             class handler{
                 public:
