@@ -9,13 +9,13 @@
 #include <string>
 #include <stdexcept>
 
-void my_function_exit(webinix::event* e) {
+void my_function_exit(webinix::window::event* e) {
 
     // Close all opened windows
     webinix::exit();
 }
 
-void my_function_count(webinix::event* e) {
+void my_function_count(webinix::window::event* e) {
 
     // This function gets called every time the user clicks on "MyButton1"
 
