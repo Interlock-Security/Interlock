@@ -190,7 +190,7 @@ WEBUI_EXPORT bool webinix_get_bool(webinix_event_t* e);
 // Return the response to JavaScript as integer.
 WEBUI_EXPORT void webinix_return_int(webinix_event_t* e, long long int n);
 // Return the response to JavaScript as string.
-WEBUI_EXPORT void webinix_return_string(webinix_event_t* e, char* s);
+WEBUI_EXPORT void webinix_return_string(webinix_event_t* e, const char* s);
 // Return the response to JavaScript as boolean.
 WEBUI_EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
 // Base64 encoding. Use this to safely send text based data to the UI. If it fails it will return NULL.
