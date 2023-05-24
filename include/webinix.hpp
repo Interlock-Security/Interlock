@@ -14,6 +14,7 @@
 // C++ STD
 #include <string>
 #include <string_view>
+#include <array>
 
 // Webinix C Header
 extern "C" {
@@ -30,180 +31,157 @@ namespace webinix {
     const int NAVIGATION = 5; // 5. Window navigation event
     const int CALLBACKS = 6; // 6. Function call event
 
-    class window;
-
-    // Event struct
-    struct event {
-        webinix::window& window; // The window object
-        unsigned int event_type; // Event type
-        std::string element; // HTML element ID
-        std::string data; // JavaScript data
-        unsigned int event_number; // Internal Webinix
-
-        // Window object constructor that
-        // initializes the reference, This
-        // is to avoid creating copies.
-        event(webinix::window& window_obj) : window(window_obj) {}
-    };
-
-    // List of callbacks: user_function(webinix::event* e)
-    void (*callback_list[512])(webinix::event*);
-
-    // List of window objects: webinix::window
-    webinix::window* window_list[512];
-
-    // Event handler
-    // Webinix is written in C. So there is no way
-    // to make C call a C++ class member. That's
-    // why this function should be outside class
-    void event_handler(webinix_event_t* c_e) {
-
-        // Get a unique ID. Same ID as `webinix_bind()`. Return > 0 if bind exist.
-        unsigned int id = webinix_interface_get_bind_id(c_e->window, c_e->element);
-
-        if(id < 1)
-            return;
-
-        // Create a new event struct
-        webinix::event e(*window_list[id]);
-        // `e.window` is already initialized by `e` constructor
-        e.event_type = c_e->event_type;
-        e.element = (c_e->element != nullptr ? std::string(c_e->element) : std::string(""));
-        e.data = (c_e->data != nullptr ? std::string(c_e->data) : std::string(""));
-        e.event_number = c_e->event_number;
-
-        // Call the user callback
-        if(callback_list[id] != nullptr)
-            callback_list[id](&e);
-    }
-
     class window {
     private:
-        size_t webinix_window = 0;
+        size_t webinix_window {webinix_new_window()};
 
-        webinix_event_t* convert_event_to_webinix_event(webinix::event* e) const {
-            // Convert C++ `webinix::event` to C `webinix_event_t`
-            webinix_event_t* c_e = new webinix_event_t;
-            c_e->window = this->webinix_window;
-            c_e->event_type = e->event_type;
-            c_e->element = (char*)e->element.c_str();
-            c_e->data = (char*)e->data.c_str();
-            c_e->event_number = e->event_number;
-            return c_e;
-        }
     public:
-        // Constructor
-        window() : webinix_window (webinix_new_window()){
-        }
+    // Event struct
+        struct event : public webinix_event_t{
+            using webinix_event_t::webinix_event_t;
+            webinix::window& window; // The window object
+
+            // Window object constructor that
+            // initializes the reference, This
+            // is to avoid creating copies.
+            event(webinix::window& window_obj, webinix_event_t c_e = {}) : webinix_event_t(c_e),
+                window(window_obj) {
+                    reinterpret_cast<webinix_event_t*>(this)->window = window_obj.webinix_window;
+                }
+
+            class handler{
+                public:
+                using callback_t = void(*)(event*);
+
+                private:
+                static inline std::array<callback_t, 512> callback_list{};
+
+                // List of window objects: webinix::window
+                static inline std::array<webinix::window*, 512> window_list{};
+
+                public:
+                handler() = delete;
+                handler(const handler&) = delete;
+                handler(handler&&) = delete;
+                handler& operator=(const handler&) = delete;
+                handler& operator=(handler&&) = delete;
+                ~handler() = delete;
+
+                static void add(size_t id, webinix::window* win, callback_t func){
+                    window_list[id] = win;
+
+                    // Save callback
+                    callback_list[id] = func;
+                }
+
+                static void handle(webinix_event_t* c_e) {
+
+                    // Get a unique ID. Same ID as `webinix_bind()`. Return > 0 if bind exist.
+                    const size_t id = webinix_interface_get_bind_id(c_e->window, c_e->element);
+
+                    if(id < 1){
+                        return;
+                    }
+
+                    // Create a new event struct
+                    event e(*window_list[id], *c_e);
+
+                    // Call the user callback
+                    if(callback_list[id] != nullptr)
+                        callback_list[id](&e);
+                }
+            };
+
+            // Parse argument as integer.
+            long long int get_int()  {
+                return webinix_get_int(this);
+            }
+
+            // Parse argument as string.
+            std::string get_string()  {
+                return std::string{webinix_get_string(this)};
+            }
+
+            // Parse argument as boolean.
+            bool get_bool()  {
+                return webinix_get_bool(this);
+            }
+
+            // Return the response to JavaScript as integer.
+            void return_int(long long int n)  {
+                webinix_return_int(this, n);
+            }
+
+            // Return the response to JavaScript as string.
+            void return_string(const std::string_view s)  {
+                webinix_return_string(this, s.data());
+            }
+
+            // Return the response to JavaScript as boolean.
+            void return_bool(bool b)  {
+                webinix_return_bool(this, b);
+            }
+        };
 
         // Bind a specific html element click event with a function. Empty element means all events.
-        void bind(const std::string_view element, void (*func)(webinix::event* e)) {
+        void bind(const std::string_view element, event::handler::callback_t func) {
 
             // Get unique ID
-            unsigned int id = webinix_bind(this->webinix_window, element.data(), webinix::event_handler);
+            const size_t id = webinix_bind(webinix_window, element.data(), event::handler::handle);
 
-            // Save window object
-            window_list[id] = this;
-
-            // Save callback
-            callback_list[id] = func;
+            event::handler::add(id, this, func);
         }
 
         // Show a window using a embedded HTML, or a file. If the window is already opened then it will be refreshed.
         bool show(const std::string_view content) const {
-            return webinix_show(this->webinix_window, content.data());
+            return webinix_show(webinix_window, content.data());
         }
 
         // Same as show(). But with a specific web browser.
         bool show_browser(const std::string_view content, unsigned int browser) const {
-            return webinix_show_browser(this->webinix_window, content.data(), browser);
+            return webinix_show_browser(webinix_window, content.data(), browser);
         }
 
         // Close a specific window.
         void close() const {
-            webinix_close(this->webinix_window);
+            webinix_close(webinix_window);
         }
 
         // Set the window in Kiosk mode (Full screen)
         void set_kiosk(bool status) const {
-            webinix_set_kiosk(this->webinix_window, status);
+            webinix_set_kiosk(webinix_window, status);
         }
 
         // -- Other ---------------------------
         // Check a specific window if it's still running
         bool is_shown() const {
-            return webinix_is_shown(this->webinix_window);
+            return webinix_is_shown(webinix_window);
         }
 
         // Set the default embedded HTML favicon
         void set_icon(const std::string_view icon, const std::string& icon_type) const {
-            webinix_set_icon(this->webinix_window, icon.data(), icon_type.c_str());
+            webinix_set_icon(webinix_window, icon.data(), icon_type.c_str());
         }
 
         // Allow the window URL to be re-used in normal web browsers
         void set_multi_access(bool status) const {
-            webinix_set_multi_access(this->webinix_window, status);
+            webinix_set_multi_access(webinix_window, status);
         }
 
         // -- JavaScript ----------------------
         // Quickly run a JavaScript (no response waiting).
         void run(const std::string_view script) const {
-            webinix_run(this->webinix_window, script.data());
+            webinix_run(webinix_window, script.data());
         }
 
         // Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
         bool script(const std::string_view script, unsigned int timeout, char* buffer, size_t buffer_length) const {
-            return webinix_script(this->webinix_window, script.data(), timeout, buffer, buffer_length);
+            return webinix_script(webinix_window, script.data(), timeout, buffer, buffer_length);
         }
 
         // Chose between Deno and Nodejs runtime for .js and .ts files.
         void set_runtime(unsigned int runtime) const {
-            webinix_set_runtime(this->webinix_window, runtime);
-        }
-
-        // Parse argument as integer.
-        long long int get_int(webinix::event* e) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            long long int ret = webinix_get_int(c_e);
-            delete c_e;
-            return ret;
-        }
-
-        // Parse argument as string.
-        std::string get_string(webinix::event* e) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            std::string ret = std::string(webinix_get_string(c_e));
-            delete c_e;
-            return ret;
-        }
-
-        // Parse argument as boolean.
-        bool get_bool(webinix::event* e) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            bool ret = webinix_get_bool(c_e);
-            delete c_e;
-            return ret;
-        }
-
-        // Return the response to JavaScript as integer.
-        void return_int(webinix::event* e, long long int n) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            webinix_return_int(c_e, n);
-            delete c_e;
-        }
-
-        // Return the response to JavaScript as string.
-        void return_string(webinix::event* e, const std::string_view s) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            webinix_return_string(c_e, s.data());
-            delete c_e;
-        }
-
-        // Return the response to JavaScript as boolean.
-        void return_bool(webinix::event* e, bool b) const {
-            webinix_event_t* c_e = convert_event_to_webinix_event(e);
-            webinix_return_bool(c_e, b);
-            delete c_e;
+            webinix_set_runtime(webinix_window, runtime);
         }
     };
 
