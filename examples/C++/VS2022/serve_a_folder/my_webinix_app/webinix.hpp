@@ -94,6 +94,10 @@ namespace webinix {
                     if(callback_list[id] != nullptr)
                         callback_list[id](&e);
                 }
+
+                static webinix::window& get_window(const size_t index){
+                    return *window_list[index];
+                }
             };
 
             // Parse argument as integer.
@@ -124,6 +128,10 @@ namespace webinix {
             // Return the response to JavaScript as boolean.
             void return_bool(bool b) {
                 webinix_return_bool(this, b);
+            }
+
+            webinix::window& get_window(){
+                return event::handler::get_window(window);
             }
         };
 
