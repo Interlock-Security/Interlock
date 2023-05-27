@@ -23,13 +23,13 @@ extern "C" {
 
 namespace webinix {
 
-    const int DISCONNECTED = 0; // 0. Window disconnection event
-    const int CONNECTED = 1; // 1. Window connection event
-    const int MULTI_CONNECTION = 2; // 2. New window connection event
-    const int UNWANTED_CONNECTION = 3; // 3. New unwanted window connection event
-    const int MOUSE_CLICK = 4; // 4. Mouse click event
-    const int NAVIGATION = 5; // 5. Window navigation event
-    const int CALLBACKS = 6; // 6. Function call event
+    static constexpr int DISCONNECTED = 0; // 0. Window disconnection event
+    static constexpr int CONNECTED = 1; // 1. Window connection event
+    static constexpr int MULTI_CONNECTION = 2; // 2. New window connection event
+    static constexpr int UNWANTED_CONNECTION = 3; // 3. New unwanted window connection event
+    static constexpr int MOUSE_CLICK = 4; // 4. Mouse click event
+    static constexpr int NAVIGATION = 5; // 5. Window navigation event
+    static constexpr int CALLBACKS = 6; // 6. Function call event
 
     class window {
     private:
@@ -39,10 +39,7 @@ namespace webinix {
 
     public:
         // Event Struct
-        struct event : public webinix_event_t {
-
-            using webinix_event_t::webinix_event_t;
-
+        class event : public webinix_event_t {
             // Window object constructor that
             // initializes the reference, This
             // is to avoid creating copies.
@@ -50,6 +47,7 @@ namespace webinix {
 
                 reinterpret_cast<webinix_event_t*>(this)->window = window_obj.webinix_window;
             }
+            public:
 
             class handler {
 
@@ -110,6 +108,10 @@ namespace webinix {
                 return std::string{webinix_get_string(this)};
             }
 
+            std::string_view get_string_view()  {
+                return std::string_view{webinix_get_string(this)};
+            }
+
             // Parse argument as boolean.
             bool get_bool()  {
                 return webinix_get_bool(this);
@@ -132,6 +134,22 @@ namespace webinix {
 
             webinix::window& get_window(){
                 return event::handler::get_window(window);
+            }
+
+            size_t get_type() const {
+                return event_type;
+            }
+
+            std::string_view get_element() const {
+                return std::string_view{element};
+            }
+
+            std::string_view get_data() const {
+                return std::string_view{data};
+            }
+
+            size_t number() const {
+                return event_number;
             }
         };
 
@@ -171,8 +189,8 @@ namespace webinix {
         }
 
         // Set the default embedded HTML favicon
-        void set_icon(const std::string_view icon, const std::string& icon_type) const {
-            webinix_set_icon(webinix_window, icon.data(), icon_type.c_str());
+        void set_icon(const std::string_view icon, const std::string_view icon_type) const {
+            webinix_set_icon(webinix_window, icon.data(), icon_type.data());
         }
 
         // Allow the window URL to be re-used in normal web browsers
@@ -214,14 +232,12 @@ namespace webinix {
 
     // Base64 encoding. Use this to safely send text based data to the UI. If it fails it will return NULL.
     inline std::string encode(const std::string_view str) {
-        std::string ret = std::string(webinix_encode(str.data()));
-        return ret;
+        return std::string{webinix_encode(str.data())};
     }
 
     // Base64 decoding. Use this to safely decode received Base64 text from the UI. If it fails it will return NULL.
     inline std::string decode(const std::string_view str) {
-        std::string ret = std::string(webinix_decode(str.data()));
-        return ret;
+        return std::string{webinix_decode(str.data())};
     }
 
     // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
