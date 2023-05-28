@@ -1,6 +1,6 @@
 # Build Webinix Library
 
-To build the Webinix you will need a `C99` compiler. No dependencies is needed.
+To build the Webinix you will need a `C99` compiler. No dependencies are needed.
 
 ### Manually build
 
