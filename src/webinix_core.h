@@ -170,7 +170,7 @@ static bool _webinix_set_root_folder(_webinix_window_t* win, const char* path);
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win);
 static void _webinix_print_hex(const char* data, size_t len);
 static void _webinix_free_mem(void* ptr);
-static bool _webinix_file_exist_mg(struct mg_connection *conn);
+static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection *conn);
 static bool _webinix_file_exist(char* file);
 static void _webinix_free_all_mem(void);
 static bool _webinix_show_window(_webinix_window_t* win, const char* content, bool is_embedded_html, size_t browser);

@@ -67,7 +67,9 @@ int main() {
     webinix_set_runtime(MyWindow, Deno);
 
     // Show a new window
-    webinix_show(MyWindow, "index.html"); // webinix_show_browser(MyWindow, "index.html", Chrome);
+    // webinix_set_root_folder(MyWindow, "_MY_PATH_HERE_");
+    // webinix_show_browser(MyWindow, "index.html", Chrome);
+    webinix_show(MyWindow, "index.html");
 
     // Wait until all windows get closed
     webinix_wait();
