@@ -140,6 +140,8 @@ typedef struct webinix_event_t {
     size_t event_number; // Internal Webinix
 } webinix_event_t;
 
+typedef void* (*_webinix_files_handler)(const char *filename, int *length, bool *allocated);
+
 // -- Definitions ---------------------
 // Create a new webinix window object.
 WEBUI_EXPORT size_t webinix_new_window(void);
@@ -165,6 +167,8 @@ WEBUI_EXPORT void webinix_destroy(size_t window);
 WEBUI_EXPORT void webinix_exit(void);
 // Set the web-server root folder path.
 WEBUI_EXPORT bool webinix_set_root_folder(size_t window, const char* path);
+// Set a custom handler to serve files
+WEBUI_EXPORT void webinix_set_file_handler(size_t window, _webinix_files_handler handler);
 
 // -- Other ---------------------------
 // Check a specific window if it's still running

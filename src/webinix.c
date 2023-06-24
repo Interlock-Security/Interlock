@@ -349,6 +349,14 @@ void webinix_run(size_t window, const char* script) {
     _webinix_free_mem((void*)packet);
 }
 
+void webinix_set_file_handler(size_t window, _webinix_files_handler handler) {
+    if (handler == NULL) return;
+    if(_webinix_core.wins[window] == NULL) return;
+    _webinix_window_t* win = _webinix_core.wins[window];
+
+    win->files_handler = handler;
+}
+
 bool webinix_script(size_t window, const char* script, size_t timeout_second, char* buffer, size_t buffer_length) {
 
     #ifdef WEBUI_LOG
@@ -468,6 +476,7 @@ size_t webinix_new_window(void) {
     win->profile_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     win->server_root_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     sprintf(win->server_root_path, "%s", WEBUI_DEFAULT_PATH);
+    win->files_handler = NULL;
     
     #ifdef WEBUI_LOG
         printf("[User] webinix_new_window() -> New window #%zu @ 0x%p\n", window_number, win);
@@ -1820,6 +1829,43 @@ static int _webinix_serve_file(_webinix_window_t* win, struct mg_connection *con
 
     const struct mg_request_info *ri = mg_get_request_info(conn);
     const char* url = ri->local_uri;
+
+    if (win->files_handler != NULL) {
+        int length = 0;
+        bool allocated = 0;
+        void *data = win->files_handler(url, &length, &allocated);
+
+        if (data == NULL) {
+            mg_send_http_error(
+                conn, 404,
+                "%s", webinix_html_res_not_available);
+            return 404;
+        }
+
+        if (length == 0) {
+            length = strlen(data);
+        }
+
+        // Send header
+        int header_ret = mg_send_http_ok(
+            conn, // 200
+            mg_get_builtin_mime_type(url),
+            length
+        );
+
+        // Send body
+        int body_ret = mg_write(
+            conn,
+            data,
+            length
+        );
+
+        if (allocated) {
+            free(data);
+        }
+
+        return 200;
+    }
     
     // Get full path
     char* full_path = _webinix_get_full_path_from_url(win, url);
