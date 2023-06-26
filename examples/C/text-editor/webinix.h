@@ -165,6 +165,8 @@ WEBUI_EXPORT void webinix_destroy(size_t window);
 WEBUI_EXPORT void webinix_exit(void);
 // Set the web-server root folder path.
 WEBUI_EXPORT bool webinix_set_root_folder(size_t window, const char* path);
+// Set a custom handler to serve files
+WEBUI_EXPORT void webinix_set_file_handler(size_t window, const void* (*handler)(const char* filename, int* length));
 
 // -- Other ---------------------------
 // Check a specific window if it's still running
@@ -201,6 +203,8 @@ WEBUI_EXPORT char* webinix_encode(const char* str);
 WEBUI_EXPORT char* webinix_decode(const char* str);
 // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
 WEBUI_EXPORT void webinix_free(void* ptr);
+// Safely allocate memory using the Webinix memory management system. It can be safely free using webinix_free().
+WEBUI_EXPORT void* webinix_malloc(size_t size);
 
 // -- Interface -----------------------
 // Bind a specific html element click event with a function. Empty element means all events. This replace webinix_bind(). The func is (Window, EventType, Element, Data, EventNumber)

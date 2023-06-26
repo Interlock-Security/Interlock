@@ -48,6 +48,50 @@ void show_second_window(webinix_event_t* e) {
     webinix_show(MySecondWindow, "second.html");
 }
 
+const void* my_files_handler(const char* filename, int* length) {
+
+    printf("File: %s \n", filename);
+
+    if(!strcmp(filename, "/test.txt")) {
+
+        // Const static file example
+        // Note: The connection will drop if the content
+        // does not have `<script src="/webinix.js"></script>`
+        return "This is a embedded file content example.";
+    }
+    else if(!strcmp(filename, "/dynamic.html")) {
+
+        // Dynamic file example
+
+        // Allocate memory
+        char* dynamic_content = webinix_malloc(1024);
+
+        // Generate content
+        static int count = 0;
+        sprintf(
+            dynamic_content,
+            "<html>"
+            "   This is a dynamic file content example. <br>"
+            "   Count: %d <a href=\"dynamic.html\">[Refresh]</a><br>"
+            "   <script src=\"/webinix.js\"></script>" // To keep connection with Webinix
+            "</html>",
+            ++count
+        );
+
+        // Set len (optional)
+        *length = strlen(dynamic_content);
+
+        // By allocating resources using webinix_malloc()
+        // Webinix will automaticaly free the resources.
+        return dynamic_content;
+    }
+
+    // Other files:
+    // A NULL return will make Webinix
+    // looks for the file locally.
+    return NULL;
+}
+
 int main() {
 
     // Create new windows
@@ -65,6 +109,9 @@ int main() {
 
     // Make Deno as the `.ts` and `.js` interpreter
     webinix_set_runtime(MyWindow, Deno);
+
+    // Set a custom files handler
+    webinix_set_file_handler(MyWindow, my_files_handler);
 
     // Show a new window
     // webinix_set_root_folder(MyWindow, "_MY_PATH_HERE_");
