@@ -4208,12 +4208,14 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
                         const char* js = _webinix_generate_js_bridge(win);
 
                         // Inject Webinix JS-Bridge into HTML
-                        size_t len = _webinix_strlen(win->html) + _webinix_strlen(js) + 128;
+                        size_t len = _webinix_strlen(win->html) + 128;
                         html = (char*) _webinix_malloc(len);
                         if(win->html != NULL && js != NULL) {
-                            sprintf(html, 
-                                "%s \n <script type = \"application/javascript\"> \n %s \n </script>",
-                                win->html, js
+                            sprintf(html,
+                                //! Construct bad html to load js bridge before all user content
+                                //! Temp fix, need to improve this trick by inserting the script tag in html head via an XML/DOM parser
+                                "<html> <script type = \"application/javascript\" src = \" webinix.js \"> \n \n </script> \n %s",
+                                win->html
                             );
                         }
 
