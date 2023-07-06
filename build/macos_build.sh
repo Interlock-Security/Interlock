@@ -35,7 +35,7 @@ echo "";
 #Converting JS source to C-String using xxd
 cd "$RootPath"
 cd "src/client"
-xxd -i ./webinix.js ./webinix.c
+xxd -i ./webinix.js ./webinix.h
 
 echo "";
 echo "Copying Webinix libs to the examples folder..."
