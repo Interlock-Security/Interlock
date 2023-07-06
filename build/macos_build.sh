@@ -29,6 +29,15 @@ cd "build/macOS/Clang"
 $CLANG_CMD
 
 echo "";
+echo "Converting JS source to C-String using xxd"
+echo "";
+
+#Converting JS source to C-String using xxd
+cd "$RootPath"
+cd "src/client"
+xxd -i ./webinix.js ./webinix.c
+
+echo "";
 echo "Copying Webinix libs to the examples folder..."
 echo "";
 
