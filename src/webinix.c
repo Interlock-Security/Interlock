@@ -4480,7 +4480,7 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
                         const char* js = _webinix_generate_js_bridge(win);
 
                         // Inject Webinix JS-Bridge into HTML
-                        size_t len = _webinix_strlen(win->html) + _webinix_strlen(js) + 128;
+                        size_t len = _webinix_strlen(win->html) + 128;
                         html = (char*) _webinix_malloc(len);
                         if(win->html != NULL && js != NULL) {
                             sprintf(html,
