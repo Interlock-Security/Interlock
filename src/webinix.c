@@ -17,7 +17,6 @@
 
 // -- Webinix JS API --------------------
 #include "client/webinix.c"
-static char* webinix_javascript_bridge = __webinix_js;
 
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
@@ -1893,6 +1892,8 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 }
 
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
+    char* webinix_javascript_bridge = __webinix_js;
+
     // Calculate the cb size
     size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++)
