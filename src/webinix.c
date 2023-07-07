@@ -17,7 +17,7 @@
 
 // -- Webinix JS API --------------------
 #include "client/webinix.h"
-static char* webinix_javascript_bridge = __webinix_js;
+static char* webinix_javascript_bridge = client_webinix_js;
 
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
