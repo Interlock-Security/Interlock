@@ -234,6 +234,8 @@ class WebUiClient {
 }
 
 const webinix = new WebUiClient()
+//@ts-ignore globally expose webinix APIs
+globalThis.webinix = webinix
 
 // -- DOM --------------------------- 
 document.addEventListener('keydown', (e) => {
