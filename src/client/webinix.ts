@@ -1,16 +1,15 @@
 type B64string = string
 
-var _webinix_log = _webinix_log ?? false //If webinix.c define _webinix_log then use it, instead set it to false
-
 class WebUiClient {
 	//webinix settings
 	//@ts-ignore injected by webinix.c
 	#port: number = _webinix_port
 	//@ts-ignore injected by webinix.c
 	#winNum: number = _webinix_win_num
-
-	#log = _webinix_log
-	#ws: WebSocket
+	//@ts-ignore injected by webinix.c
+	#log = _webinix_log ?? false //If webinix.c define _webinix_log then use it, instead set it to false
+	
+    #ws: WebSocket
 	#wsStatus = false
 	#wsStatusOnce = false
 	#closeReason = 0
