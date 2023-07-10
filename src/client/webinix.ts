@@ -10,7 +10,7 @@ class WebUiClient {
 	#log = _webinix_log
 	#ws: WebSocket
 	#wsStatus = false
-	wsStatusOnce = false
+	#wsStatusOnce = false
 	#closeReason = 0
 	#closeValue
 	#hasEvents = false
@@ -24,21 +24,71 @@ class WebUiClient {
 	#HEADER_JS = 254
 	#HEADER_JS_QUICK = 253
 	#HEADER_CLICK = 252
-	HEADER_SWITCH = 251
+	#HEADER_SWITCH = 251
 	#HEADER_CLOSE = 250
 	#HEADER_CALL_FUNC = 249
 
-	close(reason = 0, value = 0) {
+    constructor() {
+        if ('navigation' in globalThis) {
+            globalThis.navigation.addEventListener('navigate', (event) => {
+                const url = new URL(event.destination.url)
+                this.#sendEventNavigation(url.href)
+            })
+        } else {
+            console.error('navigation API not supported, some features may be missing')
+        }
+
+        // -- DOM ---------------------------
+        document.addEventListener('keydown', (event) => {
+            // Disable F5
+            if (this.#log) return
+            if (event.key === 'F5') event.preventDefault()
+        })
+        document.addEventListener('click', (event) => {
+            const anchor = (event.target as HTMLElement).closest('a')
+            if (anchor) {
+                const link = anchor.href
+                if (this.#isExternalLink(link)) {
+                    event.preventDefault()
+                    //TODO fic webinix.close declaration
+                    this.#close(this.#HEADER_SWITCH) //, link)
+                }
+            }
+        })
+
+        // -- Links -------------------------
+        onbeforeunload = () => {
+            this.#close()
+        }
+        setTimeout(() => {
+            if (!this.#wsStatusOnce) {
+                this.#freezeUi()
+                alert(
+                    'Webinix failed to connect to the background application. Please try again.'
+                )
+                if (!webinix.log) globalThis.close()
+            }
+        }, 1500)
+
+        addEventListener('load', () => {
+            this.#start()
+            document.body.addEventListener('contextmenu', function (event) {
+                event.preventDefault()
+            })
+        })
+    }
+
+	#close(reason = 0, value = 0) {
 		if (reason === this.#HEADER_SWITCH) this.#sendEventNavigation(value)
 		this.#wsStatus = false
 		this.#closeReason = reason
 		this.#closeValue = value
 		this.#ws.close()
 	}
-	freezeUi() {
+	#freezeUi() {
 		document.body.style.filter = 'contrast(1%)'
 	}
-	start() {
+	#start() {
 		if ('WebSocket' in window) {
 			if (this.#bindList.includes(this.#winNum + '/'))
 				this.#hasEvents = true
@@ -188,7 +238,7 @@ class WebUiClient {
 			if (this.#log) console.log('Webinix -> Click [' + elem + ']')
 		}
 	}
-	sendEventNavigation(url: string) {
+	#sendEventNavigation(url: string) {
 		if (this.#hasEvents && this.#wsStatus && url !== '') {
 			const url8 = new TextEncoder().encode(url)
 			const packet = new Uint8Array(3 + url8.length)
@@ -201,7 +251,7 @@ class WebUiClient {
 			if (this.#log) console.log('Webinix -> Navigation [' + url + ']')
 		}
 	}
-	isExternalLink(url) {
+	#isExternalLink(url) {
 		const currentUrl = new URL(globalThis.location.href)
 		const targetUrl = new URL(url, globalThis.location.href)
 		currentUrl.hash = ''
@@ -282,58 +332,12 @@ const webinix = new WebUiClient()
 //@ts-ignore globally expose webinix APIs
 globalThis.webinix = webinix
 
-// -- DOM ---------------------------
-document.addEventListener('keydown', (event) => {
-	// Disable F5
-	if (this.#log) return
-	if (event.key === 'F5') event.preventDefault()
-})
-document.addEventListener('click', (event) => {
-	const anchor = (event.target as HTMLElement).closest('a')
-	if (anchor) {
-		const link = anchor.href
-		if (webinix.isExternalLink(link)) {
-			event.preventDefault()
-			//TODO fic webinix.close declaration
-			webinix.close(webinix.HEADER_SWITCH) //, link)
-		}
-	}
-})
-
 // -- Global listener ---------------
 addEventListener('unload', unloadHandler, false)
-addEventListener('load', () => {
-	webinix.start()
-	document.body.addEventListener('contextmenu', function (event) {
-		event.preventDefault()
-	})
-})
 
-// -- Links -------------------------
-onbeforeunload = () => {
-	webinix.close()
-}
-setTimeout(() => {
-	if (!webinix.wsStatusOnce) {
-		webinix.freezeUi()
-		alert(
-			'Webinix failed to connect to the background application. Please try again.'
-		)
-		if (!webinix.log) globalThis.close()
-	}
-}, 1500)
 function unloadHandler() {
 	// Unload for 'back' & 'forward' navigation
 	globalThis.removeEventListener('unload', unloadHandler, false)
-}
-
-if ('navigation' in globalThis) {
-	globalThis.navigation.addEventListener('navigate', (event) => {
-		const url = new URL(event.destination.url)
-		webinix.sendEventNavigation(url.href)
-	})
-} else {
-	console.error('navigation API not supported, some features may be missing')
 }
 
 const inputs = document.getElementsByTagName('input')
