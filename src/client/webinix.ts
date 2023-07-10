@@ -332,14 +332,6 @@ const webinix = new WebUiClient()
 //@ts-ignore globally expose webinix APIs
 globalThis.webinix = webinix
 
-// -- Global listener ---------------
-addEventListener('unload', unloadHandler, false)
-
-function unloadHandler() {
-	// Unload for 'back' & 'forward' navigation
-	globalThis.removeEventListener('unload', unloadHandler, false)
-}
-
 const inputs = document.getElementsByTagName('input')
 
 for (let i = 0; i < inputs.length; i++) {
