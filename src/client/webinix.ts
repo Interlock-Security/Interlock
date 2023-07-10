@@ -2,11 +2,10 @@ var _webinix_log = _webinix_log ?? false //If webinix.c define _webinix_log then
 
 class WebUiClient {
 	//webinix settings
-    //@ts-ignore injected by webinix.c
-    #port: number = _webinix_port
-    //@ts-ignore injected by webinix.c
+	//@ts-ignore injected by webinix.c
+	#port: number = _webinix_port
+	//@ts-ignore injected by webinix.c
 	#winNum: number = _webinix_win_num
-    
 
 	#log = _webinix_log
 	#ws: WebSocket
@@ -98,7 +97,7 @@ class WebUiClient {
 								'Webinix -> Resolving reponse #' + callId + '...'
 							)
 						this.#fnPromiseResolve[callId](data8utf8)
-                        //TODO fix null assignation (determine utility)
+						//TODO fix null assignation (determine utility)
 						// this.#fnPromiseResolve[callId] = null
 					}
 				} else if (buffer8[1] === this.#HEADER_SWITCH) {
@@ -152,7 +151,7 @@ class WebUiClient {
 		Object.keys(window).forEach((key) => {
 			if (/^on(click)/.test(key)) {
 				globalThis.addEventListener(key.slice(2), (event) => {
-                    if (!(event.target instanceof HTMLElement)) return
+					if (!(event.target instanceof HTMLElement)) return
 					if (
 						this.#hasEvents ||
 						(event.target.id !== '' &&
@@ -176,7 +175,8 @@ class WebUiClient {
 				packet[1] = this.#HEADER_CLICK
 				packet[2] = 0
 				let p = -1
-				for (let i = 3; i < elem8.length + 3; i++) packet[i] = elem8[++p]
+				for (let i = 3; i < elem8.length + 3; i++)
+					packet[i] = elem8[++p]
 			} else {
 				packet = new Uint8Array(4)
 				packet[0] = this.#HEADER_SIGNATURE
@@ -294,8 +294,8 @@ document.addEventListener('click', (event) => {
 		const link = anchor.href
 		if (webinix.isExternalLink(link)) {
 			event.preventDefault()
-            //TODO fic webinix.close declaration
-			webinix.close(webinix.HEADER_SWITCH)//, link)
+			//TODO fic webinix.close declaration
+			webinix.close(webinix.HEADER_SWITCH) //, link)
 		}
 	}
 })
