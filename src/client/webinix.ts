@@ -369,7 +369,7 @@ class WebUiClient {
 	}
 }
 
-const webinix = new WebUiClient()
+export const webinix = new WebUiClient()
 //@ts-ignore globally expose webinix APIs
 globalThis.webinix = webinix
 
