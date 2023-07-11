@@ -15,290 +15,12 @@
 // -- Webinix ---------------------------
 #include "webinix_core.h"
 
+// -- Webinix JS API --------------------
+#include "client/webinix.h"
+static char* webinix_javascript_bridge = client_webinix_js;
+
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
-
-// -- Webinix JS-Bridge ---------
-// This is a uncompressed version to make the debugging
-// more easy in the browser using the builtin dev-tools
-#ifdef WEBUI_LOG
-    #define WEBUI_JS_LOG "true"
-#else
-    #define WEBUI_JS_LOG "false"
-#endif
-static const char* webinix_javascript_bridge = 
-"var _webinix_log = " WEBUI_JS_LOG "; \n"
-"var _webinix_ws; \n"
-"var _webinix_ws_status = false; \n"
-"var _webinix_ws_status_once = false; \n"
-"var _webinix_close_reason = 0; \n"
-"var _webinix_close_value; \n"
-"var _webinix_has_events = false; \n"
-"var _webinix_fn_id = new Uint8Array(1); \n"
-"var _webinix_fn_promise_resolve = []; \n"
-"const WEBUI_HEADER_SIGNATURE = 221; \n"
-"const WEBUI_HEADER_JS = 254; \n"
-"const WEBUI_HEADER_JS_QUICK = 253; \n"
-"const WEBUI_HEADER_CLICK = 252; \n"
-"const WEBUI_HEADER_SWITCH = 251; \n"
-"const WEBUI_HEADER_CLOSE = 250; \n"
-"const WEBUI_HEADER_CALL_FUNC = 249; \n"
-"function _webinix_close(reason = 0, value = 0) { \n"
-"    if(reason == WEBUI_HEADER_SWITCH) _webinix_send_event_navigation(value); \n"
-"    _webinix_ws_status = false; \n"
-"    _webinix_close_reason = reason; \n"
-"    _webinix_close_value = value; \n"
-"    _webinix_ws.close(); \n"
-"} \n"
-"function _webinix_freeze_ui() { \n"
-"    document.body.style.filter = 'contrast(1%)'; \n"
-"} \n"
-"function _webinix_start() { \n"
-"    if('WebSocket' in window) { \n"
-"        if(_webinix_bind_list.includes(_webinix_win_num + '/')) _webinix_has_events = true; \n"
-"        _webinix_ws = new WebSocket('ws://localhost:' + _webinix_port + '/_webinix_ws_connect'); \n"
-"        _webinix_ws.binaryType = 'arraybuffer'; \n"
-"        _webinix_ws.onopen = function () { \n"
-"            _webinix_ws.binaryType = 'arraybuffer'; \n"
-"            _webinix_ws_status = true; \n"
-"            _webinix_ws_status_once = true; \n"
-"            _webinix_fn_id[0] = 1; \n"
-"            if(_webinix_log) \n"
-"                console.log('Webinix -> Connected'); \n"
-"            _webinix_clicks_listener(); \n"
-"        }; \n"
-"        _webinix_ws.onerror = function () { \n"
-"            if(_webinix_log) \n"
-"                console.log('Webinix -> Connection Failed'); \n"
-"            _webinix_freeze_ui(); \n"
-"        }; \n"
-"        _webinix_ws.onclose = function (evt) { \n"
-"            _webinix_ws_status = false; \n"
-"            if(_webinix_close_reason === WEBUI_HEADER_SWITCH) { \n"
-"                if(_webinix_log) \n"
-"                    console.log('Webinix -> Connection lost -> Navigation to [' + _webinix_close_value + ']'); \n"
-"                window.location.replace(_webinix_close_value); \n"
-"            } else { \n"
-"                if(_webinix_log) { \n"
-"                    console.log('Webinix -> Connection lost (' + evt.code + ')'); \n"
-"                    _webinix_freeze_ui(); \n"
-"                } else _webinix_close_window_timer(); \n"
-"            } \n"
-"        }; \n"
-"        _webinix_ws.onmessage = function (evt) { \n"
-"                const buffer8 = new Uint8Array(evt.data); \n"
-"                if(buffer8.length < 4) return; \n"
-"                if(buffer8[0] !== WEBUI_HEADER_SIGNATURE) \n"
-"                    return; \n"
-"                var len = buffer8.length - 3; \n"
-"                if(buffer8[buffer8.length - 1] === 0) \n"
-"                   len--; // Null byte (0x00) can break eval() \n"
-"                data8 = new Uint8Array(len); \n"
-"                for (i = 0; i < len; i++) data8[i] = buffer8[i + 3]; \n"
-"                var data8utf8 = new TextDecoder('utf-8').decode(data8); \n"
-"                // Process Command \n"
-"                if(buffer8[1] === WEBUI_HEADER_CALL_FUNC) { \n"
-"                    const call_id = buffer8[2];\n"
-"                    if(_webinix_log) \n"
-"                        console.log('Webinix -> Func Reponse [' + data8utf8 + ']'); \n"
-"                    if (_webinix_fn_promise_resolve[call_id]) { \n"
-"                        if(_webinix_log) \n"
-"                            console.log('Webinix -> Resolving reponse #' + call_id + '...'); \n"
-"                        _webinix_fn_promise_resolve[call_id](data8utf8); \n"
-"                        _webinix_fn_promise_resolve[call_id] = null; \n"
-"                    } \n"
-"                } else if(buffer8[1] === WEBUI_HEADER_SWITCH) { \n"
-"                    _webinix_close(WEBUI_HEADER_SWITCH, data8utf8); \n"
-"                } else if(buffer8[1] === WEBUI_HEADER_CLOSE) { \n"
-"                    window.close(); \n"
-"                } else if(buffer8[1] === WEBUI_HEADER_JS_QUICK || buffer8[1] === WEBUI_HEADER_JS) { \n"
-"                    data8utf8 = data8utf8.replace(/(?:\\r\\n|\\r|\\n)/g, \"\\\\n\"); \n"
-"                    if(_webinix_log) \n"
-"                        console.log('Webinix -> JS [' + data8utf8 + ']'); \n"
-"                    var FunReturn = 'undefined'; \n"
-"                    var FunError = false; \n"
-"                    try { FunReturn = eval('(() => {' + data8utf8 + '})()'); } catch (e) { FunError = true; FunReturn = e.message } \n"
-"                    if(buffer8[1] === WEBUI_HEADER_JS_QUICK) return; \n"
-"                    if(typeof FunReturn === 'undefined' || FunReturn === undefined) FunReturn = 'undefined'; \n"
-"                    if(_webinix_log && !FunError) console.log('Webinix -> JS -> Return [' + FunReturn + ']'); \n"
-"                    if(_webinix_log && FunError) console.log('Webinix -> JS -> Error [' + FunReturn + ']'); \n"
-"                    const FunReturn8 = new TextEncoder('utf-8').encode(FunReturn); \n"
-"                    var Return8 = new Uint8Array(4 + FunReturn8.length); \n"
-"                    Return8[0] = WEBUI_HEADER_SIGNATURE; \n"
-"                    Return8[1] = WEBUI_HEADER_JS; \n"
-"                    Return8[2] = buffer8[2]; \n"
-"                    if(FunError) Return8[3] = 0; \n"
-"                    else Return8[3] = 1; \n"
-"                    var p = -1; \n"
-"                    for (i = 4; i < FunReturn8.length + 4; i++) Return8[i] = FunReturn8[++p]; \n"
-"                    if(_webinix_ws_status) _webinix_ws.send(Return8.buffer); \n"
-"                } \n"
-"        }; \n"
-"    } else { \n"
-"        alert('Sorry. WebSocket not supported by your Browser.'); \n"
-"        if(!_webinix_log) window.close(); \n"
-"    } \n"
-"} \n"
-"function _webinix_clicks_listener() { \n"
-"    Object.keys(window).forEach(key=>{ \n"
-"        if(/^on(click)/.test(key)) { \n"
-"            window.addEventListener(key.slice(2),event=>{ \n"
-"                if(_webinix_has_events || ((event.target.id !== '') && (_webinix_bind_list.includes(_webinix_win_num + '/' + event.target.id)))) { \n"
-"                    _webinix_send_click(event.target.id); \n"
-"                } \n"
-"            }); \n"
-"        } \n"
-"    }); \n"
-"} \n"
-"function _webinix_send_click(elem) { \n"
-"    if(_webinix_ws_status) { \n"
-"        var packet; \n"
-"        if(elem !== '') { \n"
-"            const elem8 = new TextEncoder('utf-8').encode(elem); \n"
-"            packet = new Uint8Array(3 + elem8.length); \n"
-"            packet[0] = WEBUI_HEADER_SIGNATURE; \n"
-"            packet[1] = WEBUI_HEADER_CLICK; \n"
-"            packet[2] = 0; \n"
-"            var p = -1; \n"
-"            for (i = 3; i < elem8.length + 3; i++) \n"
-"                packet[i] = elem8[++p]; \n"
-"        } else { \n"
-"            packet = new Uint8Array(4); \n"
-"            packet[0] = WEBUI_HEADER_SIGNATURE; \n"
-"            packet[1] = WEBUI_HEADER_CLICK; \n"
-"            packet[2] = 0; \n"
-"            packet[3] = 0; \n"
-"        } \n"
-"        _webinix_ws.send(packet.buffer); \n"
-"        if(_webinix_log) \n"
-"            console.log('Webinix -> Click [' + elem + ']'); \n"
-"    } \n"
-"} \n"
-"function _webinix_send_event_navigation(url) { \n"
-"    if(_webinix_has_events && _webinix_ws_status && url !== '') { \n"
-"        const url8 = new TextEncoder('utf-8').encode(url); \n"
-"        var packet = new Uint8Array(3 + url8.length); \n"
-"        packet[0] = WEBUI_HEADER_SIGNATURE; \n"
-"        packet[1] = WEBUI_HEADER_SWITCH; \n"
-"        packet[2] = 0; \n"
-"        var p = -1; \n"
-"        for (i = 3; i < url8.length + 3; i++) \n"
-"            packet[i] = url8[++p]; \n"
-"        _webinix_ws.send(packet.buffer); \n"
-"        if(_webinix_log) \n"
-"            console.log('Webinix -> Navigation [' + url + ']'); \n"
-"    } \n"
-"} \n"
-"function _webinix_is_external_link(url) { \n"
-"    const currentUrl = new URL(window.location.href); \n"
-"    const targetUrl = new URL(url, window.location.href); \n"
-"    currentUrl.hash = ''; \n"
-"    targetUrl.hash = ''; \n"
-"    if (url.startsWith('#') || url === currentUrl.href + '#' || currentUrl.href === targetUrl.href) { \n"
-"        return false; \n"
-"    } \n"
-"        return true; \n"
-"} \n"
-"function _webinix_close_window_timer() { \n"
-"    setTimeout(function(){window.close();},1000); \n"
-"} \n"
-"async function _webinix_fn_promise(fn, value) { \n"
-"    if(_webinix_log) \n"
-"        console.log('Webinix -> Func [' + fn + '](' + value + ')'); \n"
-"    const fn8 = new TextEncoder('utf-8').encode(fn); \n"
-"    const value8 = new TextEncoder('utf-8').encode(value); \n"
-"    var packet = new Uint8Array(3 + fn8.length + 1 + value8.length); \n"
-"    const call_id = _webinix_fn_id[0]++; \n"
-"    packet[0] = WEBUI_HEADER_SIGNATURE; \n"
-"    packet[1] = WEBUI_HEADER_CALL_FUNC; \n"
-"    packet[2] = call_id; \n"
-"    var p = 3; \n"
-"    for (var i = 0; i < fn8.length; i++) \n"
-"        { packet[p] = fn8[i]; p++; } \n"
-"    packet[p] = 0; \n"
-"    p++; \n"
-"    if(value8.length > 0) { \n"
-"        for (var i = 0; i < value8.length; i++) \n"
-"            { packet[p] = value8[i]; p++; } \n"
-"    } else { packet[p] = 0; } \n"
-"    return new Promise((resolve) => { \n"
-"        _webinix_fn_promise_resolve[call_id] = resolve; \n"
-"        _webinix_ws.send(packet.buffer); \n"
-"    }); \n"
-"} \n"
-" // -- APIs -------------------------- \n"
-"function webinix_fn(fn, value) { \n"
-"    if(!fn || !_webinix_ws_status) \n"
-"        return Promise.resolve(); \n"
-"    if(typeof value == 'undefined') \n"
-"        var value = ''; \n"
-"    if(!_webinix_has_events && !_webinix_bind_list.includes(_webinix_win_num + '/' + fn)) \n"
-"        return Promise.resolve(); \n"
-"    return _webinix_fn_promise(fn, value); \n"
-"} \n"
-"function webinix_log(status) { \n"
-"    if(status) { \n"
-"        console.log('Webinix -> Log Enabled.'); \n"
-"        _webinix_log = true; \n"
-"    } else { \n"
-"        console.log('Webinix -> Log Disabled.'); \n"
-"        _webinix_log = false; \n"
-"    } \n"
-"} \n"
-"function webinix_encode(str) { \n"
-"     return btoa(str); \n"
-"} \n"
-"function webinix_decode(str) { \n"
-"     return atob(str); \n"
-"} \n"
-" // -- DOM --------------------------- \n"
-"document.addEventListener('keydown', function (e) { \n"
-"    // Disable F5 \n"
-"    if(_webinix_log) return; \n"
-"    if(e.keyCode === 116) { \n"
-"        e.preventDefault(); \n"
-"        e.returnValue = false; \n"
-"        e.keyCode = 0; \n"
-"        return false; \n"
-"    } \n"
-"}); \n"
-"window.onbeforeunload = function () { \n"
-"   _webinix_ws.close(); \n"
-"}; \n"
-"setTimeout(function () { \n"
-"    if(!_webinix_ws_status_once) { \n"
-"        _webinix_freeze_ui(); \n"
-"        alert('Webinix failed to connect to the background application. Please try again.'); \n"
-"        if(!_webinix_log) window.close(); \n"
-"    } \n"
-"}, 1500); \n"
-"window.addEventListener('unload', unload_handler, false); \n"
-"function unload_handler() { \n"
-"    // Unload for 'back' & 'forward' navigation \n"
-"    window.removeEventListener('unload', unload_handler, false); \n"
-"} \n"
-"// Links \n"
-"document.addEventListener('click', e => { \n"
-"    const attribute = e.target.closest('a'); \n"
-"    if(attribute) { \n"
-"        const link = attribute.href; \n"
-"        if(_webinix_is_external_link(link)) { \n"
-"            e.preventDefault(); \n"
-"            _webinix_close(WEBUI_HEADER_SWITCH, link); \n"
-"        } \n"
-"    } \n"
-"}); \n"
-"if(typeof navigation !== 'undefined') { \n"
-"    navigation.addEventListener('navigate', (event) => { \n"
-"        const url = new URL(event.destination.url); \n"
-"        _webinix_send_event_navigation(url); \n"
-"    }); \n"
-"} \n"
-"document.body.addEventListener('contextmenu', function(event){ event.preventDefault(); }); \n"
-"const inputs = document.getElementsByTagName('input'); \n"
-"for(var i = 0; i < inputs.length; i++){ inputs[i].addEventListener('contextmenu', function(event){ event.stopPropagation(); });} \n"
-"// Load \n"
-"window.addEventListener('load', _webinix_start()); \n";
 
 // -- Heap ----------------------------
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
@@ -2171,11 +1893,6 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 }
 
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
-
-    #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_generate_js_bridge()...\n");
-    #endif
-
     // Calculate the cb size
     size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++)
@@ -2195,12 +1912,23 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     strcat(event_cb_js_array, "]; \n");
 
     // Generate the full Webinix JS-Bridge
-    size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
-    char* js = (char*) _webinix_malloc(len);
-    sprintf(js, 
-        "_webinix_port = %zu; \n_webinix_win_num = %zu; \n%s \n%s \n",
-        win->ws_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
-    );
+    #ifdef WEBUI_LOG
+        char* webinix_javascript_log = "var _webinix_log = true;";
+        size_t len = cb_mem_size + _webinix_srtlen(webinix_javascript_log) + _webinix_strlen(webinix_javascript_bridge);
+        char* js = (char*) _webinix_malloc(len);
+        sprintf(js, 
+            "%s\n _webinix_port = %zu; \n_webinix_win_num = %zu; \n%s \n%s \n",
+            webinix_javascript_log, win->ws_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
+        );
+        printf("[Core]\t\t_webinix_generate_js_bridge()...\n");
+    #else
+        size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
+        char* js = (char*) _webinix_malloc(len);
+        sprintf(js, 
+            "_webinix_port = %zu; \n_webinix_win_num = %zu; \n%s \n%s \n",
+            win->ws_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
+        );
+    #endif
 
     return js;
 }
@@ -4480,12 +4208,14 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
                         const char* js = _webinix_generate_js_bridge(win);
 
                         // Inject Webinix JS-Bridge into HTML
-                        size_t len = _webinix_strlen(win->html) + _webinix_strlen(js) + 128;
+                        size_t len = _webinix_strlen(win->html) + 128;
                         html = (char*) _webinix_malloc(len);
                         if(win->html != NULL && js != NULL) {
-                            sprintf(html, 
-                                "%s \n <script type = \"application/javascript\"> \n %s \n </script>",
-                                win->html, js
+                            sprintf(html,
+                                //! Construct bad html to load js bridge before all user content
+                                //! Temp fix, need to improve this trick by inserting the script tag in html head via an XML/DOM parser
+                                "<html> <script type = \"application/javascript\" src = \" webinix.js \"> \n \n </script> \n %s",
+                                win->html
                             );
                         }
 
