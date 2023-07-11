@@ -86,7 +86,7 @@ class WebUiClient {
 				alert(
 					'Webinix failed to connect to the background application. Please try again.'
 				)
-				if (!webinix.log) globalThis.close()
+				if (!webinix.#log) globalThis.close()
 			}
 		}, 1500)
 	}
