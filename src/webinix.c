@@ -1901,7 +1901,7 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     
     // Generate the cb array
     char* event_cb_js_array = (char*) _webinix_malloc(cb_mem_size);
-    strcat(event_cb_js_array, "const _webinix_bind_list = [");
+    strcat(event_cb_js_array, "[");
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++) {
         if(_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i])) {
             strcat(event_cb_js_array, "\"");
@@ -1909,24 +1909,21 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
             strcat(event_cb_js_array, "\",");
         }
     }
-    strcat(event_cb_js_array, "]; \n");
+    strcat(event_cb_js_array, "]");
 
     // Generate the full Webinix JS-Bridge
+    size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
+    char* js = (char*) _webinix_malloc(len);
     #ifdef WEBUI_LOG
-        char* webinix_javascript_log = "var _webinix_log = true;";
-        size_t len = cb_mem_size + _webinix_srtlen(webinix_javascript_log) + _webinix_strlen(webinix_javascript_bridge);
-        char* js = (char*) _webinix_malloc(len);
         sprintf(js, 
-            "%s\n _webinix_port = %zu; \n_webinix_win_num = %zu; \n%s \n%s \n",
-            webinix_javascript_log, win->ws_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
+            "%s\nglobalThis.webinix = new WebUiClient({ port: %zu, winNum: %zu, bindList: %s, log: true });",
+            webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array
         );
         printf("[Core]\t\t_webinix_generate_js_bridge()...\n");
     #else
-        size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
-        char* js = (char*) _webinix_malloc(len);
         sprintf(js, 
-            "_webinix_port = %zu; \n_webinix_win_num = %zu; \n%s \n%s \n",
-            win->ws_port, win->window_number, event_cb_js_array, webinix_javascript_bridge
+            "%s\nglobalThis.webinix = new WebUiClient({ port: %zu, winNum: %zu, bindList: %s, log: false });",
+            webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array
         );
     #endif
 

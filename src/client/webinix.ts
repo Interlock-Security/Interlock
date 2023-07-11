@@ -11,13 +11,12 @@ type JSONValue =
 
 class WebUiClient {
 	//webinix settings
-	//@ts-ignore injected by webinix.c
-	#port: number = _webinix_port
-	//@ts-ignore injected by webinix.c
-	#winNum: number = _webinix_win_num
-	//@ts-ignore injected by webinix.c
-	#log = _webinix_log ?? false //If webinix.c define _webinix_log then use it, instead set it to false
+	#port: number
+	#winNum: number
+	#log: boolean
+	#bindList: unknown[] = []
 
+	//Internals
 	#ws: WebSocket
 	#wsStatus = false
 	#wsStatusOnce = false
@@ -26,8 +25,6 @@ class WebUiClient {
 	#hasEvents = false
 	#fnId = 1
 	#fnPromiseResolve: (((data: string) => unknown) | undefined)[] = []
-
-	#bindList: unknown[] = []
 
 	//webinix const
 	#HEADER_SIGNATURE = 221
@@ -38,7 +35,13 @@ class WebUiClient {
 	#HEADER_CLOSE = 250
 	#HEADER_CALL_FUNC = 249
 
-	constructor() {
+	constructor({ port, winNum, bindList, log = false }: { port: number, winNum: number, bindList: unknown[], log?: boolean }) {
+		// constructor arguments are injected by webinix.c
+		this.#port = port
+		this.#winNum = winNum
+		this.#bindList = bindList
+		this.#log = log 
+
 		if ('webinix' in globalThis) {
 			throw new Error(
 				'webinix is already defined, only one instance is allowed'
@@ -439,9 +442,7 @@ class WebUiClient {
 	}
 }
 
-export const webinix = new WebUiClient()
-//@ts-ignore globally expose webinix APIs
-globalThis.webinix = webinix
+export type webinix = InstanceType<typeof WebUiClient>
 
 document.body.addEventListener('contextmenu', (event) => event.preventDefault())
 addRefreshableEventListener(document.body, 'input', 'contextmenu', (event) =>
