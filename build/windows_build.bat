@@ -22,8 +22,8 @@ cd "%RootPath%"
 REM Converting JS source to C-String using xxd
 echo Converting JS source to C-String using xxd
 cd "%RootPath%"
-cd "src\client"
-xxd -i .\webinix.js .\webinix.h
+cd "src"
+xxd -i client\webinix.js client\webinix.h
 
 echo.
 echo Building Webinix using MSVC...
