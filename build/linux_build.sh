@@ -23,7 +23,12 @@ echo "";
 echo "Converting JS source to C-String using xxd"
 echo "";
 
-#Converting JS source to C-String using xxd
+# Transpiling TS to JS
+echo "Transpile and bundle TS sources to webinix.js";
+cd "%RootPath%"
+esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --outdir=./src/client ./src/client/webinix.ts
+
+# Converting JS source to C-String using xxd
 cd "$RootPath"
 cd "src"
 xxd -i client/webinix.js client/webinix.h
