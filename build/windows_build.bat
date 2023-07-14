@@ -22,7 +22,7 @@ cd "%RootPath%"
 REM Transpiling TS to JS
 echo Transpile and bundle TS sources to webinix.js
 cd "%RootPath%"
-cmd /c esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --log-level=silent --outdir=.\src\client .\src\client\webinix.ts
+cmd /c esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=.\src\client .\src\client\webinix.ts
 
 REM Converting JS source to C-String using xxd
 echo Converting JS source to C-String using xxd
