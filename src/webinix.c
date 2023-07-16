@@ -3405,7 +3405,12 @@ static bool _webinix_show(_webinix_window_t* win, const char* content, size_t br
     const char* content_cpy = (const char*)_webinix_malloc(content_len);
     memcpy((char*)content_cpy, content, content_len);
 
-    if(strstr(content_cpy, "<html")) {
+    if(
+      strstr(content_cpy, "<html") ||
+      strstr(content_cpy, "<!DOCTYPE html>") ||
+      strstr(content_cpy, "<!doctype html>") ||
+      strstr(content_cpy, "<!Doctype html>")
+      ) {
 
         // Embedded HTML
         #ifdef WEBUI_LOG
