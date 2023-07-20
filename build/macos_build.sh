@@ -34,7 +34,7 @@ echo "";
 
 # Transpiling TS to JS
 echo "Transpile and bundle TS sources to webinix.js";
-cd "%RootPath%"
+cd "$RootPath"
 esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./src/client ./src/client/webinix.ts
 
 # Converting JS source to C-String using xxd
