@@ -16,7 +16,9 @@ echo "Webinix v$WEBUI_VERSION Build Script"
 echo "Platform: Linux x64"
 echo "Compiler: GCC and Clang"
 
-RootPath="$PWD/../"
+RootPath="$PWD/.."
+BuildPath="$RootPath/build/Linux"
+DistPath="$RootPath/dist/Linux"
 cd "$RootPath"
 
 echo "";
@@ -25,11 +27,9 @@ echo "";
 
 # Transpiling TS to JS
 echo "Transpile and bundle TS sources to webinix.js";
-cd "%RootPath%"
 esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./src/client ./src/client/webinix.ts
 
 # Converting JS source to C-String using xxd
-cd "$RootPath"
 cd "src"
 xxd -i client/webinix.js client/webinix.h
 
@@ -38,8 +38,7 @@ echo "Building Webinix using GCC...";
 echo "";
 
 # Build Webinix Library using GCC
-cd "$RootPath"
-cd "build/Linux/GCC"
+cd "$BuildPath/GCC"
 $GCC_CMD
 
 echo "";
@@ -47,8 +46,7 @@ echo "Building Webinix using Clang...";
 echo "";
 
 # Build Webinix Library using Clang
-cd "$RootPath"
-cd "build/Linux/Clang"
+cd "$BuildPath/Clang"
 $CLANG_CMD
 
 echo "";
@@ -59,32 +57,40 @@ cd "$RootPath"
 
 # C - Text Editor
 cp -f "include/webinix.h" "examples/C/text-editor/webinix.h"
-cp -f "build/Linux/GCC/webinix-2-x64.so" "examples/C/text-editor/webinix-2-x64.so"
+cp -f "$BuildPath/GCC/webinix-2-x64.so" "examples/C/text-editor/webinix-2-x64.so"
 
 echo "";
 if [ "$ARG1" = "" ]; then
 
-    echo "Copying Webinix libs to the release folder..."
+    echo "Copying Webinix libs to $DistPath..."
     echo "";
 
-    # Release Linux Include
-    cp -f "include/webinix.h" "Release/Linux/include/webinix.h"
-    cp -f "include/webinix.hpp" "Release/Linux/include/webinix.hpp"
+    # Remove Linux distributable files directory if it exits
+    [ -d "$DistPath" ] && rm -r "$DistPath"
 
-    # Release Linux GCC
-    cp -f "build/Linux/GCC/webinix-2-x64.so" "Release/Linux/GCC/webinix-2-x64.so"
-    cp -f "build/Linux/GCC/libwebinix-2-static-x64.a" "Release/Linux/GCC/libwebinix-2-static-x64.a"
+    # Create Linux output directories
+    mkdir -p "$DistPath/include"
+    mkdir "$DistPath/GCC"
+    mkdir "$DistPath/Clang"
 
-    # Release Linux Clang
-    cp -f "build/Linux/Clang/webinix-2-x64.so" "Release/Linux/Clang/webinix-2-x64.so"
-    cp -f "build/Linux/Clang/libwebinix-2-static-x64.a" "Release/Linux/Clang/libwebinix-2-static-x64.a"
+    # Copy include files
+    cp "include/webinix.h" "$DistPath/include/webinix.h"
+    cp "include/webinix.hpp" "$DistPath/include/webinix.hpp"
+
+    # Copy Linux GCC
+    cp "$BuildPath/GCC/webinix-2-x64.so" "$DistPath/GCC/webinix-2-x64.so"
+    cp "$BuildPath/GCC/libwebinix-2-static-x64.a" "$DistPath/GCC/libwebinix-2-static-x64.a"
+
+    # Copy Linux Clang
+    cp "$BuildPath/Clang/webinix-2-x64.so" "$DistPath/Clang/webinix-2-x64.so"
+    cp "$BuildPath/Clang/libwebinix-2-static-x64.a" "$DistPath/Clang/libwebinix-2-static-x64.a"
 
     echo "";
-    echo "Compressing the release folder..."
+    echo "Compressing distributable files..."
     echo "";
 
     TAR_OUT="webinix-linux-x64-v$WEBUI_VERSION.tar.gz"
-    cd "Release"
+    cd "dist"
     sleep 2
     tar -czf $TAR_OUT Linux/*
     cd "$RootPath"

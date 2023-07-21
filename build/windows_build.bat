@@ -16,17 +16,17 @@ echo Webinix v%WEBUI_VERSION% Build Script
 echo Platform: Microsoft Windows x64
 echo Compiler: MSVC, GCC and TCC
 
-Set RootPath=%CD%\..\
+Set RootPath=%CD%\..
+Set BuildPath=%RootPath%\build\Windows
+Set DistPath=%RootPath%\dist\Windows
 cd "%RootPath%"
 
 REM Transpiling TS to JS
 echo Transpile and bundle TS sources to webinix.js
-cd "%RootPath%"
 cmd /c esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=.\src\client .\src\client\webinix.ts
 
 REM Converting JS source to C-String using xxd
 echo Converting JS source to C-String using xxd
-cd "%RootPath%"
 cd "src"
 xxd -i client\webinix.js client\webinix.h
 
@@ -34,8 +34,7 @@ echo.
 echo Building Webinix using MSVC...
 
 REM Build Webinix Library using MSVC
-cd "%RootPath%"
-cd "build\Windows\MSVC"
+cd "%BuildPath%\MSVC"
 %MSVC_CMD%
 
 echo.
@@ -43,8 +42,7 @@ echo Building Webinix using GCC...
 echo.
 
 REM Build Webinix Library using GCC
-cd "%RootPath%"
-cd "build\Windows\GCC"
+cd "%BuildPath%\GCC"
 %GCC_CMD%
 
 echo.
@@ -52,8 +50,7 @@ echo Building Webinix using TCC...
 echo.
 
 REM Build Webinix Library using TCC
-cd "%RootPath%"
-cd "build\Windows\TCC"
+cd "%BuildPath%\TCC"
 %GCC_CMD%
 
 echo.
@@ -65,45 +62,53 @@ cd "%RootPath%"
 REM C++ (Visual Studio 2022)
 copy /Y "include\webinix.h" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.h"
 copy /Y "include\webinix.hpp" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix.hpp"
-copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
+copy /Y "%BuildPath%\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2022\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
 
 REM C++ (Visual Studio 2019)
 copy /Y "include\webinix.h" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix.h"
 copy /Y "include\webinix.hpp" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix.hpp"
-copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
+copy /Y "%BuildPath%\MSVC\webinix-2-static-x64.lib" "examples\C++\VS2019\serve_a_folder\my_webinix_app\webinix-2-static-x64.lib"
 
 REM C - Text Editor
 copy /Y "include\webinix.h" "examples\C\text-editor\webinix.h"
-copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "examples\C\text-editor\webinix-2-x64.dll"
+copy /Y "%BuildPath%\MSVC\webinix-2-x64.dll" "examples\C\text-editor\webinix-2-x64.dll"
 
 echo.
 IF "%ARG1%"=="" (
 
-    echo Copying Webinix libs to the release folder...
+    echo Copying Webinix libs to %DistPath%...
     echo.
 
-    REM Release Windows Include
-    copy /Y "include\webinix.h" "Release\Windows\include\webinix.h"    
+    REM Remove Windows distributable files directory if it exits
+    if exist "%DistPath%" rmdir /s /q "%DistPath%"
 
-    REM Release Windows MSVC
-    copy /Y "build\Windows\MSVC\webinix-2-x64.dll" "Release\Windows\MSVC\webinix-2-x64.dll"
-    copy /Y "build\Windows\MSVC\webinix-2-x64.lib" "Release\Windows\MSVC\webinix-2-x64.lib"
-    copy /Y "build\Windows\MSVC\webinix-2-static-x64.lib" "Release\Windows\MSVC\webinix-2-static-x64.lib"
+    REM Create Windows output directories
+    mkdir "%DistPath%\include" 2>nul
+    mkdir "%DistPath%\MSVC" 2>nul
+    mkdir "%DistPath%\GCC" 2>nul
 
-    REM Release Windows GCC
-    copy /Y "build\Windows\GCC\webinix-2-x64.dll" "Release\Windows\GCC\webinix-2-x64.dll"
-    copy /Y "build\Windows\GCC\libwebinix-2-static-x64.a" "Release\Windows\GCC\libwebinix-2-static-x64.a"
+    REM Copy include files
+    copy /Y "include\webinix.h" "%DistPath%\include\webinix.h"
 
-    REM Release Windows TCC
-    REM copy /Y "build\Windows\TCC\webinix-2-x64.dll" "Release\Windows\TCC\webinix-2-x64.dll"
-    REM copy /Y "build\Windows\TCC\webinix-2-x64.def" "Release\Windows\TCC\webinix-2-x64.def"    
-    copy /Y "build\Windows\TCC\libwebinix-2-static-x64.a" "Release\Windows\TCC\libwebinix-2-static-x64.a"
+    REM Copy Windows MSVC
+    copy /Y "%BuildPath%\MSVC\webinix-2-x64.dll" "%DistPath%\MSVC\webinix-2-x64.dll"
+    copy /Y "%BuildPath%\MSVC\webinix-2-x64.lib" "%DistPath%\MSVC\webinix-2-x64.lib"
+    copy /Y "%BuildPath%\MSVC\webinix-2-static-x64.lib" "%DistPath%\MSVC\webinix-2-static-x64.lib"
+
+    REM Copy Windows GCC
+    copy /Y "%BuildPath%\GCC\webinix-2-x64.dll" "%DistPath%\GCC\webinix-2-x64.dll"
+    copy /Y "%BuildPath%\GCC\libwebinix-2-static-x64.a" "%DistPath%\GCC\libwebinix-2-static-x64.a"
+
+    REM Copy Windows TCC
+    REM copy /Y "%BuildPath%\TCC\webinix-2-x64.dll" "%DistPath%\TCC\webinix-2-x64.dll"
+    REM copy /Y "%BuildPath%\TCC\webinix-2-x64.def" "%DistPath%\TCC\webinix-2-x64.def"
+    copy /Y "%BuildPath%\TCC\libwebinix-2-static-x64.a" "%DistPath%\TCC\libwebinix-2-static-x64.a"
 
     echo.
     echo Compressing the release folder...
 
     set TAR_OUT=webinix-windows-x64-v%WEBUI_VERSION%.tar.gz
-    cd "Release"
+    cd "dist"
     timeout 2 > NUL
     tar.exe -czf %TAR_OUT% Windows\*
     cd "%RootPath%"
