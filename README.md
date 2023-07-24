@@ -34,7 +34,7 @@ This [text editor example](https://github.com/webinix-dev/webinix/tree/main/exam
 
 <div align="center">
 
-![Example](https://github.com/webinix-dev/webinix/assets/34311583/ea7644e3-e307-4970-bc02-35f74e345529)
+![Example](https://github.com/webinix-dev/webinix/assets/34311583/c1ccf29c-806a-4742-bfd7-a3dc30cab70b)
 
 </div>
 
