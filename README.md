@@ -1,12 +1,16 @@
-![ScreenShot](logo/webinix_240_shadow.png)
+<div align="center">
+
+![Logo](https://github.com/webinix-dev/webinix/assets/34311583/c92e712f-0698-486a-a460-d4acea28a4f8)
 
 # Webinix v2.3.0
 
-[![Website](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/webinix-dev/webinix) [![Website](https://img.shields.io/github/issues/webinix-dev/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/webinix-dev/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
+[![BuildStatus](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/webinix-dev/webinix/actions?query=branch%3Amain) [![Issues](https://img.shields.io/github/issues/webinix-dev/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/webinix-dev/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
+
+</div>
 
 > Use any web browser as GUI, with your preferred language in the backend and HTML5 in the frontend, all in a lightweight portable lib.
 
-![ScreenShot](screenshot.png)
+![Screenshot](https://github.com/webinix-dev/webinix/assets/34311583/57992ef1-4f7f-4d60-8045-7b07df4088c6)
 
 > :warning: **Notice**:
 > 
@@ -28,7 +32,11 @@
 
 This [text editor example](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
 
-![ScreenShot](webinix_c_example.png)
+<div align="center">
+
+![Example](https://github.com/webinix-dev/webinix/assets/34311583/ea7644e3-e307-4970-bc02-35f74e345529)
+
+</div>
 
 ## CppCon 2019 Presentation
 
@@ -38,7 +46,11 @@ This [text editor example](https://github.com/webinix-dev/webinix/tree/main/exam
   <a href="https://www.youtube.com/watch?v=bbbcZd4cuxg"><img src="https://img.youtube.com/vi/bbbcZd4cuxg/0.jpg" alt="Embrace Modern Technology: Using HTML 5 for GUI in C++ - Borislav Stanimirov - CppCon 2019"></a>
 </div> -->
 
-![ScreenShot](cppcon_2019.png)
+<div align="center">
+
+![CPPCon](https://github.com/webinix-dev/webinix/assets/34311583/cf796ead-66d3-4298-ac80-b551c25f3e41)
+
+</div>
 
 ## UI & The Web Technologies
 
@@ -50,7 +62,11 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 
 ## How does it work?
 
-![ScreenShot](webinix_diagram.png)
+<div align="center">
+
+![Diagram](https://github.com/webinix-dev/webinix/assets/34311583/ef56944a-d92c-44cb-935a-affc8a442eb4)
+
+</div>
 
 Think of Webinix like a WebView controller, but instead of embedding the WebView controller in your program, which makes the final program big in size, and non-portable as it needs the WebView runtimes. Instead, by using Webinix, you use a tiny static/dynamic library to run any installed web browser and use it as GUI, which makes your program small, fast, and portable. **All it needs is a web browser**.
 
