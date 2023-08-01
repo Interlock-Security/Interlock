@@ -457,7 +457,7 @@ class WebUiClient {
 	}
 }
 
-export type webinix = InstanceType<typeof WebUiClient>
+export type webinix = WebUiClient
 
 //wait for the html to be parsed
 addEventListener('load', () => {
