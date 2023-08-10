@@ -2822,8 +2822,6 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
 
     const char *chromium_options[] = {
         "--no-first-run",
-        "--disable-gpu",
-        "--disable-software-rasterizer",
         "--no-proxy-server",
         "--safe-mode",
         "--disable-extensions",
