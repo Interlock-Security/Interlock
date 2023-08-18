@@ -1,6 +1,6 @@
 /*
   Webinix Library 2.3.0
-  http://_webinix_core.me
+  http://webinix.me
   https://github.com/webinix-dev/webinix
   Copyright (c) 2020-2023 Hassan Draga.
   Licensed under MIT License.
@@ -15,14 +15,11 @@
 // -- Webinix ---------------------------
 #include "webinix_core.h"
 
-// -- Webinix JS API --------------------
-#include "client/webinix.h"
-static char* webinix_javascript_bridge = client_webinix_js;
+// -- Webinix JS Bridge APIs ------------
+#include "../bridge/webinix_bridge.h"
 
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
-
-// -- Heap ----------------------------
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already processed.<br><br>The current security policy denies<br>multiple requests.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
 static const char* webinix_html_res_not_available = "<html><head><title>Resource Not Available</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Resource Not Available</h2><p>The requested resource is not available.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
 static const char* webinix_deno_not_found = "<html><head><title>Deno Not Found</title><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style></head><body><h2>&#9888; Deno Not Found</h2><p>Deno is not found on this system.<br>Please download it from <a href=\"https://github.com/denoland/deno/releases\">https://github.com/denoland/deno/releases</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
@@ -636,6 +633,63 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
 
     // Set response
     *response = buf;
+}
+
+void webinix_send_raw(size_t window, const char* function, const void* raw, size_t size) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_send_raw(%zu bytes)...\n", size);
+    #endif
+
+    if(size < 1 || _webinix_strlen(function) < 1 || raw == NULL)
+        return;
+    
+    // Dereference
+    if(_webinix_core.wins[window] == NULL) return;
+    _webinix_window_t* win = _webinix_core.wins[window];
+
+    // 0: [Signature]
+    // 1: [Type]
+    // 2: [ID]
+    // 3: [Function]
+    // 4: [Null]
+    // 5: [Raw Data]
+
+    // Prepare packet
+    size_t packet_len = 
+        3 +                         // Signature, Type, ID
+        _webinix_strlen(function) +   // Function
+        1 +                         // Null
+        size;                       // Data
+    char* packet = (char*) _webinix_malloc(packet_len);
+    packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+    packet[1] = WEBUI_HEADER_SEND_RAW;  // Type
+    packet[2] = 0;                      // Call ID
+    
+    // Function
+    size_t p = 3;
+    for(size_t i = 0; i < _webinix_strlen(function); i++) { 
+        packet[p] = function[i];
+        p++;
+    }
+
+    // Null
+    packet[p] = 0;
+    p++;
+
+    // Data
+    char* ptr = (char*)raw;
+    for(size_t i = 0; i < size; i++) {
+        packet[p] = *ptr;
+        p++;
+        ptr++;
+    }
+
+    // Send packet
+    _webinix_window_send(win, packet, packet_len);
+
+    // Free
+    _webinix_free_mem((void*)packet);
 }
 
 char* webinix_encode(const char* str) {

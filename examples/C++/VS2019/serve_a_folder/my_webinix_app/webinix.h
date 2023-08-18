@@ -205,6 +205,8 @@ WEBUI_EXPORT char* webinix_decode(const char* str);
 WEBUI_EXPORT void webinix_free(void* ptr);
 // Safely allocate memory using the Webinix memory management system. It can be safely free using webinix_free().
 WEBUI_EXPORT void* webinix_malloc(size_t size);
+// Safely send raw data to the UI.
+WEBUI_EXPORT void webinix_send_raw(size_t window, const char* function, const void* raw, size_t size);
 
 // -- Interface -----------------------
 // Bind a specific html element click event with a function. Empty element means all events. This replace webinix_bind(). The func is (Window, EventType, Element, Data, EventNumber)
