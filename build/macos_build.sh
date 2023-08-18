@@ -22,18 +22,6 @@ DistPath="$RootPath/dist/macOS"
 cd "$RootPath"
 
 echo "";
-echo "Converting JS source to C-String using xxd"
-echo "";
-
-# Transpiling TS to JS
-echo "Transpile and bundle TS sources to webinix.js";
-esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./src/client ./src/client/webinix.ts
-
-# Converting JS source to C-String using xxd
-cd "src"
-xxd -i client/webinix.js client/webinix.h
-
-echo "";
 echo "Building Webinix using Clang...";
 echo "";
 
