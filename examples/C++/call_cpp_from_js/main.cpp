@@ -9,7 +9,7 @@
 void my_function_string(webinix::window::event* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_One', 'Hello');
+    // webinix.call('MyID_One', 'Hello');
 
     std::string str = e->get_string();
     std::cout << "my_function_string: " << str << std::endl; // Hello
@@ -28,7 +28,7 @@ void my_function_string(webinix::window::event* e) {
 void my_function_integer(webinix::window::event* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_Two', 123456789);
+    // webinix.call('MyID_Two', 123456789);
 
     long long number = e->get_int();
     std::cout << "my_function_integer: " << number << std::endl; // 123456789
@@ -37,7 +37,7 @@ void my_function_integer(webinix::window::event* e) {
 void my_function_boolean(webinix::window::event* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_Three', true);
+    // webinix.call('MyID_Three', true);
 
     bool status = e->get_bool(); // True
     if(status)
@@ -49,7 +49,7 @@ void my_function_boolean(webinix::window::event* e) {
 void my_function_with_response(webinix::window::event* e) {
 
     // JavaScript:
-    // const result = webinix_fn('MyID_Four', number);
+    // const result = webinix.call('MyID_Four', number);
 
     long long number = e->get_int();
     number = number * 2;
@@ -80,13 +80,13 @@ int main() {
         <h2>Webinix - Call C++ from JavaScript Example</h2>
         <p>Call C++ function with argument (<em>See the logs in your terminal</em>)</p>
         <br>
-        <button onclick="webinix_fn('MyID_One', 'Hello');">Call my_function_string()</button>
+        <button onclick="webinix.call('MyID_One', 'Hello');">Call my_function_string()</button>
         <br>
         <br>
-        <button onclick="webinix_fn('MyID_Two', 123456789);">Call my_function_integer()</button>
+        <button onclick="webinix.call('MyID_Two', 123456789);">Call my_function_integer()</button>
         <br>
         <br>
-        <button onclick="webinix_fn('MyID_Three', true);">Call my_function_boolean()</button>
+        <button onclick="webinix.call('MyID_Three', true);">Call my_function_boolean()</button>
         <br>
         <br>
         <p>Call C++ function and wait for the response</p>
@@ -99,7 +99,7 @@ int main() {
           function MyJS() {
             const MyInput = document.getElementById('MyInputID');
             const number = MyInput.value;
-            webinix_fn('MyID_Four', number).then((response) => {
+            webinix.call('MyID_Four', number).then((response) => {
               MyInput.value = response;
             });
           }

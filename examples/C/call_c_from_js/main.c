@@ -5,7 +5,7 @@
 void my_function_string(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_One', 'Hello');
+    // webinix.call('MyID_One', 'Hello');
 
     const char* str = webinix_get_string(e);
     printf("my_function_string: %s\n", str); // Hello
@@ -24,7 +24,7 @@ void my_function_string(webinix_event_t* e) {
 void my_function_integer(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_Two', 123456789);
+    // webinix.call('MyID_Two', 123456789);
 
     long long number = webinix_get_int(e);
     printf("my_function_integer: %lld\n", number); // 123456789
@@ -33,7 +33,7 @@ void my_function_integer(webinix_event_t* e) {
 void my_function_boolean(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix_fn('MyID_Three', true);
+    // webinix.call('MyID_Three', true);
 
     bool status = webinix_get_bool(e); // True
     if(status)
@@ -45,7 +45,7 @@ void my_function_boolean(webinix_event_t* e) {
 void my_function_with_response(webinix_event_t* e) {
 
     // JavaScript:
-    // const result = webinix_fn('MyID_Four', number);
+    // const result = webinix.call('MyID_Four', number);
 
     long long number = webinix_get_int(e);
     number = number * 2;
@@ -76,13 +76,13 @@ int main() {
     "    <h2>Webinix - Call C from JavaScript Example</h2>"
     "    <p>Call C function with argument (<em>See the logs in your terminal</em>)</p>"
     "    <br>"
-    "    <button onclick=\"webinix_fn('MyID_One', 'Hello');\">Call my_function_string()</button>"
+    "    <button onclick=\"webinix.call('MyID_One', 'Hello');\">Call my_function_string()</button>"
     "    <br>"
     "    <br>"
-    "    <button onclick=\"webinix_fn('MyID_Two', 123456789);\">Call my_function_integer()</button>"
+    "    <button onclick=\"webinix.call('MyID_Two', 123456789);\">Call my_function_integer()</button>"
     "    <br>"
     "    <br>"
-    "    <button onclick=\"webinix_fn('MyID_Three', true);\">Call my_function_boolean()</button>"
+    "    <button onclick=\"webinix.call('MyID_Three', true);\">Call my_function_boolean()</button>"
     "    <br>"
     "    <br>"
     "    <p>Call C function and wait for the response</p>"
@@ -95,7 +95,7 @@ int main() {
     "      function MyJS() {"
     "        const MyInput = document.getElementById('MyInputID');"
     "        const number = MyInput.value;"
-    "        webinix_fn('MyID_Four', number).then((response) => {"
+    "        webinix.call('MyID_Four', number).then((response) => {"
     "            MyInput.value = response;"
     "        });"
     "      }"

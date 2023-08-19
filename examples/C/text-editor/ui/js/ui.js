@@ -75,7 +75,7 @@ function addText(text) {
 // Save the file
 function SaveFile() {
     const content = codeMirrorInstance.getValue();
-    webinix_fn('Save', content);
+    webinix.call('Save', content);
 }
 
 window.addEventListener("DOMContentLoaded", (event) => {
