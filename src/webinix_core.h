@@ -29,15 +29,25 @@
 #define WEBUI_DEF_TIMEOUT       (30)        // Default startup timeout in seconds
 #define WEBUI_MAX_TIMEOUT       (60)        // Maximum startup timeout in seconds the user can set
 
+// Mutex
+#ifdef _WIN32
+    typedef CRITICAL_SECTION webinix_mutex_t;
+#else
+    typedef pthread_mutex_t webinix_mutex_t;
+#endif
+
+// Timer
 typedef struct _webinix_timer_t {
     struct timespec start;
     struct timespec now;
 } _webinix_timer_t;
 
+// Events
 typedef struct webinix_event_core_t {
     char* response; // Callback response
 } webinix_event_core_t;
 
+// Window
 typedef struct _webinix_window_t {
     size_t window_number;
     volatile bool server_running;
@@ -72,6 +82,7 @@ typedef struct _webinix_window_t {
     const void* (*files_handler)(const char* filename, int* length);
 } _webinix_window_t;
 
+// Core
 typedef struct _webinix_core_t {
     volatile size_t servers;
     volatile size_t connections;
@@ -95,6 +106,9 @@ typedef struct _webinix_core_t {
     _webinix_window_t* wins[WEBUI_MAX_ARRAY];
     size_t last_win_number;
     bool server_handled;
+    webinix_mutex_t mutex_server_start;
+    webinix_mutex_t mutex_send;
+    webinix_mutex_t mutex_receive;
 } _webinix_core_t;
 
 typedef struct _webinix_cb_arg_t {
@@ -190,6 +204,10 @@ static void _webinix_print_ascii(const char* data, size_t len);
 static void _webinix_panic(void);
 static void _webinix_kill_pid(size_t pid);
 static _webinix_window_t* _webinix_dereference_win_ptr(void* ptr);
+static void _webinix_mutex_init(webinix_mutex_t *mutex);
+static void _webinix_mutex_lock(webinix_mutex_t *mutex);
+static void _webinix_mutex_unlock(webinix_mutex_t *mutex);
+static void _webinix_mutex_destroy(webinix_mutex_t *mutex);
 
 static void _webinix_http_send(struct mg_connection *conn, const char* mime_type, const char* body);
 static void _webinix_http_send_error_page(struct mg_connection *conn, const char* body, int status);

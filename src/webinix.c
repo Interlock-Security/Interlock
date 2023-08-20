@@ -1786,6 +1786,42 @@ static const char* _webinix_interpret_command(const char* cmd) {
     return (const char*)out;
 }
 
+void _webinix_mutex_init(webinix_mutex_t *mutex) {
+
+    #ifdef _WIN32
+        InitializeCriticalSection(mutex);
+    #else
+        pthread_mutex_init(mutex, NULL);
+    #endif
+}
+
+void _webinix_mutex_lock(webinix_mutex_t *mutex) {
+
+    #ifdef _WIN32
+        EnterCriticalSection(mutex);
+    #else
+        pthread_mutex_lock(mutex);
+    #endif
+}
+
+void _webinix_mutex_unlock(webinix_mutex_t *mutex) {
+
+    #ifdef _WIN32
+        LeaveCriticalSection(mutex);
+    #else
+        pthread_mutex_unlock(mutex);
+    #endif
+}
+
+void _webinix_mutex_destroy(webinix_mutex_t *mutex) {
+
+    #ifdef _WIN32
+        DeleteCriticalSection(mutex);
+    #else
+        pthread_mutex_destroy(mutex);
+    #endif
+}
+
 static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection *conn, char* index) {
 
     #ifdef WEBUI_LOG
@@ -3657,12 +3693,18 @@ static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t pa
         struct mg_connection* conn = _webinix_core.mg_connections[win->window_number];
 
         if(conn != NULL) {
+
+            // Mutex
+            _webinix_mutex_lock(&_webinix_core.mutex_send);
+
             ret = mg_websocket_write(
                 conn,
                 MG_WEBSOCKET_OPCODE_BINARY,
                 packet,
                 packets_size
             );
+
+            _webinix_mutex_unlock(&_webinix_core.mutex_send);
         }
     }
 
@@ -3731,6 +3773,9 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
 
     if((unsigned char) packet[0] != WEBUI_HEADER_SIGNATURE || len < 4)
         return;
+    
+    // Mutex
+    _webinix_mutex_lock(&_webinix_core.mutex_receive);
 
     if((unsigned char) packet[1] == WEBUI_HEADER_CLICK) {
 
@@ -3781,6 +3826,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             // Fatal.
             // The pipe ID is not valid
             // we can't send the ready signal to webinix_script()
+            _webinix_mutex_unlock(&_webinix_core.mutex_receive);
             return;
         }
 
@@ -3837,9 +3883,12 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             // Get URL
             char* url;
             size_t url_len;
-            if(!_webinix_get_data(packet, len, 3, &url_len, &url))
+            if(!_webinix_get_data(packet, len, 3, &url_len, &url)) {
+
+                _webinix_mutex_unlock(&_webinix_core.mutex_receive);
                 return;
-            
+            }
+
             #ifdef WEBUI_LOG
                 printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_SWITCH \n");
                 printf("[Core]\t\t_webinix_window_receive() -> URL size: %zu bytes \n", url_len);
@@ -3871,8 +3920,12 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // Get html element id
         char* element;
         size_t element_len;
-        if(!_webinix_get_data(packet, len, 3, &element_len, &element))
+        if(!_webinix_get_data(packet, len, 3, &element_len, &element)) {
+
+            _webinix_mutex_unlock(&_webinix_core.mutex_receive);
             return;
+        }
+
 
         // Get data
         char* data;
@@ -3949,6 +4002,8 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         _webinix_free_mem((void*)*response);
         _webinix_free_mem((void*)event_core);
     }
+
+    _webinix_mutex_unlock(&_webinix_core.mutex_receive);
 }
 
 static char* _webinix_get_current_path(void) {
@@ -4079,6 +4134,11 @@ static void _webinix_init(void) {
 
     // Initializing server services
     mg_init_library(0);
+
+    // Initializing mutex
+    _webinix_mutex_init(&_webinix_core.mutex_server_start);
+    _webinix_mutex_init(&_webinix_core.mutex_send);
+    _webinix_mutex_init(&_webinix_core.mutex_receive);
 }
 
 static size_t _webinix_get_cb_index(char* webinix_internal_id) {
@@ -4613,6 +4673,9 @@ static WEBUI_SERVER_START
         printf("[Core]\t\t[Thread] _webinix_server_start()...\n");
     #endif
 
+    // Mutex
+    _webinix_mutex_lock(&_webinix_core.mutex_server_start);
+
     _webinix_window_t* win = _webinix_dereference_win_ptr(arg);
     if(win == NULL) {
         THREAD_RETURN
@@ -4686,6 +4749,9 @@ static WEBUI_SERVER_START
             _webinix_ws_close_handler,
             (void*)win
         );
+
+        // Mutex
+        _webinix_mutex_unlock(&_webinix_core.mutex_server_start);
 
         if(_webinix_core.startup_timeout > 0 && !win->hide) {
 
@@ -4843,6 +4909,9 @@ static WEBUI_SERVER_START
         #ifdef WEBUI_LOG
             printf("[Core]\t\t[Thread] _webinix_server_start([%zu]) -> Listening failed\n", win->window_number);
         #endif
+
+        // Mutex
+        _webinix_mutex_unlock(&_webinix_core.mutex_server_start);
     }
 
     #ifdef WEBUI_LOG
