@@ -437,6 +437,8 @@ bool webinix_show(size_t window, const char* content) {
         printf("[User] webinix_show([%zu])...\n", window);
     #endif
 
+    _webinix_core.ui = true;
+
     // Dereference
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
@@ -833,6 +835,9 @@ void webinix_exit(void) {
     // Let's give other threads more time to 
     // safely exit and finish their cleaning up.
     _webinix_sleep(120);
+
+    // Fire the mutex condition wait
+    _webinix_condition_signal(&_webinix_core.condition_wait);
 }
 
 void webinix_wait(void) {
@@ -845,24 +850,20 @@ void webinix_wait(void) {
 
     if(_webinix_core.startup_timeout > 0) {
 
+        // Check if there is atleast one window (UI)
+        // is running. Otherwise the mutex condition
+        // signal will never come
+        if(!_webinix_core.ui)
+            return;
+
         #ifdef WEBUI_LOG
-            printf("[Loop] webinix_wait() -> Using timeout %zu second\n", _webinix_core.startup_timeout);
+            printf("[Loop] webinix_wait() -> Timeout in %zu seconds\n", _webinix_core.startup_timeout);
+            printf("[Loop] webinix_wait() -> Waiting for connected UI...\n");
         #endif
 
-        // Wait for browser to start
-        _webinix_wait_for_startup();
-
-        #ifdef WEBUI_LOG
-            printf("[Loop] webinix_wait() -> Wait for connected UI...\n");
-        #endif
-
-        while(_webinix_core.servers > 0) {
-
-            #ifdef WEBUI_LOG
-                // printf("[%zu/%zu]", _webinix_core.servers, _webinix_core.connections);
-            #endif
-            _webinix_sleep(50);
-        }
+        // The mutex conditional signal will
+        // be fired when no more UI (servers)
+        // is running.
     }
     else {
 
@@ -870,14 +871,20 @@ void webinix_wait(void) {
             printf("[Loop] webinix_wait() -> Infinite wait...\n");
         #endif
 
-        // Infinite wait
-        while(!_webinix_core.exit_now)
-            _webinix_sleep(50);
+        // The mutex conditional signal will
+        // be fired when `webinix_exit()` is
+        // called by the user.
     }
 
+    // Waiting for the mutex conditional signal
+    _webinix_mutex_lock(&_webinix_core.mutex_wait);
+    _webinix_condition_wait(&_webinix_core.condition_wait, &_webinix_core.mutex_wait);
+
     #ifdef WEBUI_LOG
-        printf("[Loop] webinix_wait() -> Wait finished.\n");
+        printf("[Loop] webinix_wait() -> Wait is finished.\n");
     #endif
+
+    _webinix_mutex_unlock(&_webinix_core.mutex_wait);
 
     // Final cleaning
     _webinix_clean();
@@ -1786,7 +1793,43 @@ static const char* _webinix_interpret_command(const char* cmd) {
     return (const char*)out;
 }
 
-void _webinix_mutex_init(webinix_mutex_t *mutex) {
+static void _webinix_condition_init(webinix_condition_t *cond) {
+
+    #ifdef _WIN32
+        InitializeConditionVariable(cond);
+    #else
+        pthread_cond_init(cond, NULL);
+    #endif
+}
+
+static void _webinix_condition_wait(webinix_condition_t *cond, webinix_mutex_t *mutex) {
+
+    #ifdef _WIN32
+        SleepConditionVariableCS(cond, mutex, INFINITE);
+    #else
+        pthread_cond_wait(cond, mutex);
+    #endif
+}
+
+static void _webinix_condition_signal(webinix_condition_t *cond) {
+
+    #ifdef _WIN32
+        WakeConditionVariable(cond);
+    #else
+        pthread_cond_signal(cond);
+    #endif
+}
+
+static void _webinix_condition_destroy(webinix_condition_t *cond) {
+
+    #ifdef _WIN32
+        // No need
+    #else
+        pthread_cond_destroy(cond);
+    #endif
+}
+
+static void _webinix_mutex_init(webinix_mutex_t *mutex) {
 
     #ifdef _WIN32
         InitializeCriticalSection(mutex);
@@ -1795,7 +1838,7 @@ void _webinix_mutex_init(webinix_mutex_t *mutex) {
     #endif
 }
 
-void _webinix_mutex_lock(webinix_mutex_t *mutex) {
+static void _webinix_mutex_lock(webinix_mutex_t *mutex) {
 
     #ifdef _WIN32
         EnterCriticalSection(mutex);
@@ -1804,7 +1847,7 @@ void _webinix_mutex_lock(webinix_mutex_t *mutex) {
     #endif
 }
 
-void _webinix_mutex_unlock(webinix_mutex_t *mutex) {
+static void _webinix_mutex_unlock(webinix_mutex_t *mutex) {
 
     #ifdef _WIN32
         LeaveCriticalSection(mutex);
@@ -1813,7 +1856,7 @@ void _webinix_mutex_unlock(webinix_mutex_t *mutex) {
     #endif
 }
 
-void _webinix_mutex_destroy(webinix_mutex_t *mutex) {
+static void _webinix_mutex_destroy(webinix_mutex_t *mutex) {
 
     #ifdef _WIN32
         DeleteCriticalSection(mutex);
@@ -2846,6 +2889,17 @@ static void _webinix_clean(void) {
 
     // Free all non-freed memory allocations
     _webinix_free_all_mem();
+
+    // Destroy all mutex
+    _webinix_mutex_destroy(&_webinix_core.mutex_server_start);
+    _webinix_mutex_destroy(&_webinix_core.mutex_send);
+    _webinix_mutex_destroy(&_webinix_core.mutex_receive);
+    _webinix_mutex_destroy(&_webinix_core.mutex_wait);
+    _webinix_condition_destroy(&_webinix_core.condition_wait);
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\tDone.\n");
+    #endif
 }
 
 static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show) {
@@ -4139,6 +4193,8 @@ static void _webinix_init(void) {
     _webinix_mutex_init(&_webinix_core.mutex_server_start);
     _webinix_mutex_init(&_webinix_core.mutex_send);
     _webinix_mutex_init(&_webinix_core.mutex_receive);
+    _webinix_mutex_init(&_webinix_core.mutex_wait);
+    _webinix_condition_init(&_webinix_core.condition_wait);
 }
 
 static size_t _webinix_get_cb_index(char* webinix_internal_id) {
@@ -4943,6 +4999,10 @@ static WEBUI_SERVER_START
     // end as it may take time
     mg_stop(ws_ctx);
     mg_stop(http_ctx);
+
+    // Fire the mutex condition wait
+    if(_webinix_core.startup_timeout > 0 && _webinix_core.servers < 1)
+	    _webinix_condition_signal(&_webinix_core.condition_wait);
 
     THREAD_RETURN
 }

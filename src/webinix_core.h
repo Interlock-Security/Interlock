@@ -32,8 +32,10 @@
 // Mutex
 #ifdef _WIN32
     typedef CRITICAL_SECTION webinix_mutex_t;
+    typedef CONDITION_VARIABLE webinix_condition_t;
 #else
     typedef pthread_mutex_t webinix_mutex_t;
+    typedef pthread_cond_t webinix_condition_t;
 #endif
 
 // Timer
@@ -109,6 +111,9 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_server_start;
     webinix_mutex_t mutex_send;
     webinix_mutex_t mutex_receive;
+    webinix_mutex_t mutex_wait;
+    webinix_condition_t condition_wait;
+    bool ui;
 } _webinix_core_t;
 
 typedef struct _webinix_cb_arg_t {
@@ -204,10 +209,15 @@ static void _webinix_print_ascii(const char* data, size_t len);
 static void _webinix_panic(void);
 static void _webinix_kill_pid(size_t pid);
 static _webinix_window_t* _webinix_dereference_win_ptr(void* ptr);
+
 static void _webinix_mutex_init(webinix_mutex_t *mutex);
 static void _webinix_mutex_lock(webinix_mutex_t *mutex);
 static void _webinix_mutex_unlock(webinix_mutex_t *mutex);
 static void _webinix_mutex_destroy(webinix_mutex_t *mutex);
+static void _webinix_condition_init(webinix_condition_t *cond);
+static void _webinix_condition_wait(webinix_condition_t *cond, webinix_mutex_t *mutex);
+static void _webinix_condition_signal(webinix_condition_t *cond);
+static void _webinix_condition_destroy(webinix_condition_t *cond);
 
 static void _webinix_http_send(struct mg_connection *conn, const char* mime_type, const char* body);
 static void _webinix_http_send_error_page(struct mg_connection *conn, const char* body, int status);
