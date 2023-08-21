@@ -456,6 +456,8 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
         printf("[User] webinix_show_browser([%zu], [%zu])...\n", window, browser);
     #endif
 
+    _webinix_core.ui = true;
+
     // Dereference
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
@@ -995,7 +997,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
 size_t webinix_interface_bind(size_t window, const char* element, void (*func)(size_t, size_t, char*, char*, size_t)) {
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_interface_bind()...\n");
+        printf("[User] webinix_interface_bind([%zu], [%s], [0x%p])...\n", window, element, func);
     #endif
 
     // Bind
