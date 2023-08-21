@@ -18,7 +18,7 @@
 // -- Webinix Core ----------------------
 #include "webinix_core.h"
 
-// -- Webinix JS Bridge APIs ------------
+// -- Webinix Bridge (JavaScript) -------
 #include "../bridge/webinix_bridge.h"
 
 // -- Heap ----------------------------
@@ -2062,7 +2062,7 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     }
     strcat(event_cb_js_array, "]");
 
-    // Generate the full Webinix JS-Bridge
+    // Generate the full Webinix Bridge
     size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
     char* js = (char*) _webinix_malloc(len);
     #ifdef WEBUI_LOG
@@ -4348,7 +4348,7 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
 
         if(strcmp(url, "/webinix.js") == 0) {
 
-            // Webinix JS-Bridge
+            // Webinix Bridge
 
             #ifdef WEBUI_LOG
                 printf("[Core]\t\t_webinix_http_handler() -> HTML Webinix JS\n");
@@ -4405,15 +4405,15 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
 
                     if(win->html != NULL) {
 
-                        // Generate the full Webinix JS-Bridge
+                        // Generate the full Webinix Bridge
                         const char* js = _webinix_generate_js_bridge(win);
 
-                        // Inject Webinix JS-Bridge into HTML
+                        // Inject Webinix Bridge into HTML
                         size_t len = _webinix_strlen(win->html) + 128;
                         html = (char*) _webinix_malloc(len);
                         if(win->html != NULL && js != NULL) {
                             sprintf(html,
-                                //! Construct bad html to load js bridge before all user content
+                                //! Construct bad html to load webinix bridge before all user content
                                 //! Temp fix, need to improve this trick by inserting the script tag in html head via an XML/DOM parser
                                 "<html> <script type = \"application/javascript\" src = \" webinix.js \"> \n \n </script> \n %s",
                                 win->html
@@ -5342,7 +5342,7 @@ static WEBUI_CB
                 if(VALUE_TYPE == REG_SZ)
                     sprintf(value, "%S", (LPCWSTR)VALUE_DATA);
                 else if(VALUE_TYPE == REG_DWORD)
-                    sprintf(value, "%zu", *((DWORD *)VALUE_DATA));
+                    sprintf(value, "%lu", *((DWORD *)VALUE_DATA));
                 
                 RegCloseKey(hKey);
                 return true;
