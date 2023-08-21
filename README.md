@@ -18,6 +18,18 @@
 > 
 > * We are currently writing documentation.
 
+## Contents
+
+- [Features](#features)
+- [Showcase](#showcase)
+- [UI & The Web Technologies](#ui--the-web-technologies)
+- [Documentation](#documentation)
+- [Build](#build)
+- [Examples](#examples)
+- [Wrappers](#wrappers)
+- [Supported Web Browsers](#supported-web-browsers)
+- [License](#license)
+
 ## Features
 
 - Written in Pure C
@@ -28,7 +40,7 @@
 - Multi-platform & Multi-Browser
 - Using private profile for safety
 
-## Screenshot
+## Showcase
 
 This [text editor example](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
 
@@ -38,7 +50,7 @@ This [text editor example](https://github.com/webinix-dev/webinix/tree/main/exam
 
 </div>
 
-## CppCon 2019 Presentation
+## UI & The Web Technologies
 
 [Borislav Stanimirov](https://ibob.bg/) discusses using HTML5 in the web browser as GUI at the [C++ Conference 2019 (*YouTube*)](https://www.youtube.com/watch?v=bbbcZd4cuxg).
 
@@ -52,15 +64,13 @@ This [text editor example](https://github.com/webinix-dev/webinix/tree/main/exam
 
 </div>
 
-## UI & The Web Technologies
-
 Web application UI design is not just about how a product looks but how it works. Using web technologies in your UI makes your product modern and professional, And a well-designed web application will help you make a solid first impression on potential customers. Great web application design also assists you in nurturing leads and increasing conversions. In addition, it makes navigating and using your web app easier for your users.
 
-## Why Use Web Browser?
+### Why Use Web Browsers?
 
 Today's web browsers have everything a modern UI needs. Web browsers are very sophisticated and optimized. Therefore, using it as a GUI will be an excellent choice. While old legacy GUI lib is complex and outdated, a WebView-based app is still an option. However, a WebView needs a huge SDK to build and many dependencies to run, and it can only provide some features like a real web browser. That is why Webinix uses real web browsers to give you full features of comprehensive web technologies while keeping your software lightweight and portable.
 
-## How does it work?
+### How Does it Work?
 
 <div align="center">
 
@@ -70,7 +80,7 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 
 Think of Webinix like a WebView controller, but instead of embedding the WebView controller in your program, which makes the final program big in size, and non-portable as it needs the WebView runtimes. Instead, by using Webinix, you use a tiny static/dynamic library to run any installed web browser and use it as GUI, which makes your program small, fast, and portable. **All it needs is a web browser**.
 
-## Runtime Dependencies Comparison
+### Runtime Dependencies Comparison
 
 |  | WebView | Qt | Webinix |
 | ------ | ------ | ------ | ------ |
@@ -89,15 +99,18 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
   ```powershell
   # GCC
   mingw32-make
+  
   # TCC
   mingw32-make COMPILER=tcc
+  
   # MSVC
-  nmake
+  nmake -f Makefile.nmake
   ```
 - **Linux**
   ```sh
   # GCC
   make
+  
   # Clang
   make COMPILER=clang
   ```
@@ -108,66 +121,35 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ## Examples
 
- - [C](https://github.com/webinix-dev/webinix/tree/main/examples/C)
- - [C++](https://github.com/webinix-dev/webinix/tree/main/examples/C++)
+- [C](https://github.com/webinix-dev/webinix/tree/main/examples/C)
+- [C++](https://github.com/webinix-dev/webinix/tree/main/examples/C++)
 
- ## Wrappers
-
- - [Python](https://github.com/webinix-dev/python-webinix)
- - [TypeScript / JavaScript](https://github.com/webinix-dev/deno-webinix)
- - [Go](https://github.com/webinix-dev/go-webinix)
- - [Rust](https://github.com/webinix-dev/rust-webinix) (*Not Complete*)
- - [V](https://github.com/webinix-dev/v-webinix)
- - [Nim](https://github.com/webinix-dev/nim-webinix)
- - [Zig](https://github.com/webinix-dev/zig-webinix) (*Not Complete*)
-
-## Supported Web Browsers
-
-| OS | Browser | Status |
-| ------ | ------ | ------ |
-| Windows | Mozilla Firefox | ✔️ |
-| Windows | Google Chrome | ✔️ |
-| Windows | Microsoft Edge | ✔️ |
-| Windows | Chromium | ✔️ |
-| Windows | Yandex | ✔️ |
-| Windows | Brave | ✔️ |
-| Windows | Vivaldi | ✔️ |
-| Windows | Epic | ✔️ |
-| Windows | Opera | *coming soon* |
-| - | - | - |
-| Linux | Mozilla Firefox | ✔️ |
-| Linux | Google Chrome | ✔️ |
-| Linux | Microsoft Edge | ✔️ |
-| Linux | Chromium | ✔️ |
-| Linux | Yandex | ✔️ |
-| Linux | Brave | ✔️ |
-| Linux | Vivaldi | ✔️ |
-| Linux | Epic | *Does Not Exist* |
-| Linux | Opera | *coming soon* |
-| - | - | - |
-| macOS | Mozilla Firefox | ✔️ |
-| macOS | Google Chrome | ✔️ |
-| macOS | Microsoft Edge | ✔️ |
-| macOS | Chromium | ✔️ |
-| macOS | Yandex | ✔️ |
-| macOS | Brave | ✔️ |
-| macOS | Vivaldi | ✔️ |
-| macOS | Epic | ✔️ |
-| macOS | Apple Safari | *coming soon* |
-| macOS | Opera | *coming soon* |
-
-## Supported Languages
+## Wrappers
 
 | Language | Status | Link |
 | ------ | ------ | ------ |
-| C/C++ | ✔️ | [Webinix](https://github.com/webinix-dev/webinix) |
 | Python | ✔️ | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
 | TypeScript / JavaScript | ✔️ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix) |
 | Go | ✔️ | [Go-Webinix](https://github.com/webinix-dev/go-webinix) |
-| Rust | *Not Complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
+| Rust | *not complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
 | V | ✔️ | [V-Webinix](https://github.com/webinix-dev/v-webinix) |
 | Nim | ✔️ | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix) |
-| Zig | *Not Complete* | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix) |
+| Zig | *not complete* | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix) |
+
+## Supported Web Browsers
+
+| Browser | Windows | macOS | Linux |
+| ------ | ------ | ------ | ------ |
+| Mozilla Firefox | ✔️ | ✔️ | ✔️ |
+| Google Chrome | ✔️ | ✔️ | ✔️ |
+| Microsoft Edge | ✔️ | ✔️ | ✔️ |
+| Chromium | ✔️ | ✔️ | ✔️ |
+| Yandex | ✔️ | ✔️ | ✔️ |
+| Brave | ✔️ | ✔️ | ✔️ |
+| Vivaldi | ✔️ | ✔️ | ✔️ |
+| Epic | ✔️ | ✔️ | *not available* |
+| Apple Safari | *not available* | *coming soon* | *not available* |
+| Opera | *coming soon* | *coming soon* | *coming soon* |
 
 ### License
 
