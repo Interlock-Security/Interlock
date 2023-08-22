@@ -125,12 +125,13 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 | Language | Status | Link |
 | ------ | ------ | ------ |
-| Python | ✔️ | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
-| TypeScript / JavaScript | ✔️ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix) |
 | Go | ✔️ | [Go-Webinix](https://github.com/webinix-dev/go-webinix) |
-| Rust | *not complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
-| V | ✔️ | [V-Webinix](https://github.com/webinix-dev/v-webinix) |
 | Nim | ✔️ | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix) |
+| Pascal | ✔️ | [Pascal-Webinix](https://github.com/webinix-dev/pascal-webinix) |
+| Python | ✔️ | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
+| Rust | *not complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
+| TypeScript / JavaScript | ✔️ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix) |
+| V | ✔️ | [V-Webinix](https://github.com/webinix-dev/v-webinix) |
 | Zig | *not complete* | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix) |
 
 ## Supported Web Browsers
