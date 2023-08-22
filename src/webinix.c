@@ -3778,7 +3778,7 @@ static bool _webinix_get_data(const char* packet, size_t packet_len, size_t pos,
     if((pos + 1) > packet_len) {
 
         *data = (char*)webinix_empty_string;
-        *data_len = 0;
+        if(data_len != NULL)*data_len = 0;
         return false;
     }
 
@@ -3787,7 +3787,7 @@ static bool _webinix_get_data(const char* packet, size_t packet_len, size_t pos,
     if(data_size < 1) {
 
         *data = (char*)webinix_empty_string;
-        *data_len = 0;
+        if(data_len != NULL)*data_len = 0;
         return false;
     }
 
@@ -3809,13 +3809,15 @@ static bool _webinix_get_data(const char* packet, size_t packet_len, size_t pos,
     }
 
     // Check data size
-    *data_len = _webinix_strlen(*data);
-    if(*data_len < 1) {
+    if(data_len != NULL){
+        *data_len = _webinix_strlen(*data);
+        if(*data_len < 1) {
 
-        _webinix_free_mem((void*)data);
-        *data = (char*)webinix_empty_string;
-        *data_len = 0;
-        return false;
+            _webinix_free_mem((void*)data);
+            *data = (char*)webinix_empty_string;
+            *data_len = 0;
+            return false;
+        }
     }
 
     return true;
@@ -3971,29 +3973,37 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // 0: [Signature]
         // 1: [Type]
         // 2: [Call ID]
-        // 3: [Element ID, Null, Data]
+        // 3: [Element ID, Null, Len, Null, Data, Null]
         
         // Get html element id
-        char* element;
-        size_t element_len;
-        if(!_webinix_get_data(packet, len, 3, &element_len, &element)) {
+        char* element = (char*)&packet[3];
+        size_t element_strlen = _webinix_strlen(element);
 
-            _webinix_mutex_unlock(&_webinix_core.mutex_receive);
-            return;
+        // Get data len (As str)
+        char* len_s = (char*)&packet[3 + element_strlen + 1];
+        size_t len_s_strlen = _webinix_strlen(len_s);
+
+        // Get data len
+        long long int len = 0;
+        char* endptr;
+        if(len_s_strlen > 0 && len_s_strlen <= 20) { // 64-bit max is -9,223,372,036,854,775,808 (20 character)
+            len = strtoll((const char*)len_s, &endptr, 10);
         }
 
-
         // Get data
-        char* data;
-        size_t data_len;
-        _webinix_get_data(packet, len, (3 + element_len + 1), &data_len, &data);
-        
+        char* data = (char*)&packet[3 + element_strlen + 1 + len_s_strlen + 1];
+
         #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_CALL_FUNC \n");
             printf("[Core]\t\t_webinix_window_receive() -> Call ID: [0x%02x] \n", packet[2]);
             printf("[Core]\t\t_webinix_window_receive() -> Element: [%s] \n", element);
-            printf("[Core]\t\t_webinix_window_receive() -> Data size: %zu Bytes \n", data_len);
-            printf("[Core]\t\t_webinix_window_receive() -> Data: [%s] \n", data);
+            printf("[Core]\t\t_webinix_window_receive() -> Data size: %zu Bytes \n", len);
+            printf("[Core]\t\t_webinix_window_receive() -> Data: Hex [ ");
+                _webinix_print_hex(data, len);
+            printf("]\n");
+            printf("[Core]\t\t_webinix_window_receive() -> Data: ASCII [ ");
+                _webinix_print_ascii(data, len);
+            printf("]\n");
         #endif
 
         // Generate Webinix internal id
@@ -4011,6 +4021,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         e.event_type = WEBUI_EVENT_CALLBACK;
         e.element = element;
         e.data = data;
+        e.size = len;
         e.event_number = event_core_pos;
 
         // Call user function
@@ -4044,7 +4055,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         response_packet[0] = WEBUI_HEADER_SIGNATURE;    // Signature
         response_packet[1] = WEBUI_HEADER_CALL_FUNC;    // Type
         response_packet[2] = packet[2];                 // Call ID
-        for(size_t i = 0; i < response_len; i++)  // Data
+        for(size_t i = 0; i < response_len; i++)        // Data
             response_packet[3 + i] = (*response)[i];
 
         // Send response packet
@@ -4052,8 +4063,6 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         _webinix_free_mem((void*)response_packet);
 
         // Free
-        _webinix_free_mem((void*)element);
-        _webinix_free_mem((void*)data);
         _webinix_free_mem((void*)webinix_internal_id);
         _webinix_free_mem((void*)*response);
         _webinix_free_mem((void*)event_core);
