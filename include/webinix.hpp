@@ -182,7 +182,6 @@ namespace webinix {
             webinix_set_kiosk(webinix_window, status);
         }
 
-        // -- Other ---------------------------
         // Check a specific window if it's still running
         bool is_shown() const {
             return webinix_is_shown(webinix_window);
@@ -198,7 +197,18 @@ namespace webinix {
             webinix_set_multi_access(webinix_window, status);
         }
 
+        // Safely send raw data to the UI
+        void send_raw(const std::string_view function, const void* raw, size_t size) const {
+            webinix_send_raw(webinix_window, function.data(), raw, size);
+        }
+
+        // Run the window in hidden mode
+        void set_hide(bool status) const {
+            webinix_set_hide(webinix_window, status);
+        }
+
         // -- JavaScript ----------------------
+
         // Quickly run a JavaScript (no response waiting).
         void run(const std::string_view script) const {
             webinix_run(webinix_window, script.data());
