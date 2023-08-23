@@ -56,7 +56,7 @@ function SetFileModeExtension(extension) {
 // Add a line to the editor
 function addLine(text) {
     const lastLine = codeMirrorInstance.lineCount();
-    codeMirrorInstance.replaceRange(webinix_decode(text) + "\n", {line: lastLine});
+    codeMirrorInstance.replaceRange(webinix.decode(text) + "\n", {line: lastLine});
 
     const element = document.getElementById('SaveLi');
     element.style.color = '#ddecf9';
@@ -65,7 +65,7 @@ function addLine(text) {
 
 // Add full text to the editor
 function addText(text) {
-    codeMirrorInstance.setValue(webinix_decode(text));
+    codeMirrorInstance.setValue(webinix.decode(text));
 
     const element = document.getElementById('SaveLi');
     element.style.color = '#ddecf9';
@@ -99,7 +99,7 @@ function changeWindowTitle(newTitle) {
 
 // Set file title and language
 function SetFile(path_base64) {
-    const path = webinix_decode(path_base64);
+    const path = webinix.decode(path_base64);
     const Extension = getFileExtension(path);
     const FileName = getFileName(path);
     console.log('Extension: ' + path);
