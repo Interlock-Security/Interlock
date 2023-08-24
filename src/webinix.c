@@ -493,7 +493,6 @@ size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_eve
 
         // Replace a reference
         _webinix_core.cb[cb_index] = func;
-
         _webinix_free_mem((void*)webinix_internal_id);
     }
     else {
@@ -501,10 +500,40 @@ size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_eve
         // New reference
         cb_index = _webinix_set_cb_index(webinix_internal_id);
 
-        if(cb_index > 0)
+        if(cb_index > 0) {
+
             _webinix_core.cb[cb_index] = func;
-        else
-            _webinix_free_mem((void*)webinix_internal_id);
+
+            if(win->bridge_handled) {
+
+                // The bridge is already generated and handled
+                // to this UI. We need to send this new binding
+                // ID to to the UI.
+
+                if(!win->connected) {
+                    for(size_t n = 0; n <= 12; n++) { // 3000ms
+                        if(win->connected)
+                            break;
+                        _webinix_sleep(250);
+                    }
+                }
+
+                // Prepare the packet
+                size_t id_len = _webinix_strlen(webinix_internal_id);
+                size_t packet_len = 3 + id_len + 1; // [header][element]
+                char* packet = (char*) _webinix_malloc(packet_len);
+                packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+                packet[1] = WEBUI_HEADER_NEW_ID;    // Type
+                packet[2] = 0;                      // ID
+                for(size_t i = 0; i < id_len; i++)  // Element
+                    packet[i + 3] = webinix_internal_id[i];
+                
+                // Send packets
+                _webinix_window_send(win, packet, packet_len);
+                _webinix_free_mem((void*)packet);
+            }
+        }
+        else _webinix_free_mem((void*)webinix_internal_id);
     }
 
     return cb_index;
@@ -2044,6 +2073,11 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 }
 
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
+
+    _webinix_mutex_lock(&_webinix_core.mutex_bridge);
+
+    win->bridge_handled = true;
+
     // Calculate the cb size
     size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++)
@@ -2077,6 +2111,8 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
             webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array
         );
     #endif
+
+    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
 
     return js;
 }
@@ -4205,10 +4241,13 @@ static void _webinix_init(void) {
     _webinix_mutex_init(&_webinix_core.mutex_send);
     _webinix_mutex_init(&_webinix_core.mutex_receive);
     _webinix_mutex_init(&_webinix_core.mutex_wait);
+    _webinix_mutex_init(&_webinix_core.mutex_bridge);
     _webinix_condition_init(&_webinix_core.condition_wait);
 }
 
 static size_t _webinix_get_cb_index(char* webinix_internal_id) {
+
+    _webinix_mutex_lock(&_webinix_core.mutex_bridge);
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_get_cb_index([%s])...\n", webinix_internal_id);
@@ -4218,16 +4257,22 @@ static size_t _webinix_get_cb_index(char* webinix_internal_id) {
 
         for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++) {
 
-            if(_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i])) 
-                if(strcmp(_webinix_core.html_elements[i], webinix_internal_id) == 0)
+            if(_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i])) {
+                if(strcmp(_webinix_core.html_elements[i], webinix_internal_id) == 0) {
+                    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
                     return i;
+                }
+            }
         }
     }
 
+    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
     return 0;
 }
 
 static size_t _webinix_set_cb_index(char* webinix_internal_id) {
+
+    _webinix_mutex_lock(&_webinix_core.mutex_bridge);
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_set_cb_index([%s])...\n", webinix_internal_id);
@@ -4239,11 +4284,12 @@ static size_t _webinix_set_cb_index(char* webinix_internal_id) {
         if(_webinix_is_empty(_webinix_core.html_elements[i])) {
 
             _webinix_core.html_elements[i] = webinix_internal_id;
-
+            _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
             return i;
         }
     }
 
+    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
     return 0;
 }
 
@@ -4697,6 +4743,7 @@ static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_w
 
     win->html_handled = false;
     win->server_handled = false;
+    win->bridge_handled = false;
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_ws_close_handler() -> WebSocket Closed\n");
@@ -4757,6 +4804,7 @@ static WEBUI_SERVER_START
     win->server_running = true;
     win->html_handled = false;
     win->server_handled = false;
+    win->bridge_handled = false;
     if(_webinix_core.startup_timeout < 1)
         _webinix_core.startup_timeout = 0;
     if(_webinix_core.startup_timeout > 30)
@@ -4989,6 +5037,7 @@ static WEBUI_SERVER_START
     win->server_running = false;
     win->html_handled = false;
     win->server_handled = false;
+    win->bridge_handled = false;
     win->connected = false;
     _webinix_free_port(win->server_port);
     _webinix_free_port(win->ws_port);
