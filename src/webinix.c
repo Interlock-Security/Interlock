@@ -3880,6 +3880,9 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // 2: 
         // 3: [Data]
 
+        // We should copy `element` using `_webinix_get_data()` as
+        // the `packet[]` will be freed by WS after end of this call.
+
         // Get html element id
         char* element;
         size_t element_len;
@@ -3923,6 +3926,9 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             _webinix_mutex_unlock(&_webinix_core.mutex_receive);
             return;
         }
+
+        // We should copy `data` using `_webinix_get_data()` as
+        // the `packet[]` will be freed by WS after end of this call.
 
         // Get data part
         char* data;
@@ -3974,6 +3980,9 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // Events
         if(win->has_events) {
 
+            // We should copy `url` using `_webinix_get_data()` as
+            // the `packet[]` will be freed by WS after end of this call.
+
             // Get URL
             char* url;
             size_t url_len;
@@ -4010,6 +4019,9 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // 1: [Type]
         // 2: [Call ID]
         // 3: [Element ID, Null, Len, Null, Data, Null]
+
+        // No need to copy `element` and `data` using `_webinix_get_data()` as
+        // we don't need the `packet[]` after the end of this call.
         
         // Get html element id
         char* element = (char*)&packet[3];
