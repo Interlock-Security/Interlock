@@ -881,19 +881,17 @@ void webinix_exit(void) {
 
     #ifndef WEBUI_LOG
         // Close all opened windows
-        // by sending `close` command
+        // by sending `CLOSE` command
 
         // Prepare packets
         char* packet = (char*) _webinix_malloc(4);
         packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
         packet[1] = WEBUI_HEADER_CLOSE;     // CMD
-        packet[2] = 0;                      // ID
-        packet[3] = 0;                      // Data
         for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
             if(_webinix_core.wins[i] != NULL) {
                 if(_webinix_core.wins[i]->connected) {
                     // Send packet
-                    _webinix_window_send(_webinix_core.wins[i], packet, 4);
+                    _webinix_window_send(_webinix_core.wins[i], packet, 2);
                 }
             }
         }
@@ -3850,10 +3848,9 @@ static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t pa
         printf("[Core]\t\t_webinix_window_send() -> Packet hex : [ ");
             _webinix_print_hex(packet, packets_size);
         printf("]\n");
-        printf("[Core]\t\t_webinix_window_send() -> Packet str : [%.*s] \n", (int)(packets_size - 3), (const char*)&packet[3]);
     #endif
     
-    if(!win->connected || packet == NULL || packets_size < 4)
+    if(!win->connected || packet == NULL || packets_size < 2)
         return;
 
     int ret = 0;
