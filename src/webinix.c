@@ -47,6 +47,7 @@ void webinix_run(size_t window, const char* script) {
         return;
     
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -77,6 +78,7 @@ void webinix_set_file_handler(size_t window, const void* (*handler)(const char *
         return;
     
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -93,10 +95,9 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
-
-    _webinix_init();
 
     // Initializing response buffer
     if(buffer_length > 0)
@@ -201,7 +202,10 @@ size_t webinix_new_window(void) {
     win->browser_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     win->profile_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     win->server_root_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
-    sprintf(win->server_root_path, "%s", WEBUI_DEFAULT_PATH);
+    if(_webinix_is_empty(_webinix_core.default_server_root_path))
+        sprintf(win->server_root_path, "%s", WEBUI_DEFAULT_PATH);
+    else
+        sprintf(win->server_root_path, "%s", _webinix_core.default_server_root_path);
     
     #ifdef WEBUI_LOG
         printf("[User] webinix_new_window() -> New window #%zu @ 0x%p\n", window_number, win);
@@ -215,6 +219,8 @@ size_t webinix_get_new_window_id(void) {
     #ifdef WEBUI_LOG
         printf("[User] webinix_get_new_window_id()...\n");
     #endif
+
+    _webinix_init();
 
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++) {
         if(_webinix_core.wins[i] == NULL) {
@@ -271,6 +277,7 @@ void webinix_set_kiosk(size_t window, bool status) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -284,10 +291,9 @@ void webinix_close(size_t window) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
-
-    _webinix_init();
 
     if(win->connected) {
 
@@ -311,10 +317,9 @@ void webinix_destroy(size_t window) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
-
-    _webinix_init();
 
     if(win->server_running) {
 
@@ -381,6 +386,7 @@ bool webinix_is_shown(size_t window) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -394,6 +400,7 @@ void webinix_set_multi_access(size_t window, bool status) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -407,6 +414,7 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -440,6 +448,7 @@ bool webinix_show(size_t window, const char* content) {
     _webinix_core.ui = true;
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -459,6 +468,7 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     _webinix_core.ui = true;
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -472,10 +482,9 @@ size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_eve
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
-
-    _webinix_init();
 
     int len = 0;
     if(_webinix_is_empty(element))
@@ -545,6 +554,8 @@ const char* webinix_get_string(webinix_event_t* e) {
         printf("[User] webinix_get_string()...\n");
     #endif
 
+    _webinix_init();
+
     if(e->data != NULL) {
         size_t len = _webinix_strlen(e->data);
         if(len > 0 && len <= WEBUI_MAX_BUF)
@@ -559,6 +570,8 @@ long long int webinix_get_int(webinix_event_t* e) {
     #ifdef WEBUI_LOG
         printf("[User] webinix_get_int()...\n");
     #endif
+
+    _webinix_init();
 
     char* endptr;
 
@@ -577,6 +590,8 @@ bool webinix_get_bool(webinix_event_t* e) {
         printf("[User] webinix_get_bool()...\n");
     #endif
 
+    _webinix_init();
+
     const char* str = webinix_get_string(e);
     if(str[0] == 't' || str[0] == 'T') // true || True
         return true;
@@ -591,6 +606,7 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
@@ -622,6 +638,7 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
         return;
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
@@ -650,6 +667,7 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
@@ -678,6 +696,7 @@ void webinix_set_hide(size_t window, bool status) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -694,6 +713,7 @@ void webinix_send_raw(size_t window, const char* function, const void* raw, size
         return;
     
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -747,6 +767,8 @@ char* webinix_encode(const char* str) {
         printf("[User] webinix_encode()...\n");
     #endif
 
+    _webinix_init();
+
     size_t len = strlen(str);
     if(len < 1)
         return NULL;
@@ -783,6 +805,8 @@ char* webinix_decode(const char* str) {
     #ifdef WEBUI_LOG
         printf("[User] webinix_decode()...\n");
     #endif
+
+    _webinix_init();
 
     size_t len = strlen(str);
     if(len < 1)
@@ -821,6 +845,8 @@ void webinix_free(void* ptr) {
         printf("[User] webinix_free([0x%p])...\n", ptr);
     #endif
 
+    _webinix_init();
+
     _webinix_free_mem(ptr);
 }
 
@@ -830,6 +856,8 @@ void* webinix_malloc(size_t size) {
         printf("[User] webinix_malloc(%zu bytes)...\n", size);
     #endif
 
+    _webinix_init();
+
     return _webinix_malloc(size);
 }
 
@@ -838,6 +866,8 @@ void webinix_exit(void) {
     #ifdef WEBUI_LOG
         printf("[User] webinix_exit()...\n");
     #endif
+
+    _webinix_init();
 
     #ifndef WEBUI_LOG
         // Close all opened windows
@@ -942,10 +972,9 @@ void webinix_set_runtime(size_t window, size_t runtime) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
-
-    _webinix_init();
 
     if(runtime != Deno && runtime != NodeJS)
         win->runtime = None;
@@ -960,6 +989,7 @@ bool webinix_set_root_folder(size_t window, const char* path) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -979,6 +1009,39 @@ bool webinix_set_root_folder(size_t window, const char* path) {
     return true;
 }
 
+bool webinix_set_default_root_folder(const char* path) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_set_default_root_folder([%s])...\n", path);
+    #endif
+
+    _webinix_init();
+
+    if(_webinix_is_empty(path) || (_webinix_strlen(path) > WEBUI_MAX_PATH) || !_webinix_folder_exist((char*)path)) {
+
+        _webinix_core.default_server_root_path[0] = '\0';
+        #ifdef WEBUI_LOG
+            printf("[User] webinix_set_default_root_folder() -> Failed.\n");
+        #endif
+        return false;
+    }
+    
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_set_default_root_folder() -> Success.\n");
+    #endif
+    sprintf(_webinix_core.default_server_root_path, "%s", path);
+
+    // Update all windows. This will works only
+    // for non-running windows.
+    for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
+        if(_webinix_core.wins[i] != NULL) {
+            sprintf(_webinix_core.wins[i]->server_root_path, "%s", _webinix_core.default_server_root_path);
+        }
+    }
+
+    return true;
+}
+
 // -- Interface's Functions ----------------
 static void _webinix_interface_bind_handler(webinix_event_t* e) {
 
@@ -987,6 +1050,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
@@ -1044,6 +1108,7 @@ void webinix_interface_set_response(size_t window, size_t event_number, const ch
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -1106,6 +1171,7 @@ size_t webinix_interface_get_window_id(size_t window) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -1119,6 +1185,7 @@ size_t webinix_interface_get_bind_id(size_t window, const char* element) {
     #endif
 
     // Dereference
+    _webinix_init();
     if(_webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
 
@@ -3641,8 +3708,6 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, bo
             printf("[Core]\t\t_webinix_show_window(FILE, [%zu])...\n", browser);
     #endif
 
-    _webinix_init();
-
     char* url = NULL;
     size_t port = (win->server_port == 0 ? _webinix_get_free_port() : win->server_port);
     size_t ws_port = (win->ws_port == 0 ? _webinix_get_free_port() : win->ws_port);
@@ -4232,7 +4297,7 @@ static size_t _webinix_get_free_port(void) {
 static void _webinix_init(void) {
 
     if(_webinix_core.initialized)
-        return;    
+        return;
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\tWebinix v%s \n", WEBUI_VERSION);
@@ -4241,9 +4306,10 @@ static void _webinix_init(void) {
 
     // Initializing core
     memset(&_webinix_core, 0, sizeof(_webinix_core_t));
-    _webinix_core.initialized     = true;
+    _webinix_core.initialized = true;
     _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
     _webinix_core.executable_path = _webinix_get_current_path();
+    _webinix_core.default_server_root_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
 
     // Initializing server services
     mg_init_library(0);

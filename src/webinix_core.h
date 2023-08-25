@@ -116,6 +116,7 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_wait;
     webinix_mutex_t mutex_bridge;
     webinix_condition_t condition_wait;
+    char* default_server_root_path;
     bool ui;
 } _webinix_core_t;
 
