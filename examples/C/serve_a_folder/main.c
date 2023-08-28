@@ -113,6 +113,12 @@ int main() {
     // Set a custom files handler
     webinix_set_file_handler(MyWindow, my_files_handler);
 
+    // Set window size
+    webinix_set_size(MyWindow, 800, 600);
+
+    // Set window position
+    webinix_set_position(MyWindow, 100, 100);
+
     // Show a new window
     // webinix_set_root_folder(MyWindow, "_MY_PATH_HERE_");
     // webinix_show_browser(MyWindow, "index.html", Chrome);
