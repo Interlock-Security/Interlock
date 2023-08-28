@@ -207,6 +207,16 @@ namespace webinix {
             webinix_set_hide(webinix_window, status);
         }
 
+        // Set window size
+        void set_size(unsigned int width, unsigned int height) const {
+            webinix_set_size(webinix_window, width, height);
+        }
+
+        // Set window position
+        void set_position(unsigned int x, unsigned int y) const {
+            webinix_set_position(webinix_window, x, y);
+        }
+
         // -- JavaScript ----------------------
 
         // Quickly run a JavaScript (no response waiting).
