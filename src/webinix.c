@@ -2211,12 +2211,16 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection 
 
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
 
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_generate_js_bridge()...\n");
+    #endif
+
     _webinix_mutex_lock(&_webinix_core.mutex_bridge);
 
     win->bridge_handled = true;
 
     // Calculate the cb size
-    size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
+    size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];' 
     for(size_t i = 1; i < WEBUI_MAX_ARRAY; i++)
         if(_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i]))
             cb_mem_size += _webinix_strlen(_webinix_core.html_elements[i]) + 3;
@@ -2234,20 +2238,23 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     strcat(event_cb_js_array, "]");
 
     // Generate the full Webinix Bridge
-    size_t len = cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
-    char* js = (char*) _webinix_malloc(len);
     #ifdef WEBUI_LOG
-        sprintf(js, 
-            "%s\nglobalThis.webinix = new WebuiBridge({ port: %zu, winNum: %zu, bindList: %s, log: true });",
-            webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array
-        );
-        printf("[Core]\t\t_webinix_generate_js_bridge()...\n");
+        const char* log = "true";
     #else
-        sprintf(js, 
-            "%s\nglobalThis.webinix = new WebuiBridge({ port: %zu, winNum: %zu, bindList: %s, log: false });",
-            webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array
-        );
+        const char* log = "false";
     #endif
+    size_t len = 32 + cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
+    char* js = (char*) _webinix_malloc(len);
+    int c = sprintf(js, "%s\nglobalThis.webinix = new WebuiBridge({ port: %zu, winNum: %zu, bindList: %s, log: %s, ",
+        webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array, log);
+    // Window Size
+    if (win->size_set)
+        c += sprintf(js + c, "winW: %u, winH: %u, ", win->width, win->height);
+    // Window Position
+    if (win->position_set)
+        c += sprintf(js + c, "winX: %u, winY: %u, ", win->x, win->y);
+    // Close
+    strcat(js, "});");
 
     _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
 
@@ -3178,26 +3185,42 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
     case Brave:
     case Yandex:
     case Chromium:
+        // Basic
         c = sprintf(buffer, " --user-data-dir=\"%s\"", win->profile_path);
         for (int i = 0; i < (int)(sizeof(chromium_options) / sizeof(chromium_options[0])); i++) {
             c += sprintf(buffer + c, " %s", chromium_options[i]);
         }
+        // Kiosk Mode
         if (win->kiosk_mode)
             c += sprintf(buffer + c, " %s", "--chrome-frame --kiosk");
+        // Hide Mode
         if (win->hide)
             c += sprintf(buffer + c, " %s", "--headless");
+        // Window Size
         if (win->size_set)
             c += sprintf(buffer + c, " --window-size=%u,%u", win->width, win->height);
+        // Window Position
         if (win->position_set)
             c += sprintf(buffer + c, " --window-position=%u,%u", win->x, win->y);
+        // URL (Basic)
         c += sprintf(buffer + c, " %s", "--app=");
         return c;
     case Firefox:
+        // Basic
         c = sprintf(buffer, " -P Webinix -purgecaches");
+        // Kiosk Mode
         if (win->kiosk_mode)
             c += sprintf(buffer, "%s", " -kiosk");
+        // Hide Mode
         if (win->hide)
             c += sprintf(buffer, "%s", " -headless");
+        // Window Size
+        if (win->size_set)
+            c += sprintf(buffer + c, " -width %u -height %u", win->width, win->height);
+        // Window Position
+            // Firefox does not support
+            // window position feature.
+        // URL (Basic)
         c += sprintf(buffer, " -new-window ");
         return c;
     }
