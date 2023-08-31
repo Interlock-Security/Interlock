@@ -1157,7 +1157,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
     #endif
 }
 
-size_t webinix_interface_bind(size_t window, const char* element, void (*func)(size_t, size_t, char*, char*, long long, size_t)) {
+size_t webinix_interface_bind(size_t window, const char* element, void (*func)(size_t, size_t, char*, char*, size_t, size_t)) {
 
     #ifdef WEBUI_LOG
         printf("[User] webinix_interface_bind([%zu], [%s], [0x%p])...\n", window, element, func);
@@ -2256,8 +2256,10 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     // Close
     strcat(js, "});");
 
-    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
+    // Free
+    _webinix_free_mem((void*)event_cb_js_array);
 
+    _webinix_mutex_unlock(&_webinix_core.mutex_bridge);
     return js;
 }
 
@@ -4198,6 +4200,11 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         char* endptr;
         if(len_s_strlen > 0 && len_s_strlen <= 20) { // 64-bit max is -9,223,372,036,854,775,808 (20 character)
             len = strtoll((const char*)len_s, &endptr, 10);
+
+            if(len < 0) {
+                _webinix_mutex_unlock(&_webinix_core.mutex_receive);
+                return;
+            }
         }
 
         // Get data
@@ -4207,7 +4214,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_CALL_FUNC \n");
             printf("[Core]\t\t_webinix_window_receive() -> Call ID: [0x%02x] \n", packet[2]);
             printf("[Core]\t\t_webinix_window_receive() -> Element: [%s] \n", element);
-            printf("[Core]\t\t_webinix_window_receive() -> Data size: %zu Bytes \n", len);
+            printf("[Core]\t\t_webinix_window_receive() -> Data size: %lld Bytes \n", len);
             printf("[Core]\t\t_webinix_window_receive() -> Data: Hex [ ");
                 _webinix_print_hex(data, len);
             printf("]\n");
@@ -4231,7 +4238,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         e.event_type = WEBUI_EVENT_CALLBACK;
         e.element = element;
         e.data = data;
-        e.size = len;
+        e.size = (size_t)len;
         e.event_number = event_core_pos;
 
         // Call user function
