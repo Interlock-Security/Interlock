@@ -102,7 +102,8 @@ int main() {
     webinix_bind(MainWindow, "Close", Close);
 
     // Show a new window
-    webinix_show(MainWindow, "ui/MainWindow.html");
+    webinix_set_root_folder(MainWindow, "ui");
+    webinix_show(MainWindow, "MainWindow.html");
 
     // Wait until all windows get closed
     webinix_wait();
