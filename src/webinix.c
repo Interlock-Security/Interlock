@@ -45,7 +45,7 @@ void webinix_run(size_t window, const char* script) {
     
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // Initializing pipe
@@ -76,7 +76,7 @@ void webinix_set_file_handler(size_t window, const void* (*handler)(const char *
     
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     win->files_handler = handler;
@@ -93,7 +93,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return false;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // Initializing response buffer
@@ -279,7 +279,7 @@ void webinix_set_kiosk(size_t window, bool status) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     win->kiosk_mode = status;
@@ -293,7 +293,7 @@ void webinix_close(size_t window) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(win->connected) {
@@ -320,7 +320,7 @@ void webinix_destroy(size_t window) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(win->server_running) {
@@ -389,7 +389,7 @@ bool webinix_is_shown(size_t window) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return false;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     return win->connected;
@@ -403,7 +403,7 @@ void webinix_set_multi_access(size_t window, bool status) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     win->multi_access = status;
@@ -417,7 +417,7 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // Some wrappers does not guarantee `icon` to
@@ -451,7 +451,7 @@ bool webinix_show(size_t window, const char* content) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return false;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // Find the best web browser to use
@@ -471,7 +471,7 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return false;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     return _webinix_show(win, content, browser);
@@ -485,7 +485,7 @@ size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_eve
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return 0;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     int len = 0;
@@ -612,7 +612,7 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[e->window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
     // Get buffer
@@ -644,7 +644,7 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[e->window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
     // Get buffer
@@ -673,7 +673,7 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[e->window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
     // Get buffer
@@ -702,7 +702,7 @@ void webinix_set_hide(size_t window, bool status) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     win->hide = status;
@@ -716,7 +716,7 @@ void webinix_set_size(size_t window, unsigned int width, unsigned int height) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(width < WEBUI_MIN_WIDTH || width > WEBUI_MAX_WIDTH || 
@@ -747,7 +747,7 @@ void webinix_set_position(size_t window, unsigned int x, unsigned int y) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(x < WEBUI_MIN_X || x > WEBUI_MAX_X || 
@@ -781,7 +781,7 @@ void webinix_send_raw(size_t window, const char* function, const void* raw, size
     
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // 0: [Signature]
@@ -1036,7 +1036,7 @@ void webinix_set_runtime(size_t window, size_t runtime) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(runtime != Deno && runtime != NodeJS)
@@ -1053,7 +1053,7 @@ bool webinix_set_root_folder(size_t window, const char* path) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return false;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     if(win->server_running || _webinix_is_empty(path) || (_webinix_strlen(path) > WEBUI_MAX_PATH) || !_webinix_folder_exist((char*)path)) {
@@ -1114,7 +1114,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[e->window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[e->window];
 
     // Generate Webinix internal id
@@ -1172,7 +1172,7 @@ void webinix_interface_set_response(size_t window, size_t event_number, const ch
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     // Get internal response buffer
@@ -1235,7 +1235,7 @@ size_t webinix_interface_get_window_id(size_t window) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return 0;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     return win->window_number;
@@ -1249,7 +1249,7 @@ size_t webinix_interface_get_bind_id(size_t window, const char* element) {
 
     // Dereference
     _webinix_init();
-    if(_webinix_core.wins[window] == NULL) return 0;
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
     _webinix_window_t* win = _webinix_core.wins[window];
 
     size_t len = _webinix_strlen(element);
@@ -1456,6 +1456,9 @@ static _webinix_window_t* _webinix_dereference_win_ptr(void* ptr) {
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_dereference_win_ptr()...\n");
     #endif
+
+    if(_webinix_core.exit_now)
+        return NULL;
 
     _webinix_window_t* win = (_webinix_window_t*)ptr;
 
@@ -3055,7 +3058,8 @@ static void _webinix_clean(void) {
 
     // Let's give other threads more time to safely exit
     // and finish their cleaning up.
-    _webinix_sleep(250);
+    _webinix_core.exit_now = true;
+    _webinix_sleep(500);
 
     // TODO: Add option to let the user decide if
     // Webinix should delete the web browser profile
@@ -4614,7 +4618,7 @@ static int _webinix_http_handler(struct mg_connection *conn, void *_win) {
 
     // Get the window object
     _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
-    if(win == NULL) return 500; // Internal Server Error
+    if(_webinix_core.exit_now || win == NULL) return 500; // Internal Server Error
 
     // Initializing
     _webinix_core.server_handled = true; // Main app wait
@@ -4848,7 +4852,7 @@ static void _webinix_ws_ready_handler(struct mg_connection *conn, void *_win) {
     #endif
 
     _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
-    if(win == NULL) return;
+    if(_webinix_core.exit_now || win == NULL) return;
 
     #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_ws_ready_handler() -> WebSocket Connected\n");
@@ -4908,7 +4912,7 @@ static int _webinix_ws_data_handler(struct mg_connection *conn, int opcode, char
         printf("[Core]\t\t_webinix_ws_data_handler()...\n");
     #endif
 
-    if(datasize < 1)
+    if(_webinix_core.exit_now || datasize < 1)
         return 1; // OK
     
     #ifdef WEBUI_LOG
@@ -4953,7 +4957,7 @@ static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_w
 
     // Dereference
     _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
-    if(win == NULL || !win->connected) return;
+    if(_webinix_core.exit_now || win == NULL || !win->connected) return;
 
     win->html_handled = false;
     win->server_handled = false;
