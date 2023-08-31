@@ -3,7 +3,7 @@
 
 int main() {
     webinix::window my_window;
-    my_window.show("<html>Hello World!</html>");
+    my_window.show("<html><head><script src=\"webinix.js\"></script></head> C++ Hello World ! </html>");
     webinix::wait();
     return 0;
 }
