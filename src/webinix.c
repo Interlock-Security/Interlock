@@ -2620,6 +2620,12 @@ static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser) {
                 EdgeExist = true;
                 return true;
             }
+            else if(_webinix_cmd_sync(win, "microsoft-edge-beta --version", false) == 0) {
+
+                sprintf(win->browser_path, "microsoft-edge-beta");
+                EdgeExist = true;
+                return true;
+            }
             else if(_webinix_cmd_sync(win, "microsoft-edge-dev --version", false) == 0) {
 
                 sprintf(win->browser_path, "microsoft-edge-dev");
