@@ -12,6 +12,11 @@
 
 </div>
 
+## Download
+
+- [Latest Stable Release](https://github.com/webinix-dev/webinix/releases)
+- [Latest Beta Build](https://github.com/webinix-dev/webinix/actions)
+
 ## Contents
 
 - [Features](#features)
