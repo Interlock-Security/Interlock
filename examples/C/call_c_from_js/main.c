@@ -76,6 +76,7 @@ int main() {
     const char* my_html = "<!DOCTYPE html>"
     "<html>"
     "  <head>"
+    "    <meta charset=\"UTF-8\">"
     "    <script src=\"webinix.js\"></script>"
     "    <title>Call C from JavaScript Example</title>"
     "    <style>"
