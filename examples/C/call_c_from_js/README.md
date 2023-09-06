@@ -19,13 +19,6 @@ cd webinix\examples\C\call_c_from_js\Windows\GCC
 mingw32-make
 ```
 
-- **TCC**
-```sh
-git clone https://github.com/webinix-dev/webinix.git
-cd webinix\examples\C\call_c_from_js\Windows\TCC
-mingw32-make
-```
-
 ### Linux
 
 - **GCC**

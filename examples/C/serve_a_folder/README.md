@@ -19,13 +19,6 @@ cd webinix\examples\C\serve_a_folder\Windows\GCC
 mingw32-make
 ```
 
-- **TCC**
-```sh
-git clone https://github.com/webinix-dev/webinix.git
-cd webinix\examples\C\serve_a_folder\Windows\TCC
-mingw32-make
-```
-
 ### Linux
 
 - **GCC**
