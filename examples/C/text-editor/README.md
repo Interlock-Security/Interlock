@@ -8,7 +8,5 @@ This [text editor example](https://github.com/webinix-dev/webinix/tree/main/exam
 
 ```sh
 # MinGW
-git clone https://github.com/webinix-dev/webinix.git
-cd webinix\examples\C\text-editor
-gcc -o text-editor.exe text-editor.c webinix-2.dll -Wl,-subsystem=windows -lcomdlg32
+mingw32-make
 ```
