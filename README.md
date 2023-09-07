@@ -111,7 +111,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
   make
   
   # Clang
-  make COMPILER=clang
+  make CC=clang
   ```
 - **macOS**
   ```sh
