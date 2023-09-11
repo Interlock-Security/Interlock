@@ -1,3 +1,9 @@
+# http://webinix.me
+# https://github.com/webinix-dev/webinix
+# Copyright (c) 2020-2023 Hassan Draga.
+# Licensed under MIT License.
+# All rights reserved.
+#
 # Webinix JavaScript to C99 Header
 
 def js_to_c_header(input_filename, output_filename):
