@@ -41,7 +41,7 @@
 
 ## Showcase
 
-This [text editor example](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is written in C using Webinix as the GUI library. The final executable is portable and has less than _1 MB_ in size (_+html and css files_).
+This [text editor](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is a lightweight and portable example written in C using Webinix as the GUI library.
 
 <div align="center">
 
