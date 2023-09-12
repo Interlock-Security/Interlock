@@ -15,7 +15,7 @@
 ## Download
 
 - [Latest Stable Release](https://github.com/webinix-dev/webinix/releases)
-- [Latest Beta Build](https://github.com/webinix-dev/webinix/actions)
+- [Nightly Build](https://github.com/webinix-dev/webinix/releases/tag/nightly)
 
 ## Contents
 
