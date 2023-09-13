@@ -2474,7 +2474,7 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     #endif
     size_t len = 32 + cb_mem_size + _webinix_strlen(webinix_javascript_bridge);
     char* js = (char*) _webinix_malloc(len);
-    int c = sprintf(js, "%s\nglobalThis.webinix = new WebuiBridge({ port: %zu, winNum: %zu, bindList: %s, log: %s, ",
+    int c = sprintf(js, "%s\n document.addEventListener(\"DOMContentLoaded\",function(){ globalThis.webinix = new WebuiBridge({ port: %zu, winNum: %zu, bindList: %s, log: %s, ",
         webinix_javascript_bridge, win->ws_port, win->window_number, event_cb_js_array, log);
     // Window Size
     if (win->size_set)
@@ -2483,7 +2483,7 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win) {
     if (win->position_set)
         c += sprintf(js + c, "winX: %u, winY: %u, ", win->x, win->y);
     // Close
-    strcat(js, "});");
+    strcat(js, "}); }); ");
 
     // Free
     _webinix_free_mem((void*)event_cb_js_array);
@@ -3440,7 +3440,8 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
         // Window Position
         if (win->position_set)
             c += sprintf(buffer + c, " --window-position=%u,%u", win->x, win->y);
-        // URL (Basic)
+        
+        // URL (END)
         c += sprintf(buffer + c, " %s", "--app=");
         return c;
     case Firefox:
@@ -3448,18 +3449,18 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
         c = sprintf(buffer, " -P Webinix -purgecaches");
         // Kiosk Mode
         if (win->kiosk_mode)
-            c += sprintf(buffer, "%s", " -kiosk");
+            c += sprintf(buffer + c, " %s", "-kiosk");
         // Hide Mode
         if (win->hide)
-            c += sprintf(buffer, "%s", " -headless");
+            c += sprintf(buffer + c, " %s", "-headless");
         // Window Size
         if (win->size_set)
             c += sprintf(buffer + c, " -width %u -height %u", win->width, win->height);
         // Window Position
-            // Firefox does not support
-            // window position feature.
-        // URL (Basic)
-        c += sprintf(buffer, " -new-window ");
+            // Firefox does not support window positioning.
+        
+        // URL (END)
+        c += sprintf(buffer + c, " -new-window ");
         return c;
     }
 
