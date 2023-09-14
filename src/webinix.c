@@ -898,6 +898,53 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
     *response = buf;
 }
 
+size_t webinix_get_parent_process_id(size_t window) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_get_child_process_id([%zu])...\n", window);
+    #endif
+
+    // Dereference
+    _webinix_init();
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
+    _webinix_window_t* win = _webinix_core.wins[window];
+
+    return win->process_id;
+}
+
+size_t webinix_get_child_process_id(size_t window) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_get_child_process_id([%zu])...\n", window);
+    #endif
+
+    // Dereference
+    _webinix_init();
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
+    _webinix_window_t* win = _webinix_core.wins[window];
+
+    #ifdef _WIN32
+        DWORD childProcessId = 0;
+        HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hSnapshot != INVALID_HANDLE_VALUE) {
+            PROCESSENTRY32 pe32;
+            pe32.dwSize = sizeof(PROCESSENTRY32);
+            if (Process32First(hSnapshot, &pe32)) {
+                do {
+                    if (pe32.th32ParentProcessID == win->process_id) {
+                        childProcessId = pe32.th32ProcessID;
+                        break;
+                    }
+                } while (Process32Next(hSnapshot, &pe32));
+            }
+            CloseHandle(hSnapshot);
+        }
+        return childProcessId;
+    #else
+        return win->process_id;
+    #endif
+}
+
 void webinix_return_bool(webinix_event_t* e, bool b) {
 
     #ifdef WEBUI_LOG
@@ -5776,6 +5823,31 @@ static WEBUI_CB
             return -1;
     }
 
+    /*
+    static BOOL CALLBACK _webinix_enum_windows_proc_win32(HWND hwnd, LPARAM targetProcessId) {
+
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_enum_windows_proc_win32()...\n");
+        #endif
+
+        DWORD windowProcessId;
+        GetWindowThreadProcessId(hwnd, &windowProcessId);
+
+        if(windowProcessId == targetProcessId) {
+
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_enum_windows_proc_win32() -> Bring the process (%lu) to the front\n", windowProcessId);
+            #endif
+
+            SetFocus(hwnd);
+            SetForegroundWindow(hwnd);
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+    */
+    
     static int _webinix_system_win32(_webinix_window_t* win, char* cmd, bool show) {
 
         #ifdef WEBUI_LOG
@@ -5826,6 +5898,7 @@ static WEBUI_CB
 
         win->process_id = (size_t)pi.dwProcessId;
         SetFocus(pi.hProcess);
+        // EnumWindows(_webinix_enum_windows_proc_win32, (LPARAM)(pi.dwProcessId));
         // AssignProcessToJobObject(JobObject, pi.hProcess);
         WaitForSingleObject(pi.hProcess, INFINITE);
         GetExitCodeProcess(pi.hProcess, &Return);

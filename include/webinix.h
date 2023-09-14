@@ -433,6 +433,10 @@ WEBUI_EXPORT void webinix_return_string(webinix_event_t* e, const char* s);
 // Return the response to JavaScript as boolean.
 WEBUI_EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
 
+// Get process id (The web browser may create another process for the window)
+WEBUI_EXPORT size_t webinix_get_child_process_id(size_t window);
+WEBUI_EXPORT size_t webinix_get_parent_process_id(size_t window);
+
 // -- Wrapper's Interface -------------
 
 // Bind a specific html element click event with a function. Empty element means all events. This replaces `webinix_bind()`. The func is (Window, EventType, Element, Data, DataSize, EventNumber).
