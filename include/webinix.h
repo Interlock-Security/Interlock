@@ -404,6 +404,17 @@ WEBUI_EXPORT void webinix_set_size(size_t window, unsigned int width, unsigned i
  */
 WEBUI_EXPORT void webinix_set_position(size_t window, unsigned int x, unsigned int y);
 
+/**
+ * @brief Set the web browser profile to use. An empty `name` and `path` means the default user profile. Need to be called before `webinix_show()`.
+ * 
+ * @param window The window number
+ * @param name The web browser profile name
+ * @param path The web browser profile full path
+ * 
+ * @example webinix_set_profile(myWindow, "Bar", "/Home/Foo/Bar"); | webinix_set_profile(myWindow, "", "");
+ */
+WEBUI_EXPORT void webinix_set_profile(size_t window, const char* name, const char* path);
+
 // -- JavaScript ----------------------
 
 // Run JavaScript without waiting for the response.
