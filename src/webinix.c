@@ -43,6 +43,7 @@
 #define WEBUI_MIN_Y             (0)         // Minimal window Y
 #define WEBUI_MAX_X             (3000)      // Maximal window X (4K Monitor)
 #define WEBUI_MAX_Y             (1800)      // Maximal window Y (4K Monitor)
+#define WEBUI_HOSTNAME          "localhost" // Host name to use `localhost` / `127.0.0.1`
 
 // Mutex
 #ifdef _WIN32
@@ -1142,7 +1143,8 @@ void webinix_set_profile(size_t window, const char* name, const char* path) {
     win->custom_profile = true;
 }
 
-char* webinix_get_url(size_t window) {
+const char* webinix_get_url(size_t window) {
+
     #ifdef WEBUI_LOG
         printf("[User] webinix_get_url([%zu])...\n", window);
     #endif
@@ -1152,11 +1154,7 @@ char* webinix_get_url(size_t window) {
     if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return NULL;
     _webinix_window_t* win = _webinix_core.wins[window];
     
-    // Get current URL
-    char* url = (char*) _webinix_malloc(32);
-    sprintf(url, "http://127.0.0.1:%zu", win->server_port);
-    
-    return url;
+    return (const char*)win->url;
 }
 
 void webinix_send_raw(size_t window, const char* function, const void* raw, size_t size) {
