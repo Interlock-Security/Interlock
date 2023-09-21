@@ -415,6 +415,17 @@ WEBUI_EXPORT void webinix_set_position(size_t window, unsigned int x, unsigned i
  */
 WEBUI_EXPORT void webinix_set_profile(size_t window, const char* name, const char* path);
 
+/**
+ * @brief Get the server URL
+ * 
+ * @param window The window number
+ *
+ * @return Returns the server URL
+ * 
+ * @example char* URL = webinix_get_url(myWindow);
+ */
+WEBUI_EXPORT char* webinix_get_url(size_t window);
+
 // -- JavaScript ----------------------
 
 // Run JavaScript without waiting for the response.
