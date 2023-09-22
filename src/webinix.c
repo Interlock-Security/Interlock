@@ -3571,6 +3571,7 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
         "--disable-plugins",
         "--disable-plugins-discovery",
         "--disable-translate",
+        "--disable-features=Translate",
         "--bwsi",
         "--disable-sync",
         "--disable-sync-preferences",
