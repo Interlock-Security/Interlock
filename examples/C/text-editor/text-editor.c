@@ -19,7 +19,8 @@ int main() {
 
     // Show a new window
     webinix_set_root_folder(MainWindow, "ui");
-    webinix_show(MainWindow, "MainWindow.html");
+    if (!webinix_show_browser(MainWindow, "MainWindow.html", ChromiumBased))
+        webinix_show(MainWindow, "MainWindow.html");
 
     // Wait until all windows get closed
     webinix_wait();
