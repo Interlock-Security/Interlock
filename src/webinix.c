@@ -197,7 +197,7 @@ static int _webinix_cmd_async(_webinix_window_t* win, char* cmd, bool show);
 static int _webinix_run_browser(_webinix_window_t* win, char* cmd);
 static void _webinix_clean(void);
 static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser);
-static const char* _webinix_browser_get_temp_path(size_t browser);
+static const char* _webinix_get_temp_path();
 static bool _webinix_folder_exist(char* folder);
 static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_t browser);
 static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address);
@@ -432,7 +432,6 @@ size_t webinix_new_window(void) {
     // Initialisation
     win->window_number = window_number;
     win->browser_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
-    win->profile_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     win->server_root_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
     if(_webinix_is_empty(_webinix_core.default_server_root_path))
         sprintf(win->server_root_path, "%s", WEBUI_DEFAULT_PATH);
@@ -444,27 +443,6 @@ size_t webinix_new_window(void) {
     #endif
 
     return (size_t)window_number;
-}
-
-size_t webinix_get_new_window_id(void) {
-
-    #ifdef WEBUI_LOG
-        printf("[User] webinix_get_new_window_id()...\n");
-    #endif
-
-    _webinix_init();
-
-    for(size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-        if(_webinix_core.wins[i] == NULL) {
-            if(i > _webinix_core.last_win_number)
-                _webinix_core.last_win_number = i;
-            return i;
-        }
-    }
-
-    // We should never reach here
-    _webinix_panic();
-    return 0;
 }
 
 size_t webinix_new_window_id(size_t window_number) {
@@ -504,6 +482,27 @@ size_t webinix_new_window_id(size_t window_number) {
     #endif
 
     return window_number;
+}
+
+size_t webinix_get_new_window_id(void) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_get_new_window_id()...\n");
+    #endif
+
+    _webinix_init();
+
+    for(size_t i = 1; i < WEBUI_MAX_IDS; i++) {
+        if(_webinix_core.wins[i] == NULL) {
+            if(i > _webinix_core.last_win_number)
+                _webinix_core.last_win_number = i;
+            return i;
+        }
+    }
+
+    // We should never reach here
+    _webinix_panic();
+    return 0;
 }
 
 void webinix_set_kiosk(size_t window, bool status) {
@@ -2659,8 +2658,16 @@ static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_
         printf("[Core]\t\t_webinix_browser_create_profile_folder(%zu) -> Generating Webinix profile...\n", browser);
     #endif
     
+    // Buffers
+    if(win->profile_name != NULL)
+        _webinix_free_mem((void*)win->profile_name);
+    if(win->profile_path != NULL)
+        _webinix_free_mem((void*)win->profile_path);
     win->profile_path = (char*) _webinix_malloc(WEBUI_MAX_PATH);
-    const char* temp = _webinix_browser_get_temp_path(browser);
+    win->profile_name = (char*) _webinix_malloc(WEBUI_MAX_PATH);
+
+    // Temp folder
+    const char* temp = _webinix_get_temp_path();
 
     if(browser == Chrome) {
 
@@ -2708,21 +2715,19 @@ static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_
 
         // Firefox (We need to create a folder)
 
-        char* profile_name = "WebinixFirefoxProfile";
-
         char firefox_profile_path[1024] = {0};
-        sprintf(firefox_profile_path, "%s%s.Webinix%s%s", temp, webinix_sep, webinix_sep, profile_name);
+        sprintf(firefox_profile_path, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
         
         if(!_webinix_folder_exist(firefox_profile_path)) {
 
             char buf[2048] = {0};
 
-            sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->browser_path, firefox_profile_path);
+            sprintf(buf, "\"%s\" -CreateProfile \"Webinix %s\"", win->browser_path, firefox_profile_path);
             _webinix_cmd_sync(win, buf, false);
 
             // Creating the browser profile
-            for(size_t n = 0; n <= 12; n++) {
-                // 3000ms
+            for(size_t n = 0; n <= 24; n++) {
+                // 6000ms
                 if(_webinix_folder_exist(firefox_profile_path))
                     break;
                 _webinix_sleep(250);
@@ -2761,9 +2766,13 @@ static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_
                 fputs(":root{--uc-toolbar-height:32px}:root:not([uidensity=\"compact\"]) {--uc-toolbar-height:38px}#TabsToolbar{visibility:collapse!important}:root:not([inFullscreen]) #nav-bar{margin-top:calc(0px - var(--uc-toolbar-height))}#toolbar-menubar{min-height:unset!important;height:var(--uc-toolbar-height)!important;position:relative}#main-menubar{-moz-box-flex:1;background-color:var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor);background-clip:padding-box;border-right:30px solid transparent;border-image:linear-gradient(to left,transparent,var(--toolbar-bgcolor,--toolbar-non-lwt-bgcolor) 30px) 20 / 30px}#toolbar-menubar:not([inactive]) {z-index:2}#toolbar-menubar[inactive] > #menubar-items{opacity:0;pointer-events:none;margin-left:var(--uc-window-drag-space-width,0px)}#nav-bar{visibility:collapse}@-moz-document url(chrome://browser/content/browser.xhtml) {:root:not([sizemode=\"fullscreen\"]) > head{display: block;position: fixed;width: calc(200vw - 440px);text-align: left;z-index: 9;pointer-events: none;}head > *{ display: none }head > title{display: -moz-inline-box;padding: 4px;max-width: 50vw;overflow-x: hidden;text-overflow: ellipsis;}}", file);
             #endif
             fclose(file);
-
-            sprintf(win->profile_path, "%s%s%s", temp, webinix_sep, profile_name);
         }
+
+        // Save Firefox profile name (CLI: -P {profile_name})
+        strcpy(win->profile_name, "Webinix");
+
+        // Save Firefox profile full path
+        strcpy(win->profile_path, firefox_profile_path);
 
         return true;
     }
@@ -2806,10 +2815,10 @@ static char* _webinix_generate_internal_id(_webinix_window_t* win, const char* e
     return webinix_internal_id;
 }
 
-static const char* _webinix_browser_get_temp_path(size_t browser) {
+static const char* _webinix_get_temp_path() {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_browser_get_temp_path([%zu])...\n", browser);
+        printf("[Core]\t\t_webinix_get_temp_path()...\n");
     #endif
 
     #ifdef _WIN32
@@ -2824,23 +2833,18 @@ static const char* _webinix_browser_get_temp_path(size_t browser) {
             if(WinUserProfile == NULL)
                 return "";
         #endif
+        return WinUserProfile;
     #elif __APPLE__
         // Resolve $HOME
         char* MacUserProfile = getenv("HOME");
         if(MacUserProfile == NULL)
             return "";
+        return MacUserProfile;
     #else
         // Resolve $HOME
         char* LinuxUserProfile = getenv("HOME");
         if(LinuxUserProfile == NULL)
             return "";
-    #endif
-
-    #ifdef _WIN32
-        return WinUserProfile;
-    #elif __APPLE__
-        return MacUserProfile;
-    #else
         return LinuxUserProfile;
     #endif
 }
