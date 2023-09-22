@@ -3914,7 +3914,7 @@ static bool _webinix_browser_start(_webinix_window_t* win, const char* address, 
     #endif
 
     // Non existing browser
-    if(browser > 10)
+    if(browser > 11)
         return false;
     
     // Current browser used in the last opened window
@@ -3923,7 +3923,20 @@ static bool _webinix_browser_start(_webinix_window_t* win, const char* address, 
 
     // TODO: Convert address from [/...] to [file://...]
 
-    if(browser != 0) {
+    if(browser == ChromiumBased) {
+
+        // Open the window using a Chromium based browser
+
+        if(!_webinix_browser_start_chromium(win, address))
+            if(!_webinix_browser_start_chrome(win, address))
+                if(!_webinix_browser_start_edge(win, address))
+                    if(!_webinix_browser_start_brave(win, address))
+                        if(!_webinix_browser_start_vivaldi(win, address))
+                            if(!_webinix_browser_start_epic(win, address))
+                                if(!_webinix_browser_start_yandex(win, address))
+                                    return false;
+    }
+    else if(browser != 0) {
 
         // Open the window using the user specified browser
 
