@@ -15,7 +15,7 @@ int main() {
     int MainWindow = webinix_new_window();
 
     // Bind HTML element IDs with a C functions
-    webinix_bind(MainWindow, "Close", Close);
+    webinix_bind(MainWindow, "close-button", Close);
 
     // Show a new window
     webinix_set_root_folder(MainWindow, "ui");
