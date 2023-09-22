@@ -684,8 +684,6 @@ bool webinix_show(size_t window, const char* content) {
         printf("[User] webinix_show([%zu])...\n", window);
     #endif
 
-    _webinix_core.ui = true;
-
     // Dereference
     _webinix_init();
     if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return false;
@@ -703,8 +701,6 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     #ifdef WEBUI_LOG
         printf("[User] webinix_show_browser([%zu], [%zu])...\n", window, browser);
     #endif
-
-    _webinix_core.ui = true;
 
     // Dereference
     _webinix_init();
@@ -1363,8 +1359,14 @@ void webinix_wait(void) {
         // Check if there is atleast one window (UI)
         // is running. Otherwise the mutex condition
         // signal will never come
-        if(!_webinix_core.ui)
+        if(!_webinix_core.ui) {
+
+            printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
+
+            // Final cleaning
+            _webinix_clean();
             return;
+        }
 
         #ifdef WEBUI_LOG
             printf("[Loop] webinix_wait() -> Timeout in %zu seconds\n", _webinix_core.startup_timeout);
@@ -2722,7 +2724,7 @@ static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_
 
             char buf[2048] = {0};
 
-            sprintf(buf, "\"%s\" -CreateProfile \"Webinix %s\"", win->browser_path, firefox_profile_path);
+            sprintf(buf, "%s -CreateProfile \"Webinix %s\"", win->browser_path, firefox_profile_path);
             _webinix_cmd_sync(win, buf, false);
 
             // Creating the browser profile
@@ -4285,6 +4287,8 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, bo
             _webinix_free_port(win->ws_port);
             return false;
         }
+
+        _webinix_core.ui = true;
         
         // New server thread
         #ifdef _WIN32
