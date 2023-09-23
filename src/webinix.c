@@ -186,7 +186,6 @@ static bool _webinix_show(_webinix_window_t* win, const char* content, size_t br
 static size_t _webinix_get_cb_index(char* webinix_internal_id);
 static size_t _webinix_set_cb_index(char* webinix_internal_id);
 static size_t _webinix_get_free_port(void);
-static void _webinix_wait_for_startup(void);
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
 static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len);
@@ -369,22 +368,22 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
         // Wait forever
         for(;;) {
-
+            _webinix_sleep(10);            
             if(_webinix_core.run_done[run_id])
                 break;
-            
-            _webinix_sleep(1);
         }
     }
     else {
 
         // Using timeout
-        for(size_t n = 0; n <= (timeout_second * 1000); n++) {
-
+        _webinix_timer_t timer;
+        _webinix_timer_start(&timer);
+        for(;;) {
+            _webinix_sleep(10);
             if(_webinix_core.run_done[run_id])
                 break;
-            
-            _webinix_sleep(1);
+            if(_webinix_timer_is_end(&timer, (timeout_second * 1000)))
+                break;
         }
     }
 
@@ -755,11 +754,15 @@ size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_eve
                 // ID to to the UI.
 
                 if(!win->connected) {
-                    for(size_t n = 0; n <= 12; n++) { // 3000ms
+                    _webinix_timer_t timer;
+                    _webinix_timer_start(&timer);
+                    for(;;) {
+                        _webinix_sleep(10);
                         if(win->connected)
                             break;
-                        _webinix_sleep(250);
-                    }
+                        if(_webinix_timer_is_end(&timer, 3000))
+                            break;
+                    }                    
                 }
 
                 // 0: [Signature]
@@ -1316,31 +1319,30 @@ void webinix_exit(void) {
 
     _webinix_init();
 
-    #ifndef WEBUI_LOG
-        // Close all opened windows
-        // by sending `CLOSE` command
-
-        // Prepare packets
-        char* packet = (char*) _webinix_malloc(4);
-        packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
-        packet[1] = WEBUI_HEADER_CLOSE;     // CMD
-        for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-            if(_webinix_core.wins[i] != NULL) {
-                if(_webinix_core.wins[i]->connected) {
-                    // Send packet
-                    _webinix_window_send(_webinix_core.wins[i], packet, 2);
-                }
-            }
-        }
-        _webinix_free_mem((void*)packet);
-    #endif
+    // #ifndef WEBUI_LOG
+    //     // Close all opened windows
+    //     // by sending `CLOSE` command
+    //     // Prepare packets
+    //     char* packet = (char*) _webinix_malloc(4);
+    //     packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+    //     packet[1] = WEBUI_HEADER_CLOSE;     // CMD
+    //     for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
+    //         if(_webinix_core.wins[i] != NULL) {
+    //             if(_webinix_core.wins[i]->connected) {
+    //                 // Send packet
+    //                 _webinix_window_send(_webinix_core.wins[i], packet, 2);
+    //             }
+    //         }
+    //     }
+    //     _webinix_free_mem((void*)packet);
+    // #endif
     
     // Stop all threads
     _webinix_core.exit_now = true;
 
     // Let's give other threads more time to 
-    // safely exit and finish their cleaning up.
-    _webinix_sleep(120);
+    // safely exit and finish cleaning up.
+    _webinix_sleep(250);
 
     // Fire the mutex condition wait
     _webinix_condition_signal(&_webinix_core.condition_wait);
@@ -1362,8 +1364,6 @@ void webinix_wait(void) {
         if(!_webinix_core.ui) {
 
             printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
-
-            // Final cleaning
             _webinix_clean();
             return;
         }
@@ -2728,11 +2728,14 @@ static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_
             _webinix_cmd_sync(win, buf, false);
 
             // Creating the browser profile
-            for(size_t n = 0; n <= 24; n++) {
-                // 6000ms
+            _webinix_timer_t timer;
+            _webinix_timer_start(&timer);
+            for(;;) {
+                _webinix_sleep(500);
                 if(_webinix_folder_exist(firefox_profile_path))
                     break;
-                _webinix_sleep(250);
+                if(_webinix_timer_is_end(&timer, 10000))
+                    break;
             }
 
             if(!_webinix_folder_exist(firefox_profile_path))
@@ -3464,7 +3467,7 @@ static void _webinix_clean(void) {
     cleaned = true;
 
     // Let's give other threads more time to safely exit
-    // and finish their cleaning up.
+    // and finish cleaning up.
     _webinix_core.exit_now = true;
     _webinix_sleep(500);
 
@@ -3486,7 +3489,7 @@ static void _webinix_clean(void) {
     _webinix_condition_destroy(&_webinix_core.condition_wait);
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\tDone.\n");
+        printf("[Core]\t\tWebinix exit successfully.\n");
     #endif
 }
 
@@ -4743,40 +4746,6 @@ static void _webinix_free_port(size_t port) {
             break;
         }
     }
-}
-
-static void _webinix_wait_for_startup(void) {
-
-    #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wait_for_startup()...\n");
-    #endif
-
-    if(_webinix_core.connections > 0)
-        return;
-
-    // Wait for the first http request
-    // while the web browser is starting up
-    for(size_t n = 0; n < (_webinix_core.startup_timeout * 20); n++) {
-        // User/Default timeout
-        if(_webinix_core.server_handled)
-            break;
-        _webinix_sleep(50);
-    }
-
-    // Wait for the first connection
-    // while the WS is connecting
-    if(_webinix_core.wins[1] != NULL) {
-        // 1500ms
-        for(size_t n = 0; n < 30; n++) {
-            if(_webinix_core.connections > 0)
-                break;
-            _webinix_sleep(50);
-        }
-    }
-
-    #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wait_for_startup() -> Finish.\n");
-    #endif
 }
 
 static size_t _webinix_get_free_port(void) {
