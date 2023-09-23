@@ -1319,24 +1319,22 @@ void webinix_exit(void) {
 
     _webinix_init();
 
-    // #ifndef WEBUI_LOG
-    //     // Close all opened windows
-    //     // by sending `CLOSE` command
-    //     // Prepare packets
-    //     char* packet = (char*) _webinix_malloc(4);
-    //     packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
-    //     packet[1] = WEBUI_HEADER_CLOSE;     // CMD
-    //     for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-    //         if(_webinix_core.wins[i] != NULL) {
-    //             if(_webinix_core.wins[i]->connected) {
-    //                 // Send packet
-    //                 _webinix_window_send(_webinix_core.wins[i], packet, 2);
-    //             }
-    //         }
-    //     }
-    //     _webinix_free_mem((void*)packet);
-    // #endif
-    
+    // Close all opened windows
+    // by sending `CLOSE` command
+    // Prepare packets
+    char* packet = (char*) _webinix_malloc(4);
+    packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+    packet[1] = WEBUI_HEADER_CLOSE;     // CMD
+    for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
+        if(_webinix_core.wins[i] != NULL) {
+            if(_webinix_core.wins[i]->connected) {
+                // Send packet
+                _webinix_window_send(_webinix_core.wins[i], packet, 2);
+            }
+        }
+    }
+    _webinix_free_mem((void*)packet);
+
     // Stop all threads
     _webinix_core.exit_now = true;
 
@@ -1344,7 +1342,7 @@ void webinix_exit(void) {
     // safely exit and finish cleaning up.
     _webinix_sleep(250);
 
-    // Fire the mutex condition wait
+    // Fire the mutex condition for wait()
     _webinix_condition_signal(&_webinix_core.condition_wait);
 }
 
@@ -1521,7 +1519,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
 
         // Call cb
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user callback...\n\n");
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user callback...\n[Call]\n");
         #endif
         _webinix_core.cb_interface[cb_index](e->window, e->event_type, e->element, e->data, e->size, e->event_number);
     }
@@ -4680,7 +4678,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
 
             // Call user cb
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_receive() -> Calling user callback...\n\n");
+                printf("[Core]\t\t_webinix_window_receive() -> Calling user callback...\n[Call]\n");
             #endif
             _webinix_core.cb[cb_index](&e);
         }
@@ -5714,7 +5712,7 @@ static WEBUI_CB
 
             // Call user all events cb
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t[Thread] _webinix_cb() -> Calling user callback...\n\n");
+                printf("[Core]\t\t[Thread] _webinix_cb() -> Calling user callback...\n[Call]\n");
             #endif
             _webinix_core.cb[events_cb_index](&e);
         }
@@ -5728,7 +5726,7 @@ static WEBUI_CB
 
             // Call user cb
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t[Thread] _webinix_cb() -> Calling user callback...\n\n");
+                printf("[Core]\t\t[Thread] _webinix_cb() -> Calling user callback...\n[Call]\n");
             #endif
             _webinix_core.cb[cb_index](&e);
         }
