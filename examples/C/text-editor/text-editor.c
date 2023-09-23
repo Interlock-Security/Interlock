@@ -18,11 +18,11 @@ int main() {
     webinix_set_root_folder(MainWindow, "ui");
 
     // Bind HTML elements with the specified ID to C functions
-    webinix_bind(MainWindow, "close-button", Close);
+    webinix_bind(MainWindow, "__close-btn", Close);
 
     // Show the window, preferably in a chromium based browser
-    if (!webinix_show_browser(MainWindow, "MainWindow.html", ChromiumBased))
-        webinix_show(MainWindow, "MainWindow.html");
+    if (!webinix_show_browser(MainWindow, "index.html", ChromiumBased))
+        webinix_show(MainWindow, "index.html");
 
     // Wait until all windows get closed
     webinix_wait();
