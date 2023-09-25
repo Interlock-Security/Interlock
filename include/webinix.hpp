@@ -233,6 +233,35 @@ namespace webinix {
         void set_runtime(unsigned int runtime) const {
             webinix_set_runtime(webinix_window, runtime);
         }
+
+        // Set the web-server root folder path for this specific window.
+        bool set_root_folder(const std::string_view path) const {
+            return webinix_set_root_folder(webinix_window, path.data());
+        }
+
+        // Set a custom handler to serve files.
+        void set_file_handler(const void* (*handler)(const char* filename, int* length)) const {
+            webinix_set_file_handler(webinix_window, handler);
+        }
+
+        // Set the web browser profile to use. An empty `name` and `path` means the default user profile. Need to be called before `webinix_show()`.
+        void set_profile(const std::string_view name = {""}, const std::string_view path = {""}) const {
+            webinix_set_profile(webinix_window, name.data(), path.data());
+        }
+
+        // Get the full current URL
+        std::string_view get_url() const {
+            return std::string_view{webinix_get_url(webinix_window)};
+        }
+
+        // Get process id (The web browser may create another process for the window)
+        size_t get_child_process_id() const {
+            return webinix_get_child_process_id(webinix_window);
+        }
+
+        size_t get_parent_process_id() const {
+            return webinix_get_parent_process_id(webinix_window);
+        }
     };
 
     // Wait until all opened windows get closed.
@@ -263,6 +292,11 @@ namespace webinix {
     // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
     inline void free(void* ptr) {
         webinix_free(ptr);
+    }
+
+    // Set the web-server root folder path for all windows.
+    inline bool set_default_root_folder(const std::string_view path){
+        return webinix_set_default_root_folder(path.data());
     }
 }
 
