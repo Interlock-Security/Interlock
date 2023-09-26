@@ -25,8 +25,14 @@ void events(webinix_event_t* e) {
         printf("Disconnected. \n");
     else if(e->event_type == WEBUI_EVENT_MOUSE_CLICK)
         printf("Click. \n");
-    else if(e->event_type == WEBUI_EVENT_NAVIGATION)
+    else if(e->event_type == WEBUI_EVENT_NAVIGATION) {
         printf("Starting navigation to: %s \n", (char *)e->data);
+
+        // Because we used `webinix_bind(MyWindow, "", events);`
+        // then all `href` link clicks will be blocked by Webinix, so
+        // we need to use `webinix_navigate()` to control the navigation
+        webinix_navigate(e->window, (char *)e->data);
+    }
 }
 
 void switch_to_second_page(webinix_event_t* e) {

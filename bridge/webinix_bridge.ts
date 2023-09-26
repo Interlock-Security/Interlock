@@ -46,13 +46,14 @@ class WebuiBridge {
 	#hasEvents = false
 	#fnId = 1
 	#fnPromiseResolve: (((data: string) => unknown) | undefined)[] = []
+	#allowNavigation = false
 
 	// Webinix const
 	#HEADER_SIGNATURE = 221
 	#HEADER_JS = 254
 	#HEADER_JS_QUICK = 253
 	#HEADER_CLICK = 252
-	#HEADER_SWITCH = 251
+	#HEADER_NAVIGATION = 251
 	#HEADER_CLOSE = 250
 	#HEADER_CALL_FUNC = 249
 	#HEADER_SEND_RAW = 248
@@ -116,8 +117,17 @@ class WebuiBridge {
 		// Handle navigation server side
 		if ('navigation' in globalThis) {
 			globalThis.navigation.addEventListener('navigate', (event) => {
-				const url = new URL(event.destination.url)
-				this.#sendEventNavigation(url.href)
+				if(!this.#allowNavigation) {
+					event.preventDefault()
+					const url = new URL(event.destination.url)
+					if (this.#hasEvents) {
+						if (this.#log) console.log(`Webinix -> DOM -> Navigation Event [${url.href}]`)
+						this.#sendEventNavigation(url.href)
+					}
+					else {
+						this.#close(this.#HEADER_NAVIGATION, url.href)
+					}
+				}
 			})
 		} else {
 			// Handle all link click to prevent natural navigation
@@ -127,12 +137,21 @@ class WebuiBridge {
 				'a',
 				'click',
 				(event) => {
-					event.preventDefault()
-					const { href } = event.target as HTMLAnchorElement
-					if (this.#isExternalLink(href)) {
-						this.#close(this.#HEADER_SWITCH, href)
-					} else {
-						this.#sendEventNavigation(href)
+					if(!this.#allowNavigation) {
+						event.preventDefault()
+						const { href } = event.target as HTMLAnchorElement
+						if (this.#hasEvents) {
+							if (this.#log) console.log(`Webinix -> DOM -> Navigation Click Event [${href}]`)
+							// if (this.#isExternalLink(href)) {
+							// 	this.#close(this.#HEADER_NAVIGATION, href)
+							// } else {
+							// 	this.#sendEventNavigation(href)
+							// }
+							this.#sendEventNavigation(href)
+						}
+						else {
+							this.#close(this.#HEADER_NAVIGATION, href)
+						}
 					}
 				}
 			)
@@ -161,7 +180,7 @@ class WebuiBridge {
 	}
 
 	#close(reason = 0, value = '') {
-		if (reason === this.#HEADER_SWITCH) this.#sendEventNavigation(value)
+		// if (reason === this.#HEADER_NAVIGATION) this.#sendEventNavigation(value)
 		this.#wsStatus = false
 		this.#closeReason = reason
 		this.#closeValue = value
@@ -217,14 +236,13 @@ class WebuiBridge {
 
 		this.#ws.onclose = (event) => {
 			this.#wsStatus = false
-			if (this.#closeReason === this.#HEADER_SWITCH) {
+			if (this.#closeReason === this.#HEADER_NAVIGATION) {
 				if (this.#log) {
 					console.log(
-						`Webinix -> Connection lost -> Navigation to [${
-							this.#closeValue
-						}]`
+						`Webinix -> Connection closed -> Navigation to [${this.#closeValue}]`
 					)
 				}
+				this.#allowNavigation = true
 				globalThis.location.replace(this.#closeValue)
 			} else {
 				if (this.#log) {
@@ -258,12 +276,12 @@ class WebuiBridge {
 							const callId = buffer8[2]
 
 							if (this.#log) {
-								console.log(`Webinix -> Call Response [${callResponse}]`)
+								console.log(`Webinix -> CMD -> Call Response [${callResponse}]`)
 							}
 							if (this.#fnPromiseResolve[callId]) {
 								if (this.#log) {
 									console.log(
-										`Webinix -> Resolving Response #${callId}...`
+										`Webinix -> CMD -> Resolving Response #${callId}...`
 									)
 								}
 								this.#fnPromiseResolve[callId]?.(callResponse)
@@ -271,15 +289,15 @@ class WebuiBridge {
 							}
 						}
 						break
-					case this.#HEADER_SWITCH:
+					case this.#HEADER_NAVIGATION:
 						// Command Packet
 						// 0: [Signature]
 						// 1: [CMD]
 						// 2: [URL]
 
 						const url = this.#getDataStrFromPacket(buffer8, 2)
-						console.log(`Webinix -> Switch [${url}]`)
-						this.#close(this.#HEADER_SWITCH, url)
+						console.log(`Webinix -> CMD -> Navigation [${url}]`)
+						this.#close(this.#HEADER_NAVIGATION, url)
 						break
 					case this.#HEADER_NEW_ID:
 						// Command Packet
@@ -288,7 +306,7 @@ class WebuiBridge {
 						// 2: [New Element]
 
 						const newElement = this.#getDataStrFromPacket(buffer8, 2)
-						console.log(`Webinix -> New Bind ID [${newElement}]`)
+						console.log(`Webinix -> CMD -> New Bind ID [${newElement}]`)
 						if(!this.#bindList.includes(newElement))
 							this.#bindList.push(newElement)
 						break
@@ -308,7 +326,7 @@ class WebuiBridge {
 							)
 
 							if (this.#log)
-								console.log(`Webinix -> JS [${scriptSanitize}]`)
+								console.log(`Webinix -> CMD -> JS [${scriptSanitize}]`)
 
 							// Get callback result
 							let FunReturn = 'undefined'
@@ -326,9 +344,9 @@ class WebuiBridge {
 
 							// Logging
 							if (this.#log && !FunError)
-								console.log(`Webinix -> JS -> Return [${FunReturn}]`)
+								console.log(`Webinix -> CMD -> JS -> Return [${FunReturn}]`)
 							if (this.#log && FunError)
-								console.log(`Webinix -> JS -> Error [${FunReturn}]`)
+								console.log(`Webinix -> CMD -> JS -> Error [${FunReturn}]`)
 
 							// Response Packet
 							// 0: [Signature]
@@ -355,7 +373,7 @@ class WebuiBridge {
 						if (!this.#log)
 							globalThis.close()
 						else {
-							console.log(`Webinix -> Close`)
+							console.log(`Webinix -> CMD -> Close`)
 							this.#ws.close()
 						}
 						break
@@ -381,6 +399,9 @@ class WebuiBridge {
 							// Get the raw data
 							const rawDataIndex: number = 2 + functionName.length + 1
 							const userRawData = buffer8.subarray(rawDataIndex);
+
+							if (this.#log)
+								console.log(`Webinix -> CMD -> Send Raw ${buffer8.length} bytes to [${functionName}()]`)
 							
 							// Call the user function, and pass the raw data
 							if (typeof window[functionName] === 'function')
@@ -432,23 +453,32 @@ class WebuiBridge {
 							0
 					  )
 			this.#ws.send(packet.buffer)
-			if (this.#log) console.log(`Webinix -> Click [${elem}]`)
+			if (this.#log) console.log(`Webinix -> Send Click [${elem}]`)
 		}
 	}
 
 	#sendEventNavigation(url: string) {
-		if (this.#hasEvents && this.#wsStatus && url !== '') {
-			const packet = Uint8Array.of(
-				// Response Packet
-				// 0: [Signature]
-				// 1: [CMD]
-				// 2: [URL]
-				this.#HEADER_SIGNATURE,
-				this.#HEADER_SWITCH,
-				...new TextEncoder().encode(url)
-			)
-			this.#ws.send(packet.buffer)
-			if (this.#log) console.log(`Webinix -> Navigation [${url}]`)
+		if(url !== '') {
+			if(this.#hasEvents) {
+				if (this.#log) console.log(`Webinix -> Send Navigation Event [${url}]`)			
+				if (this.#wsStatus && this.#hasEvents) {
+					const packet = Uint8Array.of(
+						// Packet
+						// 0: [Signature]
+						// 1: [CMD]
+						// 2: [URL]
+						this.#HEADER_SIGNATURE,
+						this.#HEADER_NAVIGATION,
+						...new TextEncoder().encode(url)
+					)
+					this.#ws.send(packet.buffer)
+				}
+			}
+			else {
+				if (this.#log) console.log(`Webinix -> Navigation To [${url}]`)	
+				this.#allowNavigation = true
+				globalThis.location.replace(url)
+			}
 		}
 	}
 

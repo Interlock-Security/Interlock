@@ -24,7 +24,7 @@
 #define WEBUI_HEADER_JS         0xFE        // JavaScript result in frontend
 #define WEBUI_HEADER_JS_QUICK   0xFD        // JavaScript result in frontend
 #define WEBUI_HEADER_CLICK      0xFC        // Click event
-#define WEBUI_HEADER_SWITCH     0xFB        // Frontend refresh
+#define WEBUI_HEADER_NAVIGATION 0xFB        // Frontend navigation
 #define WEBUI_HEADER_CLOSE      0xFA        // Close window
 #define WEBUI_HEADER_CALL_FUNC  0xF9        // Backend function call
 #define WEBUI_HEADER_SEND_RAW   0xF8        // Send raw binary data to the UI
@@ -699,6 +699,39 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
 
     win->icon = icon_cpy;
     win->icon_type = icon_type_cpy;
+}
+
+void webinix_navigate(size_t window, const char* url) {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_navigate([%zu], [%s])...\n", window, url);
+    #endif
+
+    // Initialization
+    _webinix_init();
+    
+    // Dereference
+    if(_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return;
+    _webinix_window_t* win = _webinix_core.wins[window];
+
+    if(!win->connected)
+        return;
+
+    // 0: [Signature]
+    // 1: [CMD]
+    // 2: [URL]
+
+    // Prepare packets
+    size_t packet_len = 2 + _webinix_strlen(url); // [header][url]
+    char* packet = (char*) _webinix_malloc(packet_len);
+    packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
+    packet[1] = WEBUI_HEADER_NAVIGATION; // CMD
+    for(size_t i = 0; i < _webinix_strlen(url); i++) // URL
+        packet[i + 2] = url[i];
+
+    // Send the packet
+    _webinix_window_send(win, packet, packet_len);
+    _webinix_free_mem((void*)packet);
 }
 
 bool webinix_show(size_t window, const char* content) {
@@ -4282,9 +4315,9 @@ static bool _webinix_show(_webinix_window_t* win, const char* content, size_t br
 
     if(
       strstr(content_cpy, "<html") ||
-      strstr(content_cpy, "<!DOCTYPE html>") ||
-      strstr(content_cpy, "<!doctype html>") ||
-      strstr(content_cpy, "<!Doctype html>")
+      strstr(content_cpy, "<!DOCTYPE") ||
+      strstr(content_cpy, "<!doctype") ||
+      strstr(content_cpy, "<!Doctype")
       ) {
 
         // Embedded HTML
@@ -4398,7 +4431,7 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, bo
         size_t packet_len = 2 + _webinix_strlen(url); // [header][url]
         char* packet = (char*) _webinix_malloc(packet_len);
         packet[0] = WEBUI_HEADER_SIGNATURE; // Signature
-        packet[1] = WEBUI_HEADER_SWITCH;    // CMD
+        packet[1] = WEBUI_HEADER_NAVIGATION; // CMD
         for(size_t i = 0; i < _webinix_strlen(win->url); i++) // URL
             packet[i + 2] = win->url[i];
 
@@ -4646,7 +4679,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // Send ready signal to webinix_script()
         _webinix_core.run_done[run_id] = true;
     }
-    else if((unsigned char) packet[1] == WEBUI_HEADER_SWITCH) {
+    else if((unsigned char) packet[1] == WEBUI_HEADER_NAVIGATION) {
 
         // Navigation Event
 
@@ -4670,7 +4703,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             }
 
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_SWITCH \n");
+                printf("[Core]\t\t_webinix_window_receive() -> WEBUI_HEADER_NAVIGATION \n");
                 printf("[Core]\t\t_webinix_window_receive() -> URL size: %zu bytes \n", url_len);
                 printf("[Core]\t\t_webinix_window_receive() -> URL: [%s] \n", url);
             #endif
