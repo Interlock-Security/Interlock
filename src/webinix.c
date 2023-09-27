@@ -1463,8 +1463,10 @@ void webinix_wait(void) {
         // is running. Otherwise the mutex condition
         // signal will never come
         if(!_webinix_core.ui) {
-
-            printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
+            #ifdef WEBUI_LOG
+                printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
+            #endif
+            
             _webinix_clean();
             return;
         }
