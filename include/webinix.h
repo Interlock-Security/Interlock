@@ -437,6 +437,13 @@ WEBUI_EXPORT const char* webinix_get_url(size_t window);
  */
 WEBUI_EXPORT void webinix_navigate(size_t window, const char* url);
 
+/**
+ * @brief Delete all local web browser profile's folder
+ * 
+ * @example webinix_clean();
+ */
+WEBUI_EXPORT void webinix_clean();
+
 // -- JavaScript ----------------------
 
 // Run JavaScript without waiting for the response.

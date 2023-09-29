@@ -202,6 +202,7 @@ static void _webinix_clean(void);
 static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser);
 static const char* _webinix_get_temp_path();
 static bool _webinix_folder_exist(char* folder);
+static void _webinix_delete_folder(char* folder);
 static bool _webinix_browser_create_profile_folder(_webinix_window_t* win, size_t browser);
 static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address);
 static bool _webinix_browser_start_edge(_webinix_window_t* win, const char* address);
@@ -736,6 +737,53 @@ void webinix_navigate(size_t window, const char* url) {
     // Send the packet
     _webinix_window_send(win, packet, packet_len);
     _webinix_free_mem((void*)packet);
+}
+
+void webinix_clean() {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_clean()...\n");
+    #endif
+
+    // Loop trough windows
+    for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
+        if(_webinix_core.wins[i] != NULL) {
+
+            _webinix_window_t* win = _webinix_core.wins[i];
+            if(_webinix_folder_exist(win->profile_path)) {
+                if(win->current_browser == Firefox) {
+                    
+                    // Delete Firefox profile
+
+                    // TODO:
+
+                    #ifdef _WIN32
+                        // Windows
+
+                        // 1. Read "%APPDATA%\Mozilla\Firefox\profiles.ini"
+                        // 2. Delete the section that contain { "Path=" + win->profile_path }
+                        // 3. _webinix_delete_folder(win->profile_path);
+
+                        // win->profile_path: Full path to profile
+                        // win->browser_path: Full path to firefox browser
+                    #elif __linux__
+                        // Linux
+
+                        // TODO: ...
+                    #else
+                        // macOS
+
+                        // TODO: ...
+                    #endif
+                }
+                else {
+
+                    // Delete Chromium based profile
+                    _webinix_delete_folder(win->profile_path);
+                }
+            }
+        }
+    }
 }
 
 bool webinix_show(size_t window, const char* content) {
@@ -2924,6 +2972,21 @@ static bool _webinix_folder_exist(char* folder) {
     return false;
 }
 
+static void _webinix_delete_folder(char* folder) {
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_delete_folder([%s])...\n", folder);
+    #endif
+
+    char command[1024];
+    #if defined(_WIN32)
+        snprintf(command, sizeof(command), "rmdir /s /q \"%s\"", folder);
+    #else
+        snprintf(command, sizeof(command), "rm -rf \"%s\"", folder);
+    #endif
+    system(command);
+}
+
 static char* _webinix_generate_internal_id(_webinix_window_t* win, const char* element) {
 
     #ifdef WEBUI_LOG
@@ -4583,11 +4646,16 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         printf("[Core]\t\t_webinix_window_receive()...\n");
     #endif
 
-    if((unsigned char) packet[0] != WEBUI_HEADER_SIGNATURE || len < 4)
+    if((unsigned char) packet[0] != WEBUI_HEADER_SIGNATURE || len < 4 || _webinix_core.exit_now)
         return;
     
     // Mutex
+    // wait for previous event to finish
     _webinix_mutex_lock(&_webinix_core.mutex_receive);
+
+    // Check if the previous event calls exit()
+    if(_webinix_core.exit_now)
+        return;
 
     #ifdef WEBUI_LOG
         ReceiveNum++;
