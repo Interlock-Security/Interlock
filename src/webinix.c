@@ -745,43 +745,74 @@ void webinix_clean() {
         printf("[User] webinix_clean()...\n");
     #endif
 
+    // Initialization
+    _webinix_init();
+
+    // Final memory cleaning
+    _webinix_clean();
+}
+
+void webinix_delete_all_profiles() {
+
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_delete_all_profiles()...\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
     // Loop trough windows
     for(size_t i = 1; i <= _webinix_core.last_win_number; i++) {
         if(_webinix_core.wins[i] != NULL) {
+            webinix_delete_profile(i);
+        }
+    }
+}
 
-            _webinix_window_t* win = _webinix_core.wins[i];
-            if(_webinix_folder_exist(win->profile_path)) {
-                if(win->current_browser == Firefox) {
-                    
-                    // Delete Firefox profile
+void webinix_delete_profile(size_t window) {
 
-                    // TODO:
+    #ifdef WEBUI_LOG
+        printf("[User] webinix_delete_profile([%zu])...\n", window);
+    #endif
 
-                    #ifdef _WIN32
-                        // Windows
+    // Initialization
+    _webinix_init();
+    
+    // Dereference
+    if(_webinix_core.wins[window] == NULL) return;
+    _webinix_window_t* win = _webinix_core.wins[window];
 
-                        // 1. Read "%APPDATA%\Mozilla\Firefox\profiles.ini"
-                        // 2. Delete the section that contain { "Path=" + win->profile_path }
-                        // 3. _webinix_delete_folder(win->profile_path);
+    if(_webinix_folder_exist(win->profile_path)) {
 
-                        // win->profile_path: Full path to profile
-                        // win->browser_path: Full path to firefox browser
-                    #elif __linux__
-                        // Linux
+        if(win->current_browser == Firefox) {
+            
+            // Delete Firefox profile
 
-                        // TODO: ...
-                    #else
-                        // macOS
+            // TODO:
 
-                        // TODO: ...
-                    #endif
-                }
-                else {
+            #ifdef _WIN32
+                // Windows
 
-                    // Delete Chromium based profile
-                    _webinix_delete_folder(win->profile_path);
-                }
-            }
+                // 1. Read "%APPDATA%\Mozilla\Firefox\profiles.ini"
+                // 2. Delete the section that contain { "Path=" + win->profile_path }
+                // 3. _webinix_delete_folder(win->profile_path);
+
+                // win->profile_path: Full path to profile
+                // win->browser_path: Full path to firefox browser
+            #elif __linux__
+                // Linux
+
+                // TODO: ...
+            #else
+                // macOS
+
+                // TODO: ...
+            #endif
+        }
+        else {
+
+            // Delete Chromium-based profile
+            _webinix_delete_folder(win->profile_path);
         }
     }
 }
@@ -1515,11 +1546,10 @@ void webinix_wait(void) {
         // is running. Otherwise the mutex condition
         // signal will never come
         if(!_webinix_core.ui) {
+
             #ifdef WEBUI_LOG
                 printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
             #endif
-            
-            _webinix_clean();
             return;
         }
 
@@ -1552,9 +1582,6 @@ void webinix_wait(void) {
     #endif
 
     _webinix_mutex_unlock(&_webinix_core.mutex_wait);
-
-    // Final cleaning
-    _webinix_clean();
 }
 
 void webinix_set_timeout(size_t second) {
@@ -1767,13 +1794,10 @@ bool webinix_interface_is_app_running(void) {
             app_is_running = false;
     }
 
-    // Final cleaning
-    if(!app_is_running) {
-        #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG
+        if(!app_is_running)
             printf("[User] webinix_is_app_running() -> App Stopped.\n");
-        #endif
-        _webinix_clean();
-    }
+    #endif
 
     return app_is_running;
 }
@@ -2980,9 +3004,13 @@ static void _webinix_delete_folder(char* folder) {
 
     char command[1024];
     #if defined(_WIN32)
-        snprintf(command, sizeof(command), "rmdir /s /q \"%s\"", folder);
+        snprintf(command, sizeof(command), "rmdir /s /q \"%s\" > nul 2>&1", folder);
     #else
-        snprintf(command, sizeof(command), "rm -rf \"%s\"", folder);
+        snprintf(command, sizeof(command), "rm -rf \"%s\" >>/dev/null 2>>/dev/null", folder);
+    #endif
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_delete_folder() -> Running [%s] \n", command);
     #endif
     system(command);
 }
@@ -5877,8 +5905,11 @@ static WEBUI_SERVER_START
     mg_stop(http_ctx);
 
     // Fire the mutex condition wait
-    if(_webinix_core.startup_timeout > 0 && _webinix_core.servers < 1)
-	    _webinix_condition_signal(&_webinix_core.condition_wait);
+    if(_webinix_core.startup_timeout > 0 && _webinix_core.servers < 1) {
+
+        _webinix_core.ui = false;
+        _webinix_condition_signal(&_webinix_core.condition_wait);
+    }
 
     THREAD_RETURN
 }

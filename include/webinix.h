@@ -417,7 +417,7 @@ WEBUI_EXPORT void webinix_set_position(size_t window, unsigned int x, unsigned i
 WEBUI_EXPORT void webinix_set_profile(size_t window, const char* name, const char* path);
 
 /**
- * @brief Get the full current URL
+ * @brief Get the full current URL.
  * 
  * @param window The window number
  *
@@ -438,11 +438,37 @@ WEBUI_EXPORT const char* webinix_get_url(size_t window);
 WEBUI_EXPORT void webinix_navigate(size_t window, const char* url);
 
 /**
- * @brief Delete all local web browser profile's folder
+ * @brief Free all memory resources. Should be called only at the end.
  * 
- * @example webinix_clean();
+ * @example
+ * webinix_wait();
+ * webinix_clean();
  */
 WEBUI_EXPORT void webinix_clean();
+
+/**
+ * @brief Delete all local web-browser profile's folder. Should be called at the end.
+ * 
+ * @example
+ * webinix_wait();
+ * webinix_delete_all_profiles();
+ * webinix_clean();
+ */
+WEBUI_EXPORT void webinix_delete_all_profiles();
+
+/**
+ * @brief Delete a specific window web-browser local folder profile.
+ * 
+ * @param window The window number
+ * 
+ * @example
+ * webinix_wait();
+ * webinix_delete_profile(myWindow);
+ * webinix_clean();
+ * 
+ * @note This can break functionality of other windows if using the same web-browser.
+ */
+WEBUI_EXPORT void webinix_delete_profile(size_t window);
 
 // -- JavaScript ----------------------
 
