@@ -112,13 +112,13 @@ typedef struct _webinix_window_t {
 // Core
 typedef struct _webinix_core_t {
     volatile size_t servers;
-    volatile size_t connections;
     char* html_elements[WEBUI_MAX_IDS];
     size_t used_ports[WEBUI_MAX_IDS];
     size_t startup_timeout;
     volatile bool exit_now;
-    const char* run_responses[WEBUI_MAX_IDS];
     volatile bool run_done[WEBUI_MAX_IDS];
+    char* run_userBuffer[WEBUI_MAX_IDS];
+    size_t run_userBufferLen[WEBUI_MAX_IDS];
     bool run_error[WEBUI_MAX_IDS];
     unsigned char run_last_id;
     bool initialized;
@@ -135,7 +135,7 @@ typedef struct _webinix_core_t {
     bool server_handled;
     webinix_mutex_t mutex_server_start;
     webinix_mutex_t mutex_send;
-    webinix_mutex_t mutex_receive;
+    // webinix_mutex_t mutex_receive;
     webinix_mutex_t mutex_wait;
     webinix_mutex_t mutex_bridge;
     webinix_condition_t condition_wait;
@@ -154,14 +154,17 @@ typedef struct _webinix_cb_arg_t {
     char* webinix_internal_id;
 } _webinix_cb_arg_t;
 
+typedef struct _webinix_recv_arg_t {
+    _webinix_window_t* win;
+    const char* packet;
+    size_t len;
+    size_t recvNum;
+} _webinix_recv_arg_t;
+
 typedef struct _webinix_cmd_async_t {
     _webinix_window_t* win;
     char* cmd;
 } _webinix_cmd_async_t;
-
-#ifdef WEBUI_LOG
-    static size_t ReceiveNum = 0;
-#endif
 
 // -- Definitions ---------------------
 #ifdef _WIN32
@@ -173,17 +176,19 @@ typedef struct _webinix_cmd_async_t {
     static bool _webinix_socket_test_listen_win32(size_t port_num);
     static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
 
-    #define WEBUI_CB DWORD WINAPI _webinix_cb(LPVOID _arg)
-    #define WEBUI_SERVER_START DWORD WINAPI _webinix_server_start(LPVOID arg)
-    #define THREAD_RETURN return 0;
+    // #define WEBUI_THREAD_CB DWORD WINAPI _webinix_cb(LPVOID _arg)
+    #define WEBUI_THREAD_SERVER_START DWORD WINAPI _webinix_server_start(LPVOID arg)
+    #define WEBUI_THREAD_RECEIVE DWORD WINAPI _webinix_receive_thread(LPVOID _arg)
+    #define WEBUI_THREAD_RETURN return 0;
 #else
     static const char* webinix_sep = "/";
     static void* _webinix_cb(void* _arg);
     static void* _webinix_run_browser_task(void* _arg);
 
-    #define WEBUI_CB void* _webinix_cb(void* _arg)
-    #define WEBUI_SERVER_START void* _webinix_server_start(void* arg)
-    #define THREAD_RETURN pthread_exit(NULL);
+    // #define WEBUI_THREAD_CB void* _webinix_cb(void* _arg)
+    #define WEBUI_THREAD_SERVER_START void* _webinix_server_start(void* arg)
+    #define WEBUI_THREAD_RECEIVE void* _webinix_receive_thread(void* _arg)
+    #define WEBUI_THREAD_RETURN pthread_exit(NULL);
 #endif
 static void _webinix_init(void);
 static bool _webinix_show(_webinix_window_t* win, const char* content, size_t browser);
@@ -192,7 +197,7 @@ static size_t _webinix_set_cb_index(char* webinix_internal_id);
 static size_t _webinix_get_free_port(void);
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
-static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len);
+static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len, size_t recvNum);
 static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t packets_size);
 static void _webinix_window_event(_webinix_window_t* win, int event_type, char* element, char* data, size_t event_number, char* webinix_internal_id);
 static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show);
@@ -256,8 +261,9 @@ static int _webinix_ws_connect_handler(const struct mg_connection *conn, void *_
 static void _webinix_ws_ready_handler(struct mg_connection *conn, void *_win);
 static int _webinix_ws_data_handler(struct mg_connection *conn, int opcode, char* data, size_t datasize, void *_win);
 static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_win);
-static WEBUI_SERVER_START;
-static WEBUI_CB;
+static WEBUI_THREAD_SERVER_START;
+// static WEBUI_THREAD_CB;
+static WEBUI_THREAD_RECEIVE;
 
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
@@ -292,9 +298,9 @@ void webinix_run(size_t window, const char* script) {
     unsigned char run_id = _webinix_get_run_id();
     _webinix_core.run_done[run_id] = false;
     _webinix_core.run_error[run_id] = false;
-    if((void*)_webinix_core.run_responses[run_id] != NULL)
-        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
-    
+    _webinix_core.run_userBuffer[run_id] = NULL;
+    _webinix_core.run_userBufferLen[run_id] = 0;
+
     // Prepare the packet
     size_t packet_len = 3 + js_len; // [header][js]
     char* packet = (char*) _webinix_malloc(packet_len);
@@ -342,7 +348,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
     // Initializing response buffer
     if(buffer_length > 0)
-        memset(buffer, 0, buffer_length);    
+        memset(buffer, 0, buffer_length);
 
     size_t js_len = _webinix_strlen(script);
 
@@ -353,8 +359,8 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     unsigned char run_id = _webinix_get_run_id();
     _webinix_core.run_done[run_id] = false;
     _webinix_core.run_error[run_id] = false;
-    if((void*)_webinix_core.run_responses[run_id] != NULL)
-        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
+    _webinix_core.run_userBuffer[run_id] = buffer;
+    _webinix_core.run_userBufferLen[run_id] = buffer_length;
     
     // 0: [Signature]
     // 1: [CMD]
@@ -379,7 +385,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
         // Wait forever
         for(;;) {
-            _webinix_sleep(10);            
+            _webinix_sleep(1);
             if(_webinix_core.run_done[run_id])
                 break;
         }
@@ -390,7 +396,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         _webinix_timer_t timer;
         _webinix_timer_start(&timer);
         for(;;) {
-            _webinix_sleep(10);
+            _webinix_sleep(1);
             if(_webinix_core.run_done[run_id])
                 break;
             if(_webinix_timer_is_end(&timer, (timeout_second * 1000)))
@@ -398,24 +404,20 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         }
     }
 
-    if(_webinix_core.run_responses[run_id] != NULL) {
+    if(_webinix_core.run_done[run_id]) {
 
         #ifdef WEBUI_LOG
-            printf("[User] webinix_script -> Response found [%s] \n", _webinix_core.run_responses[run_id]);
+            printf("[User] webinix_script -> Response found. User buffer len: %zu bytes \n", _webinix_core.run_userBufferLen[run_id]);
+            printf("[User] webinix_script -> Response found. User buffer data: [%s] \n", _webinix_core.run_userBuffer[run_id]);
         #endif
 
-        // Response found
-        if(buffer != NULL && buffer_length > 1) {
-
-            // Copy response to the user's response buffer
-            size_t response_len = _webinix_strlen(_webinix_core.run_responses[run_id]) + 1;
-            size_t bytes_to_cpy = (response_len <= buffer_length ? response_len : buffer_length);
-            memcpy(buffer, _webinix_core.run_responses[run_id], bytes_to_cpy);
-        }
-
-        _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
-
         return _webinix_core.run_error[run_id];
+    }
+    else {
+
+        #ifdef WEBUI_LOG
+            printf("[User] webinix_script -> No Response is found. \n");
+        #endif
     }
 
     return false;
@@ -1880,7 +1882,7 @@ static void _webinix_ptr_add(void* ptr, size_t size) {
             if(_webinix_core.ptr_list[i] == NULL) {
 
                 #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
+                    // printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
                 #endif
 
                 _webinix_core.ptr_list[i] = ptr;
@@ -1890,7 +1892,7 @@ static void _webinix_ptr_add(void* ptr, size_t size) {
         }
 
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
+            // printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
         #endif
 
         _webinix_core.ptr_list[_webinix_core.ptr_position] = ptr;
@@ -1994,7 +1996,7 @@ static size_t _webinix_round_to_memory_block(size_t size) {
 static void* _webinix_malloc(size_t size) {
     
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_malloc([%zu])...\n", size);
+        // printf("[Core]\t\t_webinix_malloc([%zu])...\n", size);
     #endif
     
     // Make sure we have the null
@@ -3694,7 +3696,7 @@ static void _webinix_clean(void) {
     // Destroy all mutex
     _webinix_mutex_destroy(&_webinix_core.mutex_server_start);
     _webinix_mutex_destroy(&_webinix_core.mutex_send);
-    _webinix_mutex_destroy(&_webinix_core.mutex_receive);
+    // _webinix_mutex_destroy(&_webinix_core.mutex_receive);
     _webinix_mutex_destroy(&_webinix_core.mutex_wait);
     _webinix_condition_destroy(&_webinix_core.condition_wait);
 
@@ -4134,9 +4136,13 @@ static bool _webinix_browser_start(_webinix_window_t* win, const char* address, 
     #endif
 
     // Non existing browser
-    if(browser > 11)
+    if(browser > 12)
         return false;
     
+    // No browser mode
+    if(browser == NoBrowser)
+        return true;
+
     // Current browser used in the last opened window
     if(browser == AnyBrowser && _webinix_core.current_browser != 0)
         browser = _webinix_core.current_browser;
@@ -4405,7 +4411,6 @@ static bool _webinix_show(_webinix_window_t* win, const char* content, size_t br
 
     // Some wrappers do not guarantee pointers stay valid,
     // so, let's make our copy.
-
     size_t content_len = _webinix_strlen(content);
     const char* content_cpy = (const char*)_webinix_malloc(content_len);
     memcpy((char*)content_cpy, content, content_len);
@@ -4546,32 +4551,83 @@ static void _webinix_window_event(_webinix_window_t* win, int event_type, char* 
         printf("[Core]\t\t_webinix_window_event([%s], [%s])...\n", webinix_internal_id, element);
     #endif
 
-    // Create a thread, and call the used cb function
-    // no need to wait for the response. This is fire
-    // and forget.
+    // New Event
+    webinix_event_t e;
+    e.window = win->window_number;
+    e.event_type = event_type;
+    e.element = element;
+    e.data = data;
+    e.event_number = event_number;
 
-    // Create a new CB args struct
-    _webinix_cb_arg_t* arg = (_webinix_cb_arg_t*) _webinix_malloc(sizeof(_webinix_cb_arg_t));
-    
-    // Event
-    arg->window = win;
-    arg->event_type = event_type;
-    arg->element = element;
-    arg->data = data;
-    arg->event_number = event_number;
-    // Extras
-    arg->webinix_internal_id = webinix_internal_id;
+    // Check for all events-bind functions
+    if(!_webinix_core.exit_now && win->has_events) {
 
-    // fire and forget.
-    #ifdef _WIN32
-        HANDLE user_fun_thread = CreateThread(NULL, 0, _webinix_cb, (void*)arg, 0, NULL);
-        if(user_fun_thread != NULL)
-            CloseHandle(user_fun_thread); 
-    #else
-        pthread_t thread;
-        pthread_create(&thread, NULL, &_webinix_cb, (void*)arg);
-        pthread_detach(thread);
+        char* events_id = _webinix_generate_internal_id(win, "");
+        size_t events_cb_index = _webinix_get_cb_index(events_id);
+        _webinix_free_mem((void*)events_id);
+
+        if(events_cb_index > 0 && _webinix_core.cb[events_cb_index] != NULL) {
+
+            // Call user all events cb
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_window_event() -> Calling user callback...\n[Call]\n");
+            #endif
+            _webinix_core.cb[events_cb_index](&e);
+        }
+    }
+
+    if(!_webinix_core.exit_now) {
+        
+        // Check for the regular bind functions
+        if(!_webinix_is_empty(element)) {
+
+            size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
+            if(cb_index > 0 && _webinix_core.cb[cb_index] != NULL) {
+
+                // Call user cb
+                #ifdef WEBUI_LOG
+                    printf("[Core]\t\t_webinix_window_event() -> Calling user callback...\n[Call]\n");
+                #endif
+                _webinix_core.cb[cb_index](&e);
+            }
+        }
+    }
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_window_event() -> Finished.\n");
     #endif
+
+    // Free event
+    _webinix_free_mem((void*)webinix_internal_id);
+
+    /*
+        // Create a thread, and call the used cb function
+        // no need to wait for the response. This is fire
+        // and forget.
+
+        // Create a new CB args struct
+        _webinix_cb_arg_t* arg = (_webinix_cb_arg_t*) _webinix_malloc(sizeof(_webinix_cb_arg_t));
+        
+        // Event
+        arg->window = win;
+        arg->event_type = event_type;
+        arg->element = element;
+        arg->data = data;
+        arg->event_number = event_number;
+        // Extras
+        arg->webinix_internal_id = webinix_internal_id;
+
+        // fire and forget.
+        #ifdef _WIN32
+            HANDLE thread = CreateThread(NULL, 0, _webinix_cb, (void*)arg, 0, NULL);
+            if(thread != NULL)
+                CloseHandle(thread); 
+        #else
+            pthread_t thread;
+            pthread_create(&thread, NULL, &_webinix_cb, (void*)arg);
+            pthread_detach(thread);
+        #endif
+    */
 }
 
 static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t packets_size) {
@@ -4614,6 +4670,7 @@ static void _webinix_window_send(_webinix_window_t* win, char* packet, size_t pa
     #endif
 }
 
+/*
 static bool _webinix_get_data(const char* packet, size_t packet_len, size_t pos, size_t* data_len, char** data) {
 
     #ifdef WEBUI_LOG
@@ -4667,27 +4724,27 @@ static bool _webinix_get_data(const char* packet, size_t packet_len, size_t pos,
 
     return true;
 }
+*/
 
-static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len) {
+static void _webinix_window_receive(_webinix_window_t* win, const char* packet, size_t len, size_t recvNum) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_window_receive()...\n");
+        printf("[Core]\t\t[Thread %zu] _webinix_window_receive()...\n", recvNum);
     #endif
 
     if((unsigned char) packet[0] != WEBUI_HEADER_SIGNATURE || len < 4 || _webinix_core.exit_now)
         return;
-    
+
     // Mutex
     // wait for previous event to finish
-    _webinix_mutex_lock(&_webinix_core.mutex_receive);
+    // _webinix_mutex_lock(&_webinix_core.mutex_receive);
 
     // Check if the previous event calls exit()
     if(_webinix_core.exit_now)
         return;
 
     #ifdef WEBUI_LOG
-        ReceiveNum++;
-        printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Start\n", ReceiveNum);
+        printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Start\n", recvNum);
     #endif
 
     if((unsigned char) packet[1] == WEBUI_HEADER_CLICK) {
@@ -4698,18 +4755,14 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // 1: [CMD]
         // 2: [Element]
 
-        // We should copy `element` using `_webinix_get_data()` as
-        // the `packet[]` will be freed by WS after end of this call.
-
         // Get html element id
-        char* element;
-        size_t element_len;
-        _webinix_get_data(packet, len, 2, &element_len, &element);
+        char* element = (char*)&packet[2];
+        size_t element_len = _webinix_strlen(element);
         
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> WEBUI_HEADER_CLICK \n", ReceiveNum);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Element size: %zu bytes \n", ReceiveNum, element_len);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Element : [%s] \n", ReceiveNum, element);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> WEBUI_HEADER_CLICK \n", recvNum);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Element size: %zu bytes \n", recvNum, element_len);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Element : [%s] \n", recvNum, element);
         #endif
 
         // Generate Webinix internal id
@@ -4741,17 +4794,14 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             // Fatal.
             // The pipe ID is not valid
             // we can't send the ready signal to webinix_script()
-            _webinix_mutex_unlock(&_webinix_core.mutex_receive);
+            // _webinix_mutex_unlock(&_webinix_core.mutex_receive);
             return;
         }
-
-        // We should copy `data` using `_webinix_get_data()` as
-        // the `packet[]` will be freed by WS after end of this call.
+        _webinix_core.run_done[run_id] = false;
 
         // Get data part
-        char* data;
-        size_t data_len;
-        bool data_status = _webinix_get_data(packet, len, 4, &data_len, &data);
+        char* data = (char*)&packet[4];
+        size_t data_len = _webinix_strlen(data);
 
         // Get js-error
         bool error = true;
@@ -4759,28 +4809,26 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             error = false;
 
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> WEBUI_HEADER_JS \n", ReceiveNum);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> run_id = 0x%02x \n", ReceiveNum, run_id);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> error = 0x%02x \n", ReceiveNum, error);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> %zu bytes of data\n", ReceiveNum, data_len);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> data = [%s] @ 0x%p\n", ReceiveNum, data, data);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> WEBUI_HEADER_JS \n", recvNum);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> run_id = 0x%02x \n", recvNum, run_id);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> error = 0x%02x \n", recvNum, error);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> %zu bytes of data\n", recvNum, data_len);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> data = [%s] @ 0x%p\n", recvNum, data, data);
         #endif
 
-        // Initialize pipe
-        if((void*)_webinix_core.run_responses[run_id] != NULL)
-            _webinix_free_mem((void*)_webinix_core.run_responses[run_id]);
-
         // Set pipe
-        if(data_status && data_len > 0) {
+        _webinix_core.run_error[run_id] = error;
+        if(data_len > 0) {
 
-            _webinix_core.run_error[run_id] = error;
-            _webinix_core.run_responses[run_id] = data;
+            // Copy response to the user's response buffer directly
+            size_t response_len = data_len + 1;
+            size_t bytes_to_cpy = (response_len <= _webinix_core.run_userBufferLen[run_id] ? response_len : _webinix_core.run_userBufferLen[run_id]);
+            memcpy(_webinix_core.run_userBuffer[run_id], data, bytes_to_cpy);
         }
         else {
 
             // Empty Result
-            _webinix_core.run_error[run_id] = error;
-            _webinix_core.run_responses[run_id] = "";
+            memcpy(_webinix_core.run_userBuffer[run_id], 0x00, 1);
         }
 
         // Send ready signal to webinix_script()
@@ -4797,22 +4845,14 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // Events
         if(win->has_events) {
 
-            // We should copy `url` using `_webinix_get_data()` as
-            // the `packet[]` will be freed by WS after end of this call.
-
             // Get URL
-            char* url;
-            size_t url_len;
-            if(!_webinix_get_data(packet, len, 2, &url_len, &url)) {
-
-                _webinix_mutex_unlock(&_webinix_core.mutex_receive);
-                return;
-            }
+            char* url = (char*)&packet[2];
+            size_t url_len = _webinix_strlen(url);
 
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_receive() -> #%zu -> WEBUI_HEADER_NAVIGATION \n", ReceiveNum);
-                printf("[Core]\t\t_webinix_window_receive() -> #%zu -> URL size: %zu bytes \n", ReceiveNum, url_len);
-                printf("[Core]\t\t_webinix_window_receive() -> #%zu -> URL: [%s] \n", ReceiveNum, url);
+                printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> WEBUI_HEADER_NAVIGATION \n", recvNum);
+                printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> URL size: %zu bytes \n", recvNum, url_len);
+                printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> URL: [%s] \n", recvNum, url);
             #endif
 
             // Generate Webinix internal id
@@ -4836,9 +4876,6 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         // 1: [CMD]
         // 2: [Call ID]
         // 3: [Element ID, Null, Len, Null, Data, Null]
-
-        // No need to copy `element` and `data` using `_webinix_get_data()` as
-        // we don't need the `packet[]` after the end of this call.
         
         // Get html element id
         char* element = (char*)&packet[3];
@@ -4855,7 +4892,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             len = strtoll((const char*)len_s, &endptr, 10);
 
             if(len < 0) {
-                _webinix_mutex_unlock(&_webinix_core.mutex_receive);
+                // _webinix_mutex_unlock(&_webinix_core.mutex_receive);
                 return;
             }
         }
@@ -4864,14 +4901,14 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
         char* data = (char*)&packet[3 + element_strlen + 1 + len_s_strlen + 1];
 
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> WEBUI_HEADER_CALL_FUNC \n", ReceiveNum);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Call ID: [0x%02x] \n", ReceiveNum, packet[2]);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Element: [%s] \n", ReceiveNum, element);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Data size: %lld Bytes \n", ReceiveNum, len);
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Data: Hex [ ", ReceiveNum);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> WEBUI_HEADER_CALL_FUNC \n", recvNum);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Call ID: [0x%02x] \n", recvNum, packet[2]);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Element: [%s] \n", recvNum, element);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Data size: %lld Bytes \n", recvNum, len);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Data: Hex [ ", recvNum);
                 _webinix_print_hex(data, len);
             printf("]\n");
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Data: ASCII [ ", ReceiveNum);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Data: ASCII [ ", recvNum);
                 _webinix_print_ascii(data, len);
             printf("]\n");
         #endif
@@ -4900,7 +4937,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
 
             // Call user cb
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_receive() -> #%zu -> Calling user callback...\n[Call]\n", ReceiveNum);
+                printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> Calling user callback...\n[Call]\n", recvNum);
             #endif
             _webinix_core.cb[cb_index](&e);
         }
@@ -4910,7 +4947,7 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
             *response = (char*)"";
 
         #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_window_receive() -> #%zu -> user-callback response [%s]\n", ReceiveNum, *response);
+            printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> user-callback response [%s]\n", recvNum, *response);
         #endif
 
         // 0: [Signature]
@@ -4939,10 +4976,10 @@ static void _webinix_window_receive(_webinix_window_t* win, const char* packet, 
     }
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_window_receive() -> #%zu -> End\n", ReceiveNum);
+        printf("[Core]\t\t[Thread %zu] _webinix_window_receive() -> End\n", recvNum);
     #endif
 
-    _webinix_mutex_unlock(&_webinix_core.mutex_receive);
+    // _webinix_mutex_unlock(&_webinix_core.mutex_receive);
 }
 
 static char* _webinix_get_current_path(void) {
@@ -5044,7 +5081,7 @@ static void _webinix_init(void) {
     // Initializing mutex
     _webinix_mutex_init(&_webinix_core.mutex_server_start);
     _webinix_mutex_init(&_webinix_core.mutex_send);
-    _webinix_mutex_init(&_webinix_core.mutex_receive);
+    // _webinix_mutex_init(&_webinix_core.mutex_receive);
     _webinix_mutex_init(&_webinix_core.mutex_wait);
     _webinix_mutex_init(&_webinix_core.mutex_bridge);
     _webinix_condition_init(&_webinix_core.condition_wait);
@@ -5477,37 +5514,41 @@ static void _webinix_ws_ready_handler(struct mg_connection *conn, void *_win) {
         printf("[Core]\t\t_webinix_ws_ready_handler()...\n");
     #endif
 
+    // Dereference
     _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
     if(_webinix_core.exit_now || win == NULL) return;
 
-    #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_ws_ready_handler() -> WebSocket Connected\n");
-    #endif
-
+    // Ini
+    win->connections++;
     int event_type = WEBUI_EVENT_CONNECTED;
 
-    if(!win->connected) {
+    if(win->connections < 2) {
 
         // First connection
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_ws_ready_handler() -> WebSocket %zu Connected\n", win->connections);
+        #endif
 
-        win->connected = true; // server thread
-        _webinix_core.connections++; // main loop
         _webinix_core.mg_connections[win->window_number] = conn; // websocket send func
+        win->connected = true; // server thread
     }
     else {
 
+        // Multi connections
+
         if(win->multi_access) {
 
-            // Multi connections
-            win->connections++;
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_ws_ready_handler() -> MULTI_CONNECTION -> WebSocket %zu Connected\n", win->connections);
+            #endif
+
             event_type = WEBUI_EVENT_MULTI_CONNECTION;
         }
         else {
 
             // UNWANTED Multi connections
-
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_ws_ready_handler() -> UNWANTED Multi Connections\n");
+                printf("[Core]\t\t_webinix_ws_ready_handler() -> UNWANTED_CONNECTION -> WebSocket %zu Connected\n", win->connections);
             #endif
 
             mg_close_connection(conn);
@@ -5538,6 +5579,7 @@ static int _webinix_ws_data_handler(struct mg_connection *conn, int opcode, char
         printf("[Core]\t\t_webinix_ws_data_handler()...\n");
     #endif
 
+    static size_t recvNum = 0;
     if(_webinix_core.exit_now || datasize < 1)
         return 1; // OK
     
@@ -5554,10 +5596,28 @@ static int _webinix_ws_data_handler(struct mg_connection *conn, int opcode, char
     switch (opcode & 0xf) {
 
         case MG_WEBSOCKET_OPCODE_BINARY: {
-            // Process the packet
             _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
-            if(win != NULL)
-                _webinix_window_receive(win, data, datasize);
+            if(win != NULL) {
+                // Copy packet
+                const char* data_cpy = (const char*)_webinix_malloc(datasize);
+                memcpy((char*)data_cpy, data, datasize);
+                // Create args
+                _webinix_recv_arg_t* arg = (_webinix_recv_arg_t*) _webinix_malloc(sizeof(_webinix_recv_arg_t));
+                arg->win = win;
+                arg->packet = data_cpy;
+                arg->len = datasize;
+                arg->recvNum = ++recvNum;
+                // Process the packet in a new thread
+                #ifdef _WIN32
+                    HANDLE thread = CreateThread(NULL, 0, _webinix_receive_thread, (void*)arg, 0, NULL);
+                    if(thread != NULL)
+                        CloseHandle(thread);
+                #else
+                    pthread_t thread;
+                    pthread_create(&thread, NULL, &_webinix_receive_thread, (void*)arg);
+                    pthread_detach(thread);
+                #endif
+            }
             break;
         }
         case MG_WEBSOCKET_OPCODE_TEXT: {
@@ -5585,28 +5645,42 @@ static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_w
     _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
     if(_webinix_core.exit_now || win == NULL || !win->connected) return;
 
-    win->html_handled = false;
-    win->server_handled = false;
-    win->bridge_handled = false;
+    if(win->connections < 2) {
 
-    #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_ws_close_handler() -> WebSocket Closed\n");
-    #endif
+        // Main connection close
+        #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_ws_close_handler() -> WebSocket %zu Closed\n", win->connections);
+        #endif
 
-    if(win->connected) {
+        win->html_handled = false;
+        win->server_handled = false;
+        win->bridge_handled = false;
+        win->connected = false; // server thread
+    }
+    else {
 
-        if(win->multi_access && win->connections > 0) {
+        // Multi connections close
 
-            // Multi connections close
-            win->connections--;
+        if(win->multi_access) {
+
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_ws_close_handler() -> MULTI_CONNECTION -> WebSocket %zu Closed\n", win->connections);
+            #endif
+
+            win->html_handled = false;
+            win->server_handled = false;
+            win->bridge_handled = false;
         }
         else {
 
-            // Main connection close
-            _webinix_core.connections--;  // main loop
-            win->connected = false;     // server thread                
+            // UNWANTED Multi connections close
+            #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_ws_close_handler() -> UNWANTED_CONNECTION -> WebSocket %zu Closed\n", win->connections);
+            #endif
         }
     }
+
+    win->connections--;
 
     // Events
     if(win->has_events) {
@@ -5625,7 +5699,7 @@ static void _webinix_ws_close_handler(const struct mg_connection *conn, void *_w
     }
 }
 
-static WEBUI_SERVER_START
+static WEBUI_THREAD_SERVER_START
 {
     #ifdef WEBUI_LOG
         printf("[Core]\t\t[Thread] _webinix_server_start()...\n");
@@ -5636,7 +5710,7 @@ static WEBUI_SERVER_START
 
     _webinix_window_t* win = _webinix_dereference_win_ptr(arg);
     if(win == NULL) {
-        THREAD_RETURN
+        WEBUI_THREAD_RETURN
     }
 
     #ifdef WEBUI_LOG
@@ -5911,10 +5985,11 @@ static WEBUI_SERVER_START
         _webinix_condition_signal(&_webinix_core.condition_wait);
     }
 
-    THREAD_RETURN
+    WEBUI_THREAD_RETURN
 }
 
-static WEBUI_CB
+/*
+static WEBUI_THREAD_CB
 {
     #ifdef WEBUI_LOG
         printf("[Core]\t\t[Thread] _webinix_cb()...\n");
@@ -5975,7 +6050,39 @@ static WEBUI_CB
     _webinix_free_mem((void*)arg->webinix_internal_id);
     _webinix_free_mem((void*)arg);
 
-    THREAD_RETURN
+    WEBUI_THREAD_RETURN
+}
+*/
+
+static WEBUI_THREAD_RECEIVE
+{
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t[Thread] _webinix_receive_thread()...\n");
+    #endif
+
+    // Arguments
+    _webinix_recv_arg_t* arg = (_webinix_recv_arg_t*) _arg;
+    _webinix_window_t* win = arg->win;
+    const char* packet = arg->packet;
+    size_t len = arg->len;
+    size_t recvNum = arg->recvNum;
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t[Thread %zu] _webinix_receive_thread() -> Start...\n", recvNum);
+    #endif
+
+    // Process the packet in this current thread
+    _webinix_window_receive(win, packet, len, recvNum);
+
+    #ifdef WEBUI_LOG
+        printf("[Core]\t\t[Thread %zu] _webinix_receive_thread() -> Finished.\n", recvNum);
+    #endif
+
+    // Free
+    _webinix_free_mem((void*)arg->packet);
+    _webinix_free_mem((void*)arg);
+
+    WEBUI_THREAD_RETURN
 }
 
 #ifdef _WIN32
