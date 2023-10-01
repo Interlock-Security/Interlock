@@ -1062,7 +1062,7 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
 size_t webinix_get_parent_process_id(size_t window) {
 
     #ifdef WEBUI_LOG
-        printf("[User] webinix_get_child_process_id([%zu])...\n", window);
+        printf("[User] webinix_get_parent_process_id([%zu])...\n", window);
     #endif
 
     // Initialization

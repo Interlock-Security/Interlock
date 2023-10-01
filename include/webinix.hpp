@@ -172,14 +172,19 @@ namespace webinix {
             return webinix_show_browser(webinix_window, content.data(), browser);
         }
 
-        // Close a specific window.
+        // Set the window in Kiosk mode (Full screen)
+        void set_kiosk(bool status) const {
+            webinix_set_kiosk(webinix_window, status);
+        }
+
+        // Close a specific window only. The window object will still exist.
         void close() const {
             webinix_close(webinix_window);
         }
 
-        // Set the window in Kiosk mode (Full screen)
-        void set_kiosk(bool status) const {
-            webinix_set_kiosk(webinix_window, status);
+        // Close a specific window and free all memory resources.
+        void destroy() const {
+            webinix_destroy(webinix_window);
         }
 
         // Check a specific window if it's still running
@@ -215,6 +220,21 @@ namespace webinix {
         // Set window position
         void set_position(unsigned int x, unsigned int y) const {
             webinix_set_position(webinix_window, x, y);
+        }
+
+        // Delete a specific window web-browser local folder profile.
+        void webinix_delete_profile(size_t window) const {
+            webinix_delete_profile(webinix_window);
+        }
+
+        // Get the ID of the parent process (The web browser may create another process for the window).
+        size_t get_parent_process_id() const {
+            return webinix_get_parent_process_id(webinix_window);
+        }
+
+        // Get the ID of the last child process spawned by the browser.
+        size_t get_child_process_id() const {
+            return webinix_get_child_process_id(webinix_window);
         }
 
         // -- JavaScript ----------------------
@@ -253,15 +273,6 @@ namespace webinix {
         std::string_view get_url() const {
             return std::string_view{webinix_get_url(webinix_window)};
         }
-
-        // Get process id (The web browser may create another process for the window)
-        size_t get_child_process_id() const {
-            return webinix_get_child_process_id(webinix_window);
-        }
-
-        size_t get_parent_process_id() const {
-            return webinix_get_parent_process_id(webinix_window);
-        }
     };
 
     // Wait until all opened windows get closed.
@@ -272,6 +283,11 @@ namespace webinix {
     // Close all opened windows. wait() will break.
     inline void exit() {
         webinix_exit();
+    }
+
+    // Set the web-server root folder path for all windows.
+    inline bool set_default_root_folder(const std::string_view path){
+        return webinix_set_default_root_folder(path.data());
     }
 
     // Set the maximum time in seconds to wait for browser to start
@@ -294,9 +310,19 @@ namespace webinix {
         webinix_free(ptr);
     }
 
-    // Set the web-server root folder path for all windows.
-    inline bool set_default_root_folder(const std::string_view path){
-        return webinix_set_default_root_folder(path.data());
+    // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
+    inline void* malloc(size_t size) {
+        return webinix_malloc(size);
+    }
+
+    // Free all memory resources. Should be called only at the end.
+    inline void clean() {
+        webinix_clean();
+    }
+
+    // Delete all local web-browser profiles folder. It should called at the end.
+    inline void delete_all_profiles() {
+        webinix_delete_all_profiles();
     }
 }
 
