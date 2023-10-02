@@ -133,6 +133,9 @@ int main() {
     // Wait until all windows get closed
     webinix_wait();
 
+    // Free all memory resources (Optional)
+    webinix_clean();
+
     return 0;
 }
 
