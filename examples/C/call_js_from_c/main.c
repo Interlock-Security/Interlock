@@ -18,7 +18,10 @@ void my_function_count(webinix_event_t* e) {
     // Run JavaScript
     if(!webinix_script(e->window, "return GetCount();", 0, response, 64)) {
 
-        printf("JavaScript Error: %s\n", response);
+        if(!webinix_is_shown(e->window))
+            printf("Window closed.\n");
+        else
+            printf("JavaScript Error: %s\n", response);
         return;
     }
 
