@@ -142,6 +142,7 @@ typedef struct webinix_event_t {
     size_t event_type; // Event type
     char* element; // HTML element ID
     size_t event_number; // Internal Webinix
+    size_t bind_id; // Bind ID
 } webinix_event_t;
 
 // -- Definitions ---------------------
@@ -543,8 +544,5 @@ WEBUI_EXPORT bool webinix_interface_is_app_running(void);
 
 // Get a unique window ID.
 WEBUI_EXPORT size_t webinix_interface_get_window_id(size_t window);
-
-// Get a unique ID. Same ID as `webinix_bind()`. Return > 0 if bind exist.
-WEBUI_EXPORT size_t webinix_interface_get_bind_id(size_t window, const char* element);
 
 #endif /* _WEBUI_H */

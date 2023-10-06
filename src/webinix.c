@@ -1920,6 +1920,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
         #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user callback...\n[Call]\n");
         #endif
+        e->bind_id = cb_index;
         _webinix_core.cb_interface[cb_index](e->window, e->event_type, e->element, e->event_number);
     }
 
@@ -2030,33 +2031,6 @@ size_t webinix_interface_get_window_id(size_t window) {
     _webinix_window_t* win = _webinix_core.wins[window];
 
     return win->window_number;
-}
-
-size_t webinix_interface_get_bind_id(size_t window, const char* element) {
-
-    #ifdef WEBUI_LOG
-        printf("[User] webinix_interface_get_bind_id([%zu], [%s])...\n", window, element);
-    #endif
-
-    // Initialization
-    _webinix_init();
-    
-    // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL) return 0;
-    _webinix_window_t* win = _webinix_core.wins[window];
-
-    size_t len = _webinix_strlen(element);
-    if (len < 1)
-        element = "";
-
-    // [win num][/][element]
-    char* webinix_internal_id = _webinix_malloc(3 + 1 + len);
-    sprintf(webinix_internal_id, "%zu/%s", win->window_number, element);
-
-    size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
-
-    _webinix_free_mem((void*)webinix_internal_id);
-    return cb_index;
 }
 
 // -- Core's Functions ----------------
@@ -3273,7 +3247,7 @@ static void _webinix_delete_folder(char* folder) {
 static char* _webinix_generate_internal_id(_webinix_window_t* win, const char* element) {
 
     #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_generate_internal_id([%s])...\n", element);
+        printf("[Core]\t\t_webinix_generate_internal_id([%zu], [%s])...\n", win->window_number, element);
     #endif
 
     // Generate Webinix internal id
@@ -4867,7 +4841,7 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, bo
     win->server_port = port;
     win->ws_port = ws_port;
     
-    if (!webinix_is_shown(win->window_number)) {
+    if (!win->connected) {
 
         // Start a new window
 
@@ -4935,10 +4909,11 @@ static void _webinix_window_event(_webinix_window_t* win, int event_type, char* 
 
         if (events_cb_index > 0 && _webinix_core.cb[events_cb_index] != NULL) {
 
-            // Call user all events cb
+            // Call user all-events cb
             #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_event() -> Calling user callback...\n[Call]\n");
+                printf("[Core]\t\t_webinix_window_event() -> Calling all-events user callback...\n[Call]\n");
             #endif
+            e.bind_id = events_cb_index;
             _webinix_core.cb[events_cb_index](&e);
         }
     }
@@ -4955,6 +4930,7 @@ static void _webinix_window_event(_webinix_window_t* win, int event_type, char* 
                 #ifdef WEBUI_LOG
                     printf("[Core]\t\t_webinix_window_event() -> Calling user callback...\n[Call]\n");
                 #endif
+                e.bind_id = cb_index;
                 _webinix_core.cb[cb_index](&e);
             }
         }
@@ -6263,6 +6239,7 @@ static WEBUI_THREAD_RECEIVE
                             #ifdef WEBUI_LOG
                                 printf("[Core]\t\t[Thread %zu] _webinix_receive_thread() -> Calling user callback...\n[Call]\n", recvNum);
                             #endif
+                            e.bind_id = cb_index;
                             _webinix_core.cb[cb_index](&e);
                         }
 
