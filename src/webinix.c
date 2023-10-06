@@ -148,7 +148,7 @@ typedef struct _webinix_core_t {
     uint16_t run_last_id;
     bool initialized;
     void (*cb[WEBUI_MAX_IDS])(webinix_event_t* e);
-    void (*cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char*, size_t);
+    void (*cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char*, size_t, size_t);
     char* executable_path;
     void *ptr_list[WEBUI_MAX_IDS * 2];
     size_t ptr_position;
@@ -1914,14 +1914,14 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->event_type [%zu]\n", e->event_type);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->element [%s]\n", e->element);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->event_number %zu\n", e->event_number);
+            printf("[Core]\t\t_webinix_interface_bind_handler() -> e->bind_id %zu\n", e->bind_id);
         #endif
 
         // Call cb
         #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user callback...\n[Call]\n");
         #endif
-        e->bind_id = cb_index;
-        _webinix_core.cb_interface[cb_index](e->window, e->event_type, e->element, e->event_number);
+        _webinix_core.cb_interface[cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
     }
 
     // Free
@@ -1943,7 +1943,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
     #endif
 }
 
-size_t webinix_interface_bind(size_t window, const char* element, void (*func)(size_t, size_t, char*, size_t)) {
+size_t webinix_interface_bind(size_t window, const char* element, void (*func)(size_t, size_t, char*, size_t, size_t)) {
 
     #ifdef WEBUI_LOG
         printf("[User] webinix_interface_bind([%zu], [%s], [0x%p])...\n", window, element, func);
