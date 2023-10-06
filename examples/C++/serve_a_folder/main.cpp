@@ -14,7 +14,6 @@ class MyClass {
     // This method gets called every time the
     // user clicks on "OpenNewWindow"
     void show_second_window(webinix::window::event* e) {
-
         // Show a new window, and navigate to `/second.html`
         // if the window is already opened, then switch in the same window
         my_second_window.show("second.html");
@@ -23,7 +22,6 @@ class MyClass {
     // This method gets called every time the
     // user clicks on "SwitchToSecondPage"
     void switch_to_second_page(webinix::window::event* e) {
-
         // Switch to `/second.html` in the same opened window.
         e->get_window().show("second.html");
     }
@@ -32,34 +30,35 @@ class MyClass {
     // This function receives all events because
     // it's get bind with an empty HTML ID.
     void events(webinix::window::event* e) {
-
         if (e->event_type == webinix::CONNECTED)
             std::cout << "Window Connected." << std::endl;
         else if (e->event_type == webinix::DISCONNECTED)
             std::cout << "Window Disconnected." << std::endl;
         else if (e->event_type == webinix::MOUSE_CLICK)
             std::cout << "Click on element: " << e->element << std::endl;
-        else if (e->event_type == webinix::NAVIGATION)
-            std::cout << "Starting navigation to: " << e->data << std::endl;
+        else if (e->event_type == webinix::NAVIGATION) {
+            std::string url = e->get_string();
+            std::cout << "Starting navigation to: " << url << std::endl;
+            e->get_window().navigate(url);
+        }
     }
 
     // Example of a simple function (Not a method)
     void exit_app(webinix::window::event* e) {
-
         // Close all opened windows
         webinix::exit();
     }    
 };
 
-// Wrapper:
-// Because Webinix is written in C, so it can not
-// access `MyClass` directly. That's why we should
-// create a simple C++ wrapper.
-MyClass obj;
-void show_second_window_wrp(webinix::window::event* e) { obj.show_second_window(e); }
-void switch_to_second_page_wrp(webinix::window::event* e) { obj.switch_to_second_page(e); }
-void events_wrp(webinix::window::event* e) { obj.events(e); }
-void exit_app_wrp(webinix::window::event* e) { obj.exit_app(e); }
+// -- MyClass C Wrapper ------------------------------------------------------------------------
+// Because Webinix is written in C, so it can not access `MyClass` directly.
+// That's why we should create a simple C++ wrapper.
+MyClass myClassObj;
+void show_second_window_wrp(webinix::window::event* e) { myClassObj.show_second_window(e); }
+void switch_to_second_page_wrp(webinix::window::event* e) { myClassObj.switch_to_second_page(e); }
+void events_wrp(webinix::window::event* e) { myClassObj.events(e); }
+void exit_app_wrp(webinix::window::event* e) { myClassObj.exit_app(e); }
+// ---------------------------------------------------------------------------------------------
 
 int main() {
 
@@ -76,7 +75,8 @@ int main() {
     my_second_window.bind("Exit", exit_app_wrp);
 
     // Bind all events
-    // my_window.bind("", events_wrp);
+    my_window.bind("", events_wrp);
+    my_second_window.bind("", events_wrp);
 
     // Show a new window
     my_window.show("index.html"); // my_window.show_browser("index.html", Chrome);
