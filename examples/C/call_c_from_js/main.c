@@ -5,69 +5,78 @@
 void my_function_string(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix.call('MyID_One', 'Hello');
+    // webinix.call('MyID_One', 'Hello', 'World`);
 
-    const char* str = webinix_get_string(e);
-    printf("my_function_string: %s\n", str); // Hello
+    const char* str_1 = webinix_get_string(e); // Or webinix_get_string_at(e, 0);
+    const char* str_2 = webinix_get_string_at(e, 1);
 
-    // Need Multiple Arguments?
-    //
-    // Webinix support only one argument. To get multiple arguments
-    // you can send a JSON string from JavaScript then decode it.
-    // Example:
-    //
-    // my_json = my_json_decoder(str);
-    // foo = my_json[0];
-    // bar = my_json[1];
+    printf("my_function_string 1: %s\n", str_1); // Hello
+    printf("my_function_string 2: %s\n", str_2); // World
 }
 
 void my_function_integer(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix.call('MyID_Two', 123456789);
+    // webinix.call('MyID_Two', 123, 456, 789);
 
-    long long number = webinix_get_int(e);
-    printf("my_function_integer: %lld\n", number); // 123456789
+    long long number_1 = webinix_get_int(e); // Or webinix_get_int_at(e, 0);
+    long long number_2 = webinix_get_int_at(e, 1);
+    long long number_3 = webinix_get_int_at(e, 2);
+
+    printf("my_function_integer 1: %lld\n", number_1); // 123
+    printf("my_function_integer 2: %lld\n", number_2); // 456
+    printf("my_function_integer 3: %lld\n", number_3); // 789
 }
 
 void my_function_boolean(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix.call('MyID_Three', true);
+    // webinix.call('MyID_Three', true, false);
 
-    bool status = webinix_get_bool(e); // True
-    if(status)
-        printf("my_function_boolean: True\n");
-    else
-        printf("my_function_boolean: False\n");
+    bool status_1 = webinix_get_bool(e); // Or webinix_get_bool_at(e, 0);
+    bool status_2 = webinix_get_bool_at(e, 1);
+
+    printf("my_function_boolean 1: %s\n", (status_1 ? "True" : "False")); // True
+    printf("my_function_boolean 2: %s\n", (status_2 ? "True" : "False")); // False
 }
 
 void my_function_raw_binary(webinix_event_t* e) {
 
     // JavaScript:
-    // webinix.call('MyID_RawBinary', new Uint8Array([0x42, 0x43, 0x44]));
+    // webinix.call('MyID_RawBinary', new Uint8Array([0x41]), new Uint8Array([0x42, 0x43]));
 
-    const unsigned char* raw = (const unsigned char*)e->data;
-    long long len = e->size;
+    const unsigned char* raw_1 = (const unsigned char*)webinix_get_string(e); // Or webinix_get_string_at(e, 0);
+    const unsigned char* raw_2 = (const unsigned char*)webinix_get_string_at(e, 1);
 
-    printf("my_function_raw_binary: %lld bytes\n", len);
-    printf("my_function_raw_binary: ");
-    for (size_t i = 0; i < len; i++)
-        printf("0x%02x ", raw[i]);
+    size_t len_1 = webinix_get_size(e); // Or webinix_get_size_at(e, 0);
+    size_t len_2 = webinix_get_size_at(e, 1);
+
+    // Print raw_1
+    printf("my_function_raw_binary 1 (%zu bytes): ", len_1);
+    for (size_t i = 0; i < len_1; i++)
+        printf("0x%02x ", raw_1[i]);
+    printf("\n");
+
+    // Print raw_2
+    printf("my_function_raw_binary 2 (%zu bytes): ", len_2);
+    for (size_t i = 0; i < len_2; i++)
+        printf("0x%02x ", raw_2[i]);
     printf("\n");
 }
 
 void my_function_with_response(webinix_event_t* e) {
 
     // JavaScript:
-    // const result = webinix.call('MyID_Four', number);
+    // webinix.call('MyID_Four', number, 2).then(...)
 
-    long long number = webinix_get_int(e);
-    number = number * 2;
-    printf("my_function_with_response: %lld\n", number);
+    long long number = webinix_get_int(e); // Or webinix_get_int_at(e, 0);
+    long long times = webinix_get_int_at(e, 1);
+
+    int res = number * times;
+    printf("my_function_with_response: %lld * %lld = %lld\n", number, times, res);
 
     // Send back the response to JavaScript
-    webinix_return_int(e, number);
+    webinix_return_int(e, res);
 }
 
 int main() {
@@ -95,13 +104,13 @@ int main() {
     "  <body>"
     "    <h1>Webinix - Call C from JavaScript</h1>"
     "    <p>Call C functions with arguments (<em>See the logs in your terminal</em>)</p>"
-    "    <button onclick=\"webinix.call('MyID_One', 'Hello');\">Call my_function_string()</button>"
+    "    <button onclick=\"webinix.call('MyID_One', 'Hello', 'World');\">Call my_function_string()</button>"
     "    <br>"
-    "    <button onclick=\"webinix.call('MyID_Two', 123456789);\">Call my_function_integer()</button>"
+    "    <button onclick=\"webinix.call('MyID_Two', 123, 456, 789);\">Call my_function_integer()</button>"
     "    <br>"
-    "    <button onclick=\"webinix.call('MyID_Three', true);\">Call my_function_boolean()</button>"
+    "    <button onclick=\"webinix.call('MyID_Three', true, false);\">Call my_function_boolean()</button>"
     "    <br>"
-    "    <button onclick=\"webinix.call('MyID_RawBinary', new Uint8Array([0x41, 0x42, 0x43]));\">Call my_function_raw_binary()</button>"
+    "    <button onclick=\"webinix.call('MyID_RawBinary', new Uint8Array([0x41]), new Uint8Array([0x42, 0x43]));\">Call my_function_raw_binary()</button>"
     "    <br>"
     "    <p>Call a C function that returns a response</p>"
     "    <button onclick=\"MyJS();\">Call my_function_with_response()</button>"
@@ -110,7 +119,7 @@ int main() {
     "      function MyJS() {"
     "        const MyInput = document.getElementById('MyInputID');"
     "        const number = MyInput.value;"
-    "        webinix.call('MyID_Four', number).then((response) => {"
+    "        webinix.call('MyID_Four', number, 2).then((response) => {"
     "            MyInput.value = response;"
     "        });"
     "      }"

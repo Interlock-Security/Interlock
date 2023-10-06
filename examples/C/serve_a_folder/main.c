@@ -26,12 +26,13 @@ void events(webinix_event_t* e) {
     else if(e->event_type == WEBUI_EVENT_MOUSE_CLICK)
         printf("Click. \n");
     else if(e->event_type == WEBUI_EVENT_NAVIGATION) {
-        printf("Starting navigation to: %s \n", (char *)e->data);
+        const char* url = webinix_get_string(e);
+        printf("Starting navigation to: %s \n", url);
 
         // Because we used `webinix_bind(MyWindow, "", events);`
-        // then all `href` link clicks will be blocked by Webinix, so
-        // we need to use `webinix_navigate()` to control the navigation
-        webinix_navigate(e->window, (char *)e->data);
+        // Webinix will block all `href` link clicks and sent here instead.
+        // We can then control the behaviour of links as needed.
+        webinix_navigate(e->window, url);
     }
 }
 
