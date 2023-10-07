@@ -4611,7 +4611,7 @@ static bool _webinix_browser_start(_webinix_window_t* win, const char* address, 
             return _webinix_browser_start_firefox(win, address);
         else if (win->current_browser == Yandex)
             return _webinix_browser_start_yandex(win, address);
-        else if (browser == Chromium)
+        else if (win->current_browser == Chromium)
             return _webinix_browser_start_chromium(win, address);
         else
             return false;
