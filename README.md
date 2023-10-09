@@ -32,9 +32,9 @@
 ## Features
 
 - Written in Pure C
-- Fully Independent (*No need for any third-party runtimes*)
+- Fully Independent (_No need for any third-party runtimes_)
 - Lightweight ~200 Kb & Small memory footprint
-- Fast binary communication protocol between Webinix and the browser (*Instead of JSON*)
+- Fast binary communication protocol between Webinix and the browser (_Instead of JSON_)
 - One header file
 - Multi-platform & Multi-Browser
 - Using private profile for safety
@@ -51,7 +51,7 @@ This [text editor](https://github.com/webinix-dev/webinix/tree/main/examples/C/t
 
 ## UI & The Web Technologies
 
-[Borislav Stanimirov](https://ibob.bg/) discusses using HTML5 in the web browser as GUI at the [C++ Conference 2019 (*YouTube*)](https://www.youtube.com/watch?v=bbbcZd4cuxg).
+[Borislav Stanimirov](https://ibob.bg/) discusses using HTML5 in the web browser as GUI at the [C++ Conference 2019 (_YouTube_)](https://www.youtube.com/watch?v=bbbcZd4cuxg).
 
 <!-- <div align="center">
   <a href="https://www.youtube.com/watch?v=bbbcZd4cuxg"><img src="https://img.youtube.com/vi/bbbcZd4cuxg/0.jpg" alt="Embrace Modern Technology: Using HTML 5 for GUI in C++ - Borislav Stanimirov - CppCon 2019"></a>
@@ -81,38 +81,42 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ### Runtime Dependencies Comparison
 
-|  | WebView | Qt | Webinix |
-| ------ | ------ | ------ | ------ |
-| Runtime Dependencies on Windows | *WebView2* | *QtCore, QtGui, QtWidgets* | ***A Web Browser*** |
-| Runtime Dependencies on Linux | *GTK3, WebKitGTK* | *QtCore, QtGui, QtWidgets* | ***A Web Browser*** |
-| Runtime Dependencies on macOS | *Cocoa, WebKit* | *QtCore, QtGui, QtWidgets* | ***A Web Browser*** |
+|                                 | WebView           | Qt                         | Webinix               |
+| ------------------------------- | ----------------- | -------------------------- | ------------------- |
+| Runtime Dependencies on Windows | _WebView2_        | _QtCore, QtGui, QtWidgets_ | **_A Web Browser_** |
+| Runtime Dependencies on Linux   | _GTK3, WebKitGTK_ | _QtCore, QtGui, QtWidgets_ | **_A Web Browser_** |
+| Runtime Dependencies on macOS   | _Cocoa, WebKit_   | _QtCore, QtGui, QtWidgets_ | **_A Web Browser_** |
 
 ## Documentation
 
 > **Note**
 > We are currently writing documentation.
 
- - [Online Documentation - C](https://webinix.me/docs/#/c_api)
- - [Online Documentation - C++](https://webinix.me/docs/#/cpp_api)
+- [Online Documentation - C](https://webinix.me/docs/#/c_api)
+- [Online Documentation - C++](https://webinix.me/docs/#/cpp_api)
 
 ## Build
 
 - **Windows**
+
   ```powershell
   # GCC
   mingw32-make
-  
+
   # MSVC
   nmake -f Makefile.nmake
   ```
+
 - **Linux**
+
   ```sh
   # GCC
   make
-  
+
   # Clang
   make CC=clang
   ```
+
 - **macOS**
   ```sh
   make
@@ -125,31 +129,31 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ## Wrappers
 
-| Language | Status | Link |
-| ------ | ------ | ------ |
-| Go | ✔️ | [Go-Webinix](https://github.com/webinix-dev/go-webinix) |
-| Nim | ✔️ | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix) |
-| Pascal | ✔️ | [Pascal-Webinix](https://github.com/webinix-dev/pascal-webinix) |
-| Python | ✔️ | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
-| Rust | *not complete* | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix) |
-| TypeScript / JavaScript | ✔️ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix) |
-| V | ✔️ | [V-Webinix](https://github.com/webinix-dev/v-webinix) |
-| Zig | *not complete* | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix) |
+| Language                | Status         | Link                                                      |
+| ----------------------- | -------------- | --------------------------------------------------------- |
+| Go                      | ✔️             | [Go-Webinix](https://github.com/webinix-dev/go-webinix)         |
+| Nim                     | ✔️             | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix)       |
+| Pascal                  | ✔️             | [Pascal-Webinix](https://github.com/webinix-dev/pascal-webinix) |
+| Python                  | ✔️             | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
+| Rust                    | _not complete_ | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix)     |
+| TypeScript / JavaScript | ✔️             | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix)     |
+| V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
+| Zig                     | _not complete_ | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
 
 ## Supported Web Browsers
 
-| Browser | Windows | macOS | Linux |
-| ------ | ------ | ------ | ------ |
-| Mozilla Firefox | ✔️ | ✔️ | ✔️ |
-| Google Chrome | ✔️ | ✔️ | ✔️ |
-| Microsoft Edge | ✔️ | ✔️ | ✔️ |
-| Chromium | ✔️ | ✔️ | ✔️ |
-| Yandex | ✔️ | ✔️ | ✔️ |
-| Brave | ✔️ | ✔️ | ✔️ |
-| Vivaldi | ✔️ | ✔️ | ✔️ |
-| Epic | ✔️ | ✔️ | *not available* |
-| Apple Safari | *not available* | *coming soon* | *not available* |
-| Opera | *coming soon* | *coming soon* | *coming soon* |
+| Browser         | Windows         | macOS         | Linux           |
+| --------------- | --------------- | ------------- | --------------- |
+| Mozilla Firefox | ✔️              | ✔️            | ✔️              |
+| Google Chrome   | ✔️              | ✔️            | ✔️              |
+| Microsoft Edge  | ✔️              | ✔️            | ✔️              |
+| Chromium        | ✔️              | ✔️            | ✔️              |
+| Yandex          | ✔️              | ✔️            | ✔️              |
+| Brave           | ✔️              | ✔️            | ✔️              |
+| Vivaldi         | ✔️              | ✔️            | ✔️              |
+| Epic            | ✔️              | ✔️            | _not available_ |
+| Apple Safari    | _not available_ | _coming soon_ | _not available_ |
+| Opera           | _coming soon_   | _coming soon_ | _coming soon_   |
 
 ### License
 
