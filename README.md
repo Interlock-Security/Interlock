@@ -104,7 +104,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
   mingw32-make
 
   # MSVC
-  nmake -f Makefile.nmake
+  nmake
   ```
 
 - **Linux**
