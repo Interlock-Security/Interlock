@@ -48,11 +48,11 @@ void my_function_raw_binary(webinix_event_t* e) {
 	const unsigned char* raw_1 = (const unsigned char*)webinix_get_string(e); // Or webinix_get_string_at(e, 0);
 	const unsigned char* raw_2 = (const unsigned char*)webinix_get_string_at(e, 1);
 
-	size_t len_1 = webinix_get_size(e); // Or webinix_get_size_at(e, 0);
-	size_t len_2 = webinix_get_size_at(e, 1);
+	int len_1 = (int)webinix_get_size(e); // Or webinix_get_size_at(e, 0);
+	int len_2 = (int)webinix_get_size_at(e, 1);
 
 	// Print raw_1
-	printf("my_function_raw_binary 1 (%llu bytes): ", len_1);
+	printf("my_function_raw_binary 1 (%d bytes): ", len_1);
 	for (size_t i = 0; i < len_1; i++)
 		printf("0x%02x ", raw_1[i]);
 	printf("\n");
@@ -64,7 +64,7 @@ void my_function_raw_binary(webinix_event_t* e) {
 		valid = true;
 
 	// Print raw_2
-	printf("my_function_raw_binary 2 big (%llu bytes): valid data? %s\n", len_2, (valid ? "Yes" : "No"));
+	printf("my_function_raw_binary 2 big (%d bytes): valid data? %s\n", len_2, (valid ? "Yes" : "No"));
 }
 
 void my_function_with_response(webinix_event_t* e) {
