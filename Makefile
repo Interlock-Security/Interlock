@@ -10,7 +10,7 @@ WEBUI_BUILD_FLAGS = /Fo"webinix.obj" /c /EHsc "$(MAKEDIR)/src/webinix.c" /I"$(MA
 
 # Output Commands
 LIB_STATIC_OUT = /OUT:"webinix-2-static.lib" "webinix.obj" "civetweb.obj"
-LIB_DYN_OUT = /DLL /OUT:"webinix-2.dll" "webinix.obj" "civetweb.obj" user32.lib Advapi32.lib
+LIB_DYN_OUT = /DLL /OUT:"webinix-2.dll" "webinix.obj" "civetweb.obj" user32.lib Advapi32.lib Shell32.lib
 
 # == 2.TARGETS ================================================================
 
