@@ -2517,6 +2517,27 @@ static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection*
 	return exist;
 }
 
+static bool _webinix_regular_open_url(const char* url) {
+
+#ifdef WEBUI_LOG
+	printf("[Core]\t\t_webinix_regular_open_url([%s])...\n", url);
+#endif
+
+#if defined(_WIN32)
+    HINSTANCE result = ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+	return ((INT_PTR)result > 32);
+#elif defined(__APPLE__)
+    char command[1024];
+    snprintf(command, sizeof(command), "open \"%s\"", url);
+    return (system(command) == 0);
+#else
+    // Assuming Linux
+    char command[1024];
+    snprintf(command, sizeof(command), "xdg-open \"%s\"", url);
+    return (system(command) == 0);
+#endif
+}
+
 static bool _webinix_file_exist(char* file) {
 
 #ifdef WEBUI_LOG
@@ -5075,13 +5096,15 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, bo
 
 		// Run browser
 		if (!_webinix_browser_start(win, win->url, browser)) {
+			if (!_webinix_regular_open_url(win->url)) {
 
-			// Browser not available
-			_webinix_free_mem((void*)win->html);
-			_webinix_free_mem((void*)win->url);
-			_webinix_free_port(win->server_port);
-			_webinix_free_port(win->ws_port);
-			return false;
+				// Browser not available
+				_webinix_free_mem((void*)win->html);
+				_webinix_free_mem((void*)win->url);
+				_webinix_free_port(win->server_port);
+				_webinix_free_port(win->ws_port);
+				return false;
+			}
 		}
 
 		_webinix_core.ui = true;
