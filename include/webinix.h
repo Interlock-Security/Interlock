@@ -486,6 +486,9 @@ WEBUI_EXPORT size_t webinix_get_parent_process_id(size_t window);
  */
 WEBUI_EXPORT size_t webinix_get_child_process_id(size_t window);
 
+// Set a custom SSL/TLS certificate and the private key in PEM format. If set empty Webinix will generate a self-signed certificate
+WEBUI_EXPORT bool webinix_set_tls_certificate(const char* certificate_pem, const char* private_key_pem);
+
 // -- JavaScript ----------------------
 
 // Run JavaScript without waiting for the response.
