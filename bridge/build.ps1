@@ -55,7 +55,7 @@ if (!$silent) { Write-Host "Transpile and bundle Webinix-Bridge from TypeScript 
 .\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=. ./webinix_bridge.ts $log_level
 
 # Convert Webinix-Bridge (JS to C)
-if (!$silent) { Write-Host "Convert Webinix-Bridge JavaScript to C99 Header..." }
+if (!$silent) { Write-Host "Convert Webinix-Bridge JavaScript to C Header..." }
 & $python_cmd js2c.py
 
 # Done

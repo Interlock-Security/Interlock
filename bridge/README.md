@@ -1,6 +1,6 @@
 # Webinix Bridge
 
-The Webinix Bridge connects the UI (_Web Browser_) with the backend application through WebSocket. This bridge is written in TypeScript, and it needs to be transpiled to JavaScript using [ESBuild](https://esbuild.github.io/) to produce `webinix_bridge.js`, then converted to C99 header using the Python script `js2c.py` to generate `webinix_bridge.h`.
+The Webinix Bridge connects the UI (_Web Browser_) with the backend application through WebSocket. This bridge is written in TypeScript, and it needs to be transpiled to JavaScript using [ESBuild](https://esbuild.github.io/) to produce `webinix_bridge.js`, then converted to C header using the Python script `js2c.py` to generate `webinix_bridge.h`.
 
 ### Windows
 
