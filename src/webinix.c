@@ -244,14 +244,14 @@ static int _webinix_system_win32_out(const char* cmd, char** output, bool show);
 static bool _webinix_socket_test_listen_win32(size_t port_num);
 static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
 
-#define WEBUI_THREAD_SERVER_START DWORD WINAPI _webinix_server_start(LPVOID arg)
+#define WEBUI_THREAD_SERVER_START DWORD WINAPI _webinix_server_thread(LPVOID arg)
 #define WEBUI_THREAD_RECEIVE      DWORD WINAPI _webinix_receive_thread(LPVOID _arg)
 #define WEBUI_THREAD_RETURN       return 0;
 #else
 static const char* webinix_sep = "/";
 static void* _webinix_run_browser_task(void* _arg);
 
-#define WEBUI_THREAD_SERVER_START void* _webinix_server_start(void* arg)
+#define WEBUI_THREAD_SERVER_START void* _webinix_server_thread(void* arg)
 #define WEBUI_THREAD_RECEIVE      void* _webinix_receive_thread(void* _arg)
 #define WEBUI_THREAD_RETURN       pthread_exit(NULL);
 #endif
@@ -330,7 +330,7 @@ static uint16_t _webinix_get_id(const char* data);
 static uint32_t _webinix_get_token(const char* data);
 static uint32_t _webinix_generate_random_uint32();
 static const char* _webinix_url_encode(const char* str);
-static bool _webinix_regular_open_url(const char* url);
+static bool _webinix_open_url_native(const char* url);
 static bool _webinix_is_valid_url(const char* url);
 static bool _webinix_port_is_used(size_t port_num);
 #ifdef WEBUI_TLS
@@ -580,39 +580,8 @@ size_t webinix_new_window(void) {
 	printf("[User] webinix_new_window()...\n");
 #endif
 
-	// Initialization
-	_webinix_init();
-	if (_webinix_core.exit_now)
-		return 0;
-
-	// Get a new window number
-	// starting from 1.
-	size_t window_number = webinix_get_new_window_id();
-	if (_webinix_core.wins[window_number] != NULL)
-		_webinix_panic();
-
 	// Create a new window
-	_webinix_window_t* win = (_webinix_window_t*)_webinix_malloc(sizeof(_webinix_window_t));
-	_webinix_core.wins[window_number] = win;
-
-	// Initialisation
-	win->window_number = window_number;
-	win->browser_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-	win->server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-	if (_webinix_is_empty(_webinix_core.default_server_root_path))
-		sprintf(win->server_root_path, "%s", WEBUI_DEFAULT_PATH);
-	else
-		sprintf(win->server_root_path, "%s", _webinix_core.default_server_root_path);
-
-	// Generate a random token
-	win->token = _webinix_generate_random_uint32();
-
-#ifdef WEBUI_LOG
-	printf("[User] webinix_new_window() -> New window #%zu @ 0x%p\n", window_number, win);
-	printf("[User] webinix_new_window() -> New window Token 0x%08X (%" PRIu32 ")\n", win->token, win->token);
-#endif
-
-	return window_number;
+	return webinix_new_window_id(webinix_get_new_window_id());
 }
 
 size_t webinix_new_window_id(size_t window_number) {
@@ -626,6 +595,7 @@ size_t webinix_new_window_id(size_t window_number) {
 	if (_webinix_core.exit_now)
 		return 0;
 
+	// Check window ID
 	if (window_number < 1 || window_number > WEBUI_MAX_IDS)
 		return 0;
 
@@ -1579,12 +1549,17 @@ bool webinix_set_tls_certificate(const char* certificate_pem, const char* privat
 			return false;
 		}
 
+		// Free generated self-signed
+		_webinix_free_mem((void*)_webinix_core.root_cert);
+		_webinix_free_mem((void*)_webinix_core.root_key);
+		_webinix_free_mem((void*)_webinix_core.ssl_cert);
+		_webinix_free_mem((void*)_webinix_core.ssl_key);		
+
+		// Set user TLS
 		char* ssl_cert = (char*)_webinix_malloc(certificate_len);
 		char* ssl_key = (char*)_webinix_malloc(private_key_len);
-
 		snprintf(ssl_cert, certificate_len, "%s", certificate_pem);
 		snprintf(ssl_key, private_key_len, "%s", private_key_pem);
-
 		_webinix_core.ssl_cert = ssl_cert;
 		_webinix_core.ssl_key = ssl_key;
 
@@ -2781,10 +2756,10 @@ static bool _webinix_is_valid_url(const char* url) {
     return false;
 }
 
-static bool _webinix_regular_open_url(const char* url) {
+static bool _webinix_open_url_native(const char* url) {
 
 #ifdef WEBUI_LOG
-	printf("[Core]\t\t_webinix_regular_open_url([%s])...\n", url);
+	printf("[Core]\t\t_webinix_open_url_native([%s])...\n", url);
 #endif
 
 #if defined(_WIN32)
@@ -5772,7 +5747,7 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, in
 		// Run browser
 		bool runBrowser = false;
 		if (!_webinix_browser_start(win, window_url, browser)) {
-			if (browser == AnyBrowser && _webinix_regular_open_url(window_url))
+			if (browser == AnyBrowser && _webinix_open_url_native(window_url))
 				runBrowser = true;
 		} else runBrowser = true;
 		_webinix_free_mem((void*)window_url);
@@ -5795,13 +5770,13 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, in
 
 // New server thread
 #ifdef _WIN32
-		HANDLE thread = CreateThread(NULL, 0, _webinix_server_start, (void*)win, 0, NULL);
+		HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void*)win, 0, NULL);
 		win->server_thread = thread;
 		if (thread != NULL)
 			CloseHandle(thread);
 #else
 		pthread_t thread;
-		pthread_create(&thread, NULL, &_webinix_server_start, (void*)win);
+		pthread_create(&thread, NULL, &_webinix_server_thread, (void*)win);
 		pthread_detach(thread);
 		win->server_thread = thread;
 #endif
@@ -5995,12 +5970,15 @@ static void _webinix_init(void) {
 
 	if (_webinix_core.initialized)
 		return;
+	memset(&_webinix_core, 0, sizeof(_webinix_core_t));
+	_webinix_core.initialized = true;
 
 #ifdef WEBUI_LOG
 	printf("[Core]\t\tWebinix v" WEBUI_VERSION " (" WEBUI_OS ", " WEBUI_SECURE ")\n");
 	printf("[Core]\t\t_webinix_init()...\n");
 #endif
 
+	// Random
 #ifdef _WIN32
 	srand((size_t)time(NULL));
 #else
@@ -6008,8 +5986,6 @@ static void _webinix_init(void) {
 #endif
 
 	// Initializing core
-	memset(&_webinix_core, 0, sizeof(_webinix_core_t));
-	_webinix_core.initialized = true;
 	_webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
 	_webinix_core.executable_path = _webinix_get_current_path();
 	_webinix_core.default_server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
@@ -6605,7 +6581,7 @@ static void _webinix_ws_close_handler(const struct mg_connection* conn, void* _w
 
 static WEBUI_THREAD_SERVER_START {
 #ifdef WEBUI_LOG
-	printf("[Core]\t\t_webinix_server_start()...\n");
+	printf("[Core]\t\t_webinix_server_thread()...\n");
 #endif
 
 	// Mutex
@@ -6617,7 +6593,7 @@ static WEBUI_THREAD_SERVER_START {
 	}
 
 #ifdef WEBUI_LOG
-	printf("[Core]\t\t_webinix_server_start([%zu]) -> URL: [%s]\n", win->window_number, win->url);
+	printf("[Core]\t\t_webinix_server_thread([%zu]) -> URL: [%s]\n", win->window_number, win->url);
 #endif
 
 	// Initialization
@@ -6738,17 +6714,17 @@ static WEBUI_THREAD_SERVER_START {
 		if (_webinix_core.startup_timeout > 0) {
 
 #ifdef WEBUI_LOG
-			printf("[Core]\t\t_webinix_server_start([%zu]) -> Listening Success\n", win->window_number);
+			printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening Success\n", win->window_number);
 			printf(
-			    "[Core]\t\t_webinix_server_start([%zu]) -> HTTP Port: %s\n", win->window_number, server_port
+			    "[Core]\t\t_webinix_server_thread([%zu]) -> HTTP Port: %s\n", win->window_number, server_port
 			);
-			printf("[Core]\t\t_webinix_server_start([%zu]) -> WS Port: %s\n", win->window_number, ws_port);
+			printf("[Core]\t\t_webinix_server_thread([%zu]) -> WS Port: %s\n", win->window_number, ws_port);
 			printf(
-			    "[Core]\t\t_webinix_server_start([%zu]) -> Timeout is %zu seconds\n", win->window_number,
+			    "[Core]\t\t_webinix_server_thread([%zu]) -> Timeout is %zu seconds\n", win->window_number,
 			    _webinix_core.startup_timeout
 			);
 			printf(
-			    "[Core]\t\t_webinix_server_start([%zu]) -> Root path: %s\n", win->window_number,
+			    "[Core]\t\t_webinix_server_thread([%zu]) -> Root path: %s\n", win->window_number,
 			    win->server_root_path
 			);
 #endif
@@ -6761,7 +6737,7 @@ static WEBUI_THREAD_SERVER_START {
 
 #ifdef WEBUI_LOG
 					printf(
-					    "[Core]\t\t_webinix_server_start([%zu]) -> Waiting for first HTTP "
+					    "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting for first HTTP "
 					    "request...\n",
 					    win->window_number
 					);
@@ -6792,7 +6768,7 @@ static WEBUI_THREAD_SERVER_START {
 						do {
 #ifdef WEBUI_LOG
 							printf(
-							    "[Core]\t\t_webinix_server_start([%zu]) -> Waiting for first "
+							    "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting for first "
 							    "connection...\n",
 							    win->window_number
 							);
@@ -6824,7 +6800,7 @@ static WEBUI_THREAD_SERVER_START {
 
 #ifdef WEBUI_LOG
 					printf(
-					    "[Core]\t\t_webinix_server_start([%zu]) -> Window Connected.\n",
+					    "[Core]\t\t_webinix_server_thread([%zu]) -> Window Connected.\n",
 					    win->window_number
 					);
 #endif
@@ -6849,7 +6825,7 @@ static WEBUI_THREAD_SERVER_START {
 
 #ifdef WEBUI_LOG
 							printf(
-							    "[Core]\t\t_webinix_server_start([%zu]) -> Window "
+							    "[Core]\t\t_webinix_server_thread([%zu]) -> Window "
 							    "disconnected\n",
 							    win->window_number
 							);
@@ -6858,7 +6834,7 @@ static WEBUI_THREAD_SERVER_START {
 							do {
 #ifdef WEBUI_LOG
 								printf(
-								    "[Core]\t\t_webinix_server_start([%zu]) -> Waiting "
+								    "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting "
 								    "for reconnection...\n",
 								    win->window_number
 								);
@@ -6897,8 +6873,8 @@ static WEBUI_THREAD_SERVER_START {
 		if (_webinix_core.startup_timeout == 0) {
 
 #ifdef WEBUI_LOG
-			printf("[Core]\t\t_webinix_server_start([%zu]) -> Listening success\n", win->window_number);
-			printf("[Core]\t\t_webinix_server_start([%zu]) -> Infinite loop...\n", win->window_number);
+			printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening success\n", win->window_number);
+			printf("[Core]\t\t_webinix_server_thread([%zu]) -> Infinite loop...\n", win->window_number);
 #endif
 
 			// Wait forever
@@ -6912,7 +6888,7 @@ static WEBUI_THREAD_SERVER_START {
 	} else {
 
 #ifdef WEBUI_LOG
-		printf("[Core]\t\t_webinix_server_start([%zu]) -> Listening failed\n", win->window_number);
+		printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening failed\n", win->window_number);
 #endif
 
 		// Mutex
@@ -6920,7 +6896,7 @@ static WEBUI_THREAD_SERVER_START {
 	}
 
 #ifdef WEBUI_LOG
-	printf("[Core]\t\t_webinix_server_start([%zu]) -> Cleaning...\n", win->window_number);
+	printf("[Core]\t\t_webinix_server_thread([%zu]) -> Cleaning...\n", win->window_number);
 #endif
 
 	// Clean
@@ -6939,7 +6915,7 @@ static WEBUI_THREAD_SERVER_START {
 	// win->process_id = 0;
 
 #ifdef WEBUI_LOG
-	printf("[Core]\t\t_webinix_server_start([%zu]) -> Server stoped.\n", win->window_number);
+	printf("[Core]\t\t_webinix_server_thread([%zu]) -> Server stoped.\n", win->window_number);
 #endif
 
 	// Let the main wait() know that
