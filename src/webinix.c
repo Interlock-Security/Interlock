@@ -5709,22 +5709,10 @@ static bool _webinix_show_window(_webinix_window_t* win, const char* content, in
 		_webinix_free_mem((void*)win->url);
 
 	// Get network ports
-	win->server_port = (win->custom_server_port > 0 ? win->custom_server_port : _webinix_get_free_port());
-	win->ws_port = (win->ws_port > 0 ? win->ws_port : _webinix_get_free_port());
-	if (_webinix_port_is_used(win->server_port)) {
-#ifdef WEBUI_LOG
-		printf("[Core]\t\t_webinix_show_window() -> Web server port %zu is busy.\n", 
-		win->server_port);
-#endif
-		return false;
-	}
-	else if (_webinix_port_is_used(win->ws_port)) {
-#ifdef WEBUI_LOG
-		printf("[Core]\t\t_webinix_show_window() -> WebSocket server port %zu is busy.\n", 
-		win->ws_port);
-#endif
-		return false;
-	}
+	if (win->custom_server_port > 0)
+		win->server_port = win->custom_server_port;
+	win->server_port = (win->server_port == 0 ? _webinix_get_free_port() : win->server_port);
+	win->ws_port = (win->ws_port == 0 ? _webinix_get_free_port() : win->ws_port);
 
 	// Generate the server URL
 	win->url = (char*)_webinix_malloc(32); // [http][domain][port]
