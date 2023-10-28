@@ -197,12 +197,12 @@ WEBUI_EXPORT size_t webinix_bind(size_t window, const char* element, void (*func
  * open, it will be refreshed.
  *
  * @param window The window number
- * @param content The HTML, Or a local file
+ * @param content The HTML, URL, Or a local file
  *
  * @return Returns True if showing the window is successed.
  *
  * @example webinix_show(myWindow, "<html>...</html>"); | webinix_show(myWindow,
- * "index.html");
+ * "index.html"); | webinix_show(myWindow, "http://...");
  */
 WEBUI_EXPORT bool webinix_show(size_t window, const char* content);
 
