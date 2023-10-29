@@ -1,5 +1,5 @@
 /*
-  Webinix Library 2.4.0-Beta
+  Webinix Library 2.4.0
   http://webinix.me
   https://github.com/webinix-dev/webinix
   Copyright (c) 2020-2023 Hassan Draga.
