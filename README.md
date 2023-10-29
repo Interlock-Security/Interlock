@@ -4,6 +4,11 @@
 
 # Webinix v2.4.0
 
+[build-status]: https://img.shields.io/github/actions/workflow/status/webinix-dev/webinix/ci.yml?branch=main&style=for-the-badge&logo=githubactions&labelColor=414868&logoColor=C0CAF5
+[last-commit]: https://img.shields.io/github/last-commit/webinix-dev/webinix?style=for-the-badge&logo=github&logoColor=C0CAF5&labelColor=414868
+[release-version]: https://img.shields.io/github/v/tag/webinix-dev/webinix?style=for-the-badge&logo=webtrees&logoColor=C0CAF5&labelColor=414868&color=7664C6
+[license]: https://img.shields.io/github/license/webinix-dev/webinix?style=for-the-badge&logo=opensourcehardware&label=License&logoColor=C0CAF5&labelColor=414868&color=8c73cc
+
 [![][build-status]](https://github.com/webinix-dev/webinix/actions?query=branch%3Amain)
 [![][last-commit]](https://github.com/webinix-dev/webinix/pulse)
 [![][release-version]](https://github.com/webinix-dev/webinix/releases/latest)
