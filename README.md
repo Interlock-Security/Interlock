@@ -175,6 +175,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | TypeScript / JavaScript | ✔️             | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix)     |
 | V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
 | Zig                     | _not complete_ | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
+| Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)       |
 
 ## Supported Web Browsers
 
