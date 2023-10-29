@@ -4,7 +4,10 @@
 
 # Webinix v2.4.0
 
-[![BuildStatus](https://img.shields.io/circleci/project/github/badges/shields/master?style=for-the-badge)](https://github.com/webinix-dev/webinix/actions?query=branch%3Amain) [![Issues](https://img.shields.io/github/issues/webinix-dev/webinix.svg?branch=master&style=for-the-badge&url=https://google.com)](https://github.com/webinix-dev/webinix/issues) [![Website](https://img.shields.io/website?label=webinix.me&style=for-the-badge&url=https://google.com)](https://webinix.me/)
+[![][build-status]](https://github.com/webinix-dev/webinix/actions?query=branch%3Amain)
+[![][last-commit]](https://github.com/webinix-dev/webinix/pulse)
+[![][release-version]](https://github.com/webinix-dev/webinix/releases/latest)
+[![][license]](https://github.com/webinix-dev/webinix/blob/main/LICENSE)
 
 > Webinix is not a web-server solution or a framework, but it allows you to use any web browser as a GUI, with your preferred language in the backend and HTML5 in the frontend. All in a lightweight portable lib.
 
