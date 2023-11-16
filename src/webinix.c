@@ -200,6 +200,7 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_receive;
     webinix_mutex_t mutex_wait;
     webinix_mutex_t mutex_bridge;
+    webinix_mutex_t mutex_js_run;
     webinix_condition_t condition_wait;
     char* default_server_root_path;
     bool ui;
@@ -468,7 +469,9 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
     // Initializing pipe
     uint16_t run_id = _webinix_get_run_id();
+    _webinix_mutex_lock( & _webinix_core.mutex_js_run);
     _webinix_core.run_done[run_id] = false;
+    _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
     _webinix_core.run_error[run_id] = false;
     _webinix_core.run_userBuffer[run_id] = buffer;
     _webinix_core.run_userBufferLen[run_id] = buffer_length;
@@ -481,13 +484,18 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     // Send the packet
     _webinix_send(win, win->token, run_id, WEBUI_CMD_JS, script, js_len);
 
+    bool js_status = false;
+
     // Wait for UI response
     if (timeout_second < 1 || timeout_second > 86400) {
 
         // Wait forever
         for (;;) {
             _webinix_sleep(1);
-            if (_webinix_core.run_done[run_id])
+            _webinix_mutex_lock( & _webinix_core.mutex_js_run);
+            js_status = _webinix_core.run_done[run_id];
+            _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+            if (js_status)
                 break;
         }
     } else {
@@ -497,14 +505,17 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         _webinix_timer_start( & timer);
         for (;;) {
             _webinix_sleep(1);
-            if (_webinix_core.run_done[run_id])
+            _webinix_mutex_lock( & _webinix_core.mutex_js_run);
+            js_status = _webinix_core.run_done[run_id];
+            _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+            if (js_status)
                 break;
             if (_webinix_timer_is_end( & timer, (timeout_second * 1000)))
                 break;
         }
     }
 
-    if (_webinix_core.run_done[run_id]) {
+    if (js_status) {
 
         #ifdef WEBUI_LOG
         printf(
@@ -2286,6 +2297,23 @@ bool webinix_interface_get_bool_at(size_t window, size_t event_number, size_t in
     e.bind_id = 0;
 
     return webinix_get_bool_at(&e, index);
+}
+
+size_t webinix_interface_get_size_at(size_t window, size_t event_number, size_t index) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_get_size_at([%zu], [%zu], [%zu])...\n", window, event_number, index);
+    #endif
+
+    // New Event
+    webinix_event_t e;
+    e.window = window;
+    e.event_type = 0;
+    e.element = NULL;
+    e.event_number = event_number;
+    e.bind_id = 0;
+
+    return webinix_get_size_at(&e, index);
 }
 
 size_t webinix_interface_bind(size_t window, const char* element, void( * func)(size_t, size_t, char* , size_t, size_t)) {
@@ -4623,6 +4651,7 @@ static void _webinix_clean(void) {
     _webinix_mutex_destroy( & _webinix_core.mutex_send);
     _webinix_mutex_destroy( & _webinix_core.mutex_receive);
     _webinix_mutex_destroy( & _webinix_core.mutex_wait);
+    _webinix_mutex_destroy( & _webinix_core.mutex_js_run);
     _webinix_condition_destroy( & _webinix_core.condition_wait);
 
     #ifdef WEBUI_LOG
@@ -6028,6 +6057,7 @@ static void _webinix_init(void) {
     _webinix_mutex_init( & _webinix_core.mutex_receive);
     _webinix_mutex_init( & _webinix_core.mutex_wait);
     _webinix_mutex_init( & _webinix_core.mutex_bridge);
+    _webinix_mutex_init( & _webinix_core.mutex_js_run);
     _webinix_condition_init( & _webinix_core.condition_wait);
 
     // // Determine whether the current device
@@ -7131,7 +7161,9 @@ static WEBUI_THREAD_RECEIVE {
 
                             if (_webinix_core.run_userBuffer[packet_id] != NULL) {
 
+                                _webinix_mutex_lock( & _webinix_core.mutex_js_run);
                                 _webinix_core.run_done[packet_id] = false;
+                                _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
 
                                 // Get js-error
                                 bool error = true;
@@ -7195,7 +7227,9 @@ static WEBUI_THREAD_RECEIVE {
                                 }
 
                                 // Send ready signal to webinix_script()
+                                _webinix_mutex_lock( & _webinix_core.mutex_js_run);
                                 _webinix_core.run_done[packet_id] = true;
+                                _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
                             }
                         }
                     } else if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_NAVIGATION) {
