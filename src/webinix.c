@@ -205,6 +205,7 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_bridge;
     webinix_mutex_t mutex_js_run;
     webinix_mutex_t mutex_win_connect;
+    webinix_mutex_t mutex_exit_now;
     webinix_condition_t condition_wait;
     char* default_server_root_path;
     bool ui;
@@ -412,7 +413,7 @@ void webinix_run(size_t window, const char* script) {
         return;
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -437,7 +438,7 @@ void webinix_set_file_handler(size_t window, const void * ( * handler)(const cha
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -457,7 +458,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -573,7 +574,7 @@ size_t webinix_new_window_id(size_t window_number) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return 0;
 
     // Check window ID
@@ -621,7 +622,7 @@ size_t webinix_get_new_window_id(void) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return 0;
 
     for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
@@ -647,7 +648,7 @@ void webinix_set_kiosk(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -664,7 +665,7 @@ void webinix_close(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -689,7 +690,7 @@ void webinix_destroy(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -762,7 +763,7 @@ bool webinix_is_shown(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -779,7 +780,7 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -816,7 +817,7 @@ void webinix_navigate(size_t window, const char* url) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1062,7 +1063,7 @@ bool webinix_show(size_t window, const char* content) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1080,7 +1081,7 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1097,7 +1098,7 @@ size_t webinix_bind(size_t window, const char* element, void( * func)(webinix_ev
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return 0;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1176,7 +1177,7 @@ const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
         return NULL;
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return NULL;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -1255,7 +1256,7 @@ size_t webinix_get_size_at(webinix_event_t* e, size_t index) {
         return 0;
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return 0;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -1313,7 +1314,7 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -1348,7 +1349,7 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -1380,7 +1381,7 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -1412,7 +1413,7 @@ size_t webinix_get_parent_process_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return 0;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1576,7 +1577,7 @@ bool webinix_set_port(size_t window, size_t port) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1597,7 +1598,7 @@ size_t webinix_get_child_process_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return 0;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1693,7 +1694,7 @@ void webinix_set_hide(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1710,7 +1711,7 @@ void webinix_set_size(size_t window, unsigned int width, unsigned int height) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1744,7 +1745,7 @@ void webinix_set_position(size_t window, unsigned int x, unsigned int y) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1777,7 +1778,7 @@ void webinix_set_profile(size_t window, const char* name, const char* path) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1826,7 +1827,7 @@ const char* webinix_get_url(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return NULL;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1846,7 +1847,7 @@ void webinix_send_raw(size_t window, const char* function, const void * raw, siz
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -1889,7 +1890,7 @@ char* webinix_encode(const char* str) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return NULL;
 
     size_t len = strlen(str);
@@ -1931,7 +1932,7 @@ char* webinix_decode(const char* str) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return NULL;
 
     size_t len = strlen(str);
@@ -1973,7 +1974,7 @@ void webinix_free(void * ptr) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return;
 
     _webinix_free_mem(ptr);
@@ -1987,7 +1988,7 @@ void * webinix_malloc(size_t size) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return NULL;
 
     return _webinix_malloc(size);
@@ -2001,7 +2002,7 @@ void webinix_exit(void) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return;
 
     // Close all opened windows
@@ -2024,7 +2025,7 @@ void webinix_exit(void) {
     }
 
     // Stop all threads
-    _webinix_core.exit_now = true;
+    _webinix_mtx_is_exit_now(WEBUI_MUTEX_TRUE);
 
     // Let's give other threads more time to
     // safely exit and finish cleaning up.
@@ -2042,7 +2043,7 @@ void webinix_wait(void) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return;
 
     if (_webinix_core.startup_timeout > 0) {
@@ -2096,7 +2097,7 @@ void webinix_set_timeout(size_t second) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return;
 
     if (second > WEBUI_MAX_TIMEOUT)
@@ -2115,7 +2116,7 @@ void webinix_set_runtime(size_t window, size_t runtime) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -2135,7 +2136,7 @@ bool webinix_set_root_folder(size_t window, const char* path) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return false;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -2164,7 +2165,7 @@ bool webinix_set_default_root_folder(const char* path) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return false;
 
     if (_webinix_is_empty(path) || (_webinix_strlen(path) > WEBUI_MAX_PATH) || !_webinix_folder_exist((char*)path)) {
@@ -2203,7 +2204,7 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[e->window];
 
@@ -2346,7 +2347,7 @@ void webinix_interface_set_response(size_t window, size_t event_number, const ch
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -2382,7 +2383,7 @@ bool webinix_interface_is_app_running(void) {
 
     // Initialization
     _webinix_init();
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return false;
 
     // Get app status
@@ -2409,7 +2410,7 @@ size_t webinix_interface_get_window_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.exit_now || _webinix_core.wins[window] == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
         return 0;
     _webinix_window_t * win = _webinix_core.wins[window];
 
@@ -2612,7 +2613,7 @@ static _webinix_window_t * _webinix_dereference_win_ptr(void * ptr) {
     printf("[Core]\t\t_webinix_dereference_win_ptr()...\n");
     #endif
 
-    if (_webinix_core.exit_now)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
         return NULL;
 
     _webinix_window_t * win = (_webinix_window_t * ) ptr;
@@ -3498,11 +3499,11 @@ static bool _webinix_mtx_is_connected(_webinix_window_t * win, int update) {
 static bool _webinix_mtx_is_exit_now(int update) {
 
     bool status = false;
-    _webinix_mutex_lock( & _webinix_core.mutex_win_connect);
+    _webinix_mutex_lock( & _webinix_core.mutex_exit_now);
     if (update == WEBUI_MUTEX_TRUE) _webinix_core.exit_now = true;
     else if (update == WEBUI_MUTEX_FALSE) _webinix_core.exit_now = false;
     status = _webinix_core.exit_now;
-    _webinix_mutex_unlock( & _webinix_core.mutex_win_connect);
+    _webinix_mutex_unlock( & _webinix_core.mutex_exit_now);
     return status;
 }
 
@@ -4665,7 +4666,7 @@ static void _webinix_clean(void) {
 
     // Let's give other threads more time to safely exit
     // and finish cleaning up.
-    _webinix_core.exit_now = true;
+    _webinix_mtx_is_exit_now(WEBUI_MUTEX_TRUE);
     _webinix_sleep(500);
 
     // Clean all servers services
@@ -4681,6 +4682,7 @@ static void _webinix_clean(void) {
     _webinix_mutex_destroy( & _webinix_core.mutex_wait);
     _webinix_mutex_destroy( & _webinix_core.mutex_js_run);
     _webinix_mutex_destroy( & _webinix_core.mutex_win_connect);
+    _webinix_mutex_destroy( & _webinix_core.mutex_exit_now);
     _webinix_condition_destroy( & _webinix_core.condition_wait);
 
     #ifdef WEBUI_LOG
@@ -5899,7 +5901,7 @@ static void _webinix_window_event(
     e.event_number = event_number;
 
     // Check for all events-bind functions
-    if (!_webinix_core.exit_now && win->has_events) {
+    if (!_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) && win->has_events) {
 
         char* events_id = _webinix_generate_internal_id(win, "");
         size_t events_cb_index = _webinix_get_cb_index(events_id);
@@ -5917,7 +5919,7 @@ static void _webinix_window_event(
         }
     }
 
-    if (!_webinix_core.exit_now) {
+    if (!_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE)) {
 
         // Check for the regular bind functions
         if (!_webinix_is_empty(element)) {
@@ -6088,6 +6090,7 @@ static void _webinix_init(void) {
     _webinix_mutex_init( & _webinix_core.mutex_bridge);
     _webinix_mutex_init( & _webinix_core.mutex_js_run);
     _webinix_mutex_init( & _webinix_core.mutex_win_connect);
+    _webinix_mutex_init( & _webinix_core.mutex_exit_now);
     _webinix_condition_init( & _webinix_core.condition_wait);
 
     // // Determine whether the current device
@@ -6249,7 +6252,7 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
 
     // Get the window object
     _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
-    if (_webinix_core.exit_now || win == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
         return 500; // Internal Server Error
 
     // Initializing
@@ -6488,7 +6491,7 @@ static int _webinix_ws_connect_handler(const struct mg_connection * conn, void *
 
     // Dereference
     _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
-    if (_webinix_core.exit_now || win == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
         return 1;
 
     if (_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE)) {
@@ -6515,7 +6518,7 @@ static void _webinix_ws_ready_handler(struct mg_connection * conn, void * _win) 
 
     // Dereference
     _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
-    if (_webinix_core.exit_now || win == NULL)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
         return;
 
     _webinix_receive(win, WEBUI_WS_OPEN, (void * ) conn, 0);
@@ -6527,7 +6530,7 @@ static int _webinix_ws_data_handler(struct mg_connection * conn, int opcode, cha
     printf("[Core]\t\t_webinix_ws_data_handler()...\n");
     #endif
 
-    if (_webinix_core.exit_now || datasize < WEBUI_PROTOCOL_SIZE)
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || datasize < WEBUI_PROTOCOL_SIZE)
         return 1; // OK
 
     switch(opcode & 0xf) {
@@ -6565,7 +6568,7 @@ static void _webinix_ws_close_handler(const struct mg_connection * conn, void * 
 
     // Dereference
     _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
-    if (_webinix_core.exit_now || win == NULL || !_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE))
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL || !_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE))
         return;
 
     _webinix_receive(win, WEBUI_WS_CLOSE, (void * ) conn, 0);
@@ -6815,12 +6818,12 @@ static WEBUI_THREAD_SERVER_START {
                         _webinix_sleep(1);
 
                         // Exit signal
-                        if (_webinix_core.exit_now) {
+                        if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE)) {
                             stop = true;
                             break;
                         }
 
-                        if (!_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE) && !_webinix_core.exit_now) {
+                        if (!_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE) && !_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE)) {
 
                             // The UI is just get disconnected
                             // probably the user did a refresh
@@ -6884,7 +6887,7 @@ static WEBUI_THREAD_SERVER_START {
             for (;;) {
 
                 _webinix_sleep(1);
-                if (_webinix_core.exit_now)
+                if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE))
                     break;
             }
         }
@@ -7062,7 +7065,7 @@ static WEBUI_THREAD_RECEIVE {
     size_t event_type = arg->event_type;
     void * ptr = arg->ptr;
 
-    if (!_webinix_core.exit_now) {
+    if (!_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE)) {
 
         #ifdef WEBUI_LOG
         printf("[Core]\t\t[Thread %zu] _webinix_receive_thread() -> Start...\n", recvNum);
@@ -7118,7 +7121,7 @@ static WEBUI_THREAD_RECEIVE {
                 if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] != WEBUI_CMD_JS)
                     _webinix_mutex_lock( & _webinix_core.mutex_receive);
 
-                if (!_webinix_core.exit_now) { // Check if previous event called exit()
+                if (!_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE)) { // Check if previous event called exit()
 
                     if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CLICK) {
 
