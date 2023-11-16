@@ -2,7 +2,7 @@
 
 ![Logo](https://github.com/webinix-dev/webinix/assets/34311583/c92e712f-0698-486a-a460-d4acea28a4f8)
 
-# Webinix v2.4.0
+# Webinix v2.4.1
 
 [build-status]: https://img.shields.io/github/actions/workflow/status/webinix-dev/webinix/ci.yml?branch=main&style=for-the-badge&logo=githubactions&labelColor=414868&logoColor=C0CAF5
 [last-commit]: https://img.shields.io/github/last-commit/webinix-dev/webinix?style=for-the-badge&logo=github&logoColor=C0CAF5&labelColor=414868
