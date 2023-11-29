@@ -1852,7 +1852,7 @@ void webinix_set_public(size_t window, bool status) {
 
     // Dereference
     if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
-        return NULL;
+        return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
     win->is_public = status;
