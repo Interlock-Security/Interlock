@@ -433,6 +433,16 @@ WEBUI_EXPORT void webinix_set_profile(size_t window, const char* name, const cha
 WEBUI_EXPORT const char* webinix_get_url(size_t window);
 
 /**
+ * @brief Allow a specific window address to be accessible from a public network
+ *
+ * @param window The window number
+ * @param status True or False
+ *
+ * @example webinix_set_public(myWindow, true);
+ */
+WEBUI_EXPORT void webinix_set_public(size_t window, bool status);
+
+/**
  * @brief Navigate to a specific URL
  *
  * @param window The window number

@@ -172,6 +172,7 @@ typedef struct _webinix_window_t {
     struct mg_connection * mg_connection;
     webinix_event_inf_t* events[WEBUI_MAX_IDS];
     size_t events_count;
+    bool is_public;
 }
 _webinix_window_t;
 
@@ -1831,7 +1832,30 @@ const char* webinix_get_url(size_t window) {
         return NULL;
     _webinix_window_t * win = _webinix_core.wins[window];
 
-    return (const char* ) win->url;
+    // Check if server is started
+    if (_webinix_is_empty(win->url)) {
+        // Start server
+        webinix_show_browser(window, "<html><head><script src=\"webinix.js\"></script></head></html>", NoBrowser);
+    }
+
+    return (const char*) win->url;
+}
+
+void webinix_set_public(size_t window, bool status) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_public([%zu])...\n", window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mtx_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t * win = _webinix_core.wins[window];
+
+    win->is_public = status;
 }
 
 void webinix_send_raw(size_t window, const char* function, const void * raw, size_t size) {
@@ -2906,8 +2930,8 @@ static bool _webinix_socket_test_listen_mg(size_t port_num) {
     #endif
 
     // HTTP Port Test
-    char* test_port = (char*)_webinix_malloc(16);
-    sprintf(test_port, "%zu", port_num);
+    char* test_port = (char*)_webinix_malloc(64);
+    sprintf(test_port, "127.0.0.1:%zu", port_num);
 
     // Start HTTP Server
     const char* http_options[] = {
@@ -5913,7 +5937,36 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         _webinix_free_mem((void * ) window_url);
     }
 
-    return true;
+    // Wait for connection
+    if (browser != NoBrowser) {
+        size_t timeout = (_webinix_core.startup_timeout > 0 ? _webinix_core.startup_timeout : WEBUI_DEF_TIMEOUT);
+        _webinix_timer_t timer;
+        _webinix_timer_start( & timer);
+        for (;;) {
+            // Stop if window is connected
+            _webinix_sleep(100);
+            if (_webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE))
+                break;
+            // Stop if timer is finished
+            if (_webinix_timer_is_end(&timer, (timeout * 1000)))
+                break;
+        }
+    } else {
+        // Wait for server thread to start
+        _webinix_timer_t timer;
+        _webinix_timer_start(&timer);
+        for (;;) {
+            // Stop if server thread started
+            _webinix_sleep(100);
+            if (win->server_running)
+                break;
+            // Stop if timer is finished
+            if (_webinix_timer_is_end(&timer, (1000)))
+                break;
+        }
+    }
+
+    return _webinix_mtx_is_connected(win, WEBUI_MUTEX_NONE);
 }
 
 static void _webinix_window_event(
@@ -6630,25 +6683,31 @@ static WEBUI_THREAD_SERVER_START {
     win->bridge_handled = false;
     if (_webinix_core.startup_timeout < 1)
         _webinix_core.startup_timeout = 0;
-    if (_webinix_core.startup_timeout > 30)
-        _webinix_core.startup_timeout = 30;
+    if (_webinix_core.startup_timeout > WEBUI_DEF_TIMEOUT)
+        _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
+
+    // Public host access
+    char host[16] = {0};
+    if (!win->is_public)
+        // Private localhost access
+        strcpy(host, "127.0.0.1:");
 
     #ifdef WEBUI_TLS
     // HTTP Secure Port
-    char* server_port = (char*)_webinix_malloc(32);
-    sprintf(server_port, "127.0.0.1:%zus", win->server_port);
+    char* server_port = (char*)_webinix_malloc(64);
+    sprintf(server_port, "%s%zus", host, win->server_port);
 
     // WS Secure Port
-    char* ws_port = (char*)_webinix_malloc(32);
-    sprintf(ws_port, "127.0.0.1:%zus", win->ws_port);
+    char* ws_port = (char*)_webinix_malloc(64);
+    sprintf(ws_port, "%s%zus", host, win->ws_port);
     #else
     // HTTP Port
-    char* server_port = (char*)_webinix_malloc(32);
-    sprintf(server_port, "127.0.0.1:%zu", win->server_port);
+    char* server_port = (char*)_webinix_malloc(64);
+    sprintf(server_port, "%s%zu", host, win->server_port);
 
     // WS Port
-    char* ws_port = (char*)_webinix_malloc(32);
-    sprintf(ws_port, "127.0.0.1:%zu", win->ws_port);
+    char* ws_port = (char*)_webinix_malloc(64);
+    sprintf(ws_port, "%s%zu", host, win->ws_port);
     #endif
 
     // Start HTTP Server
