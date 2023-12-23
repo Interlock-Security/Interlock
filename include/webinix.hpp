@@ -167,13 +167,13 @@ class window {
 
     // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP link of `webinix.js`
     // in case you are trying to use Webinix with an external web-server like NGNIX
-    void set_size(size_t port) const { webinix_set_port(webinix_window, port); }
+    void set_port(size_t port) const { webinix_set_port(webinix_window, port); }
 
     // Set window position
     void set_position(unsigned int x, unsigned int y) const { webinix_set_position(webinix_window, x, y); }
 
     // Delete a specific window web-browser local folder profile.
-    void webinix_delete_profile(size_t window) const { webinix_delete_profile(webinix_window); }
+    void delete_profile() const { webinix_delete_profile(webinix_window); }
 
     // Get the ID of the parent process (The web browser may create another process for the window).
     size_t get_parent_process_id() const { return webinix_get_parent_process_id(webinix_window); }
