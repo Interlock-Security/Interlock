@@ -103,5 +103,19 @@
 			xmlHttp.send(null);
 			alert(xmlHttp.responseText);
 		}
+
+		document.addEventListener('DOMContentLoaded', function() {
+			// DOM is loaded, and `webinix` object should be available.
+			webinix.setEventCallback((e) => {
+				if (e == webinix.event.CONNECTED) {
+					// Connection to the backend is established
+					console.log('Connected.');
+				} else if (e == webinix.event.DISCONNECTED) {
+					// Connection to the backend is lost
+					console.log('Disconnected.');
+				}
+			});
+		});
+
 	</script>
 </html>
