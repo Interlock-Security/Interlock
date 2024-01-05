@@ -422,6 +422,16 @@ WEBUI_EXPORT void webinix_set_position(size_t window, unsigned int x, unsigned i
 WEBUI_EXPORT void webinix_set_profile(size_t window, const char* name, const char* path);
 
 /**
+ * @brief Set the web browser proxy_server to use. Need to be called before `webinix_show()`.
+ *
+ * @param window The window number
+ * @param proxy_server The web browser proxy_server
+ *
+ * @example webinix_set_proxy(myWindow, "http://127.0.0.1:8888"); 
+ */
+WEBUI_EXPORT void webinix_set_proxy(size_t window, const char* proxy_server);
+
+/**
  * @brief Get the full current URL.
  *
  * @param window The window number

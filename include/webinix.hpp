@@ -197,6 +197,11 @@ class window {
         webinix_set_profile(webinix_window, name.data(), path.data());
     }
 
+    // Set the web browser proxy to use. Need to be called before `webinix_show()`.
+    void set_proxy(const std::string_view proxy_server = {""}) const {
+        webinix_set_profile(webinix_window, proxy_server.data());
+    }
+
     // Get the full current URL
     std::string_view get_url() const { return std::string_view{webinix_get_url(webinix_window)}; }
 
