@@ -1,6 +1,6 @@
 <div align="center">
 
-![Logo](https://github.com/webinix-dev/webinix/assets/34311583/c92e712f-0698-486a-a460-d4acea28a4f8)
+![Logo](https://raw.githubusercontent.com/webinix-dev/webinix-logo/main/webinix_240.png)
 
 # Webinix v2.4.2
 
