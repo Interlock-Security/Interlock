@@ -199,7 +199,7 @@ class window {
 
     // Set the web browser proxy to use. Need to be called before `webinix_show()`.
     void set_proxy(const std::string_view proxy_server = {""}) const {
-        webinix_set_profile(webinix_window, proxy_server.data());
+        webinix_set_proxy(webinix_window, proxy_server.data());
     }
 
     // Get the full current URL
