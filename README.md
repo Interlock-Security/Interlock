@@ -183,6 +183,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
 | Zig                     | _not complete_ | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
 | Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)       |
+| Delphi                  | ✔️ | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)       |
 
 ## Supported Web Browsers
 
