@@ -181,9 +181,9 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | Rust                    | _not complete_ | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix)     |
 | TypeScript / JavaScript | ✔️             | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix)     |
 | V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
-| Zig                     | _not complete_ | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
-| Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)       |
-| Delphi                  | ✔️ | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)       |
+| Zig                     | ✔️             | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
+| Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)     |
+| Delphi                  | ✔️             | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)|
 
 ## Supported Web Browsers
 
