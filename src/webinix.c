@@ -836,7 +836,7 @@ void webinix_navigate(size_t window, const char* url) {
     _webinix_send(win, win->token, 0, WEBUI_CMD_NAVIGATION, url, _webinix_strlen(url));
 }
 
-void webinix_clean() {
+void webinix_clean(void) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_clean()...\n");
@@ -849,7 +849,7 @@ void webinix_clean() {
     _webinix_clean();
 }
 
-void webinix_delete_all_profiles() {
+void webinix_delete_all_profiles(void) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_delete_all_profiles()...\n");
