@@ -469,7 +469,7 @@ WEBUI_EXPORT void webinix_navigate(size_t window, const char* url);
  * webinix_wait();
  * webinix_clean();
  */
-WEBUI_EXPORT void webinix_clean();
+WEBUI_EXPORT void webinix_clean(void);
 
 /**
  * @brief Delete all local web-browser profiles folder. It should called at the
@@ -480,7 +480,7 @@ WEBUI_EXPORT void webinix_clean();
  * webinix_delete_all_profiles();
  * webinix_clean();
  */
-WEBUI_EXPORT void webinix_delete_all_profiles();
+WEBUI_EXPORT void webinix_delete_all_profiles(void);
 
 /**
  * @brief Delete a specific window web-browser local folder profile.
