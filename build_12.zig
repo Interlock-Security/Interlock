@@ -28,7 +28,7 @@ pub fn build_12(b: *Build) void {
 
     const webinix = build_webinix_12(b, optimize, target, isStatic, enableTLS);
 
-    webinix.installHeader("include/webinix.h", "webinix.h");
+    webinix.installHeader(b.path("include/webinix.h"), "webinix.h");
 
     build_examples_12(b, optimize, target, webinix);
 
