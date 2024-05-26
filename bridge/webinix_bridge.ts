@@ -5,7 +5,7 @@
 
   http://webinix.me
   https://github.com/webinix-dev/webinix
-  Copyright (c) 2020-2023 Hassan Draga.
+  Copyright (c) 2020-2024 Hassan Draga.
   Licensed under MIT License.
   All rights reserved.
   Canada.
