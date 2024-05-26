@@ -24,7 +24,7 @@ WEBUI_BUILD_FLAGS = /Fo"webinix.obj" /c /EHsc "$(MAKEDIR)/src/webinix.c" /I"$(MA
 
 # Output Commands
 LIB_STATIC_OUT = /OUT:"$(WEBUI_OUT_LIB_NAME)-static.lib" "webinix.obj" "civetweb.obj"
-LIB_DYN_OUT = /DLL /OUT:"$(WEBUI_OUT_LIB_NAME).dll" "webinix.obj" "civetweb.obj" user32.lib Advapi32.lib Shell32.lib /LIBPATH:"$(WEBUI_TLS_LIB)" $(TLS_LDFLAG_DYNAMIC)
+LIB_DYN_OUT = /DLL /OUT:"$(WEBUI_OUT_LIB_NAME).dll" "webinix.obj" "civetweb.obj" user32.lib Advapi32.lib Shell32.lib Ole32.lib /LIBPATH:"$(WEBUI_TLS_LIB)" $(TLS_LDFLAG_DYNAMIC)
 
 # == 2.TARGETS ================================================================
 
