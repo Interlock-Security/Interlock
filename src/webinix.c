@@ -9369,8 +9369,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         pthread_create(&thread, NULL, &_webinix_webview_thread, (void*)win);
         pthread_detach(thread);
         #endif
-
-        return 0;
     }
 
     static int _webinix_wv_create_schedule(void* arg) {
