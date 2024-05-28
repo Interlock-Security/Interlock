@@ -6395,6 +6395,24 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
         // Start a new window
 
+        // Prioritize the server thread if we
+        // knows that there is UIs running
+        if (_webinix_core.ui) {
+            
+            // New server thread
+            #ifdef _WIN32
+            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void * ) win, 0, NULL);
+            win->server_thread = thread;
+            if (thread != NULL)
+                CloseHandle(thread);
+            #else
+            pthread_t thread;
+            pthread_create( & thread, NULL, & _webinix_server_thread, (void * ) win);
+            pthread_detach(thread);
+            win->server_thread = thread;
+            #endif 
+        }
+
         // New WebView
         bool runWebView = false;
         if (win->allow_webview) {
@@ -6455,22 +6473,26 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
             return false;
         }
 
-        // Let the wait() knows that this app
-        // has atleast one window to wait for
-        _webinix_core.ui = true;
+        if (!_webinix_core.ui) {
 
-        // New server thread
-        #ifdef _WIN32
-        HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void * ) win, 0, NULL);
-        win->server_thread = thread;
-        if (thread != NULL)
-            CloseHandle(thread);
-        #else
-        pthread_t thread;
-        pthread_create( & thread, NULL, & _webinix_server_thread, (void * ) win);
-        pthread_detach(thread);
-        win->server_thread = thread;
-        #endif
+            // Let the wait() knows that this app
+            // has atleast one window to wait for
+            _webinix_core.ui = true;
+
+            // New server thread
+            #ifdef _WIN32
+            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void * ) win, 0, NULL);
+            win->server_thread = thread;
+            if (thread != NULL)
+                CloseHandle(thread);
+            #else
+            pthread_t thread;
+            pthread_create( & thread, NULL, & _webinix_server_thread, (void * ) win);
+            pthread_detach(thread);
+            win->server_thread = thread;
+            #endif
+        }
+
     } else {
 
         // Refresh an existing running window
