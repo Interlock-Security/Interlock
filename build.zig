@@ -75,11 +75,19 @@ fn build_lib(b: *Build, optimize: OptimizeMode, target: CrossTarget, is_dynamic:
     webinix.addIncludePath(.{ .path = "include" });
     webinix.installHeader("include/webinix.h", "webinix.h");
 
-    if (target.os_tag == .windows or (target.os_tag == null and builtin.os.tag == .windows)) {
+    if (target.isDarwin()) {
+        webinix.addCSourceFile(.{
+            .file = .{ .path = "src/webview/wkwebview.m" },
+            .flags = &.{},
+        });
+        webinix.linkFramework("Cocoa");
+        webinix.linkFramework("WebKit");
+    } else if (target.isWindows()) {
         webinix.linkSystemLibrary("ws2_32");
+        webinix.linkSystemLibrary("Ole32");
         if (target.abi == .msvc) {
-            webinix.linkSystemLibrary("shell32");
             webinix.linkSystemLibrary("Advapi32");
+            webinix.linkSystemLibrary("Shell32");
             webinix.linkSystemLibrary("user32");
         }
         if (enable_tls) {
