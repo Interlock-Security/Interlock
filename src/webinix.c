@@ -310,6 +310,9 @@ _webinix_window_t;
 
 // Core
 typedef struct _webinix_core_t {
+    struct {
+        bool show_wait_connection;
+    } config;
     volatile size_t servers;
     char* html_elements[WEBUI_MAX_IDS];
     size_t used_ports[WEBUI_MAX_IDS];
@@ -779,16 +782,6 @@ size_t webinix_new_window_id(size_t window_number) {
 
     // Generate a random token
     win->token = _webinix_generate_random_uint32();
-
-    #ifdef __APPLE__
-    // if (_webinix_macos_wv_new(window_number)) {
-    //     if (!_webinix_core.is_webview) {
-    //         _webinix_core.is_webview = true;
-    //         // Set close callback once
-    //         _webinix_macos_wv_set_close_cb(_webinix_wv_event_closed);
-    //     }
-    // }
-    #endif
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_new_window_id() -> New window #%zu @ 0x%p\n", window_number, win);
@@ -1803,6 +1796,29 @@ bool webinix_set_tls_certificate(const char* certificate_pem, const char* privat
     #endif
 
     return false;
+}
+
+void webinix_config(webinix_configs option, bool status) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_config([%d], [%d])\n", option, status);
+    #endif
+
+    // Initialization
+    _webinix_init();
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE))
+        return;
+
+    switch (option) {
+        case show_wait_connection:
+            _webinix_core.config.show_wait_connection = status;
+            break;
+        #ifdef WEBUI_LOG
+        default:
+            printf("[User] webinix_config -> Unknown option [%d]\n", option);
+            break;
+        #endif
+    }
 }
 
 bool webinix_set_port(size_t window, size_t port) {
@@ -6398,8 +6414,8 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
         // Run browser
         bool runBrowser = false;
-        if (browser != NoBrowser) {
-            if (!runWebView) {
+        if (!runWebView) {
+            if (browser != NoBrowser) {
                 if (!_webinix_browser_start(win, window_url, browser)) {
                     #ifdef WEBUI_LOG
                     printf("[Core]\t\t_webinix_show_window() -> App-mode browser failed.\n");
@@ -6477,60 +6493,71 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         _webinix_free_mem((void * ) window_url);
     }
 
-    // Wait for connection
-    if ((_webinix_core.is_webview) || (browser != NoBrowser)) {
+    // Wait for window connection
+    if (_webinix_core.config.show_wait_connection) {
 
-        size_t timeout = (_webinix_core.startup_timeout > 0 ? _webinix_core.startup_timeout : WEBUI_DEF_TIMEOUT);
-        _webinix_timer_t timer;
-        _webinix_timer_start( & timer);
-        for (;;) {
+        #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_show_window() -> Waiting for window connection\n");
+        #endif
 
-            _webinix_sleep(10);            
+        if ((_webinix_core.is_webview) || (browser != NoBrowser)) {
 
-            // Process WebView if any
-            if (_webinix_core.is_webview) {
-                #ifdef _WIN32
-                // ...
-                #elif __linux__
+            size_t timeout = (_webinix_core.startup_timeout > 0 ? _webinix_core.startup_timeout : WEBUI_DEF_TIMEOUT);
+            _webinix_timer_t timer;
+            _webinix_timer_start( & timer);
+            for (;;) {
+
+                _webinix_sleep(10);            
+
+                // Process WebView if any
                 if (_webinix_core.is_webview) {
-                    while (gtk_events_pending()) {
-                        gtk_main_iteration_do(0);
-                    }
-                }
-                #else
-                if (!_webinix_core.is_wkwebview_main_run) {
+                    #ifdef _WIN32
+                    // ...
+                    #elif __linux__
                     if (_webinix_core.is_webview) {
-                        _webinix_macos_wv_process();
+                        while (gtk_events_pending()) {
+                            gtk_main_iteration_do(0);
+                        }
                     }
+                    #else
+                    if (!_webinix_core.is_wkwebview_main_run) {
+                        if (_webinix_core.is_webview) {
+                            _webinix_macos_wv_process();
+                        }
+                    }
+                    #endif
                 }
-                #endif
+
+                // Stop if window is connected
+                if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
+                    break;
+                
+                // Stop if timer is finished
+                if (_webinix_timer_is_end(&timer, (timeout * 1000)))
+                    break;
             }
+        } else {
 
-            // Stop if window is connected
-            if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
-                break;
-            
-            // Stop if timer is finished
-            if (_webinix_timer_is_end(&timer, (timeout * 1000)))
-                break;
+            // Wait for server thread to start
+            _webinix_timer_t timer;
+            _webinix_timer_start(&timer);
+            for (;;) {
+                // Stop if server thread started
+                _webinix_sleep(100);
+                if (win->server_running)
+                    break;
+                // Stop if timer is finished
+                if (_webinix_timer_is_end(&timer, (1000)))
+                    break;
+            }
         }
-    } else {
 
-        // Wait for server thread to start
-        _webinix_timer_t timer;
-        _webinix_timer_start(&timer);
-        for (;;) {
-            // Stop if server thread started
-            _webinix_sleep(100);
-            if (win->server_running)
-                break;
-            // Stop if timer is finished
-            if (_webinix_timer_is_end(&timer, (1000)))
-                break;
-        }
+        // The window is successfully launched and connected.
+        return _webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE);
     }
 
-    return _webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE);
+    // The window is successfully launched.
+    return true;
 }
 
 static void _webinix_window_event(
@@ -6721,6 +6748,9 @@ static void _webinix_init(void) {
     _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
     _webinix_core.executable_path = _webinix_get_current_path();
     _webinix_core.default_server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
+
+    // Initializing configs
+    _webinix_core.config.show_wait_connection = true;
 
     // Initializing server services
     #ifdef WEBUI_TLS
@@ -9125,6 +9155,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         if (SUCCEEDED(hr)) {
 
+            // Let `wait()` use safe main-thread WebView2 loop
+            _webinix_core.is_webview = true;
+
             // Success
             _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
 
@@ -9504,7 +9537,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
                 return false;
             }
 
-            // Let wait() use main thread WebView loop
+            // Let `wait()` use safe main-thread GTK WebView loop
             _webinix_core.is_webview = true;
 
             // Initialize GTK
@@ -9732,15 +9765,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
     static bool _webinix_wv_show(_webinix_window_t* win, char* url) {
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wv_show ([%s])\n", url);
+        printf("[Core]\t\t_webinix_wv_show([%s])\n", url);
         #endif
 
         // Apple macOS WKWebView
         if (!_webinix_core.is_wkwebview_main_run) {
-
-            //
             if (_webinix_macos_wv_new(win->window_number)) {
                 if (!_webinix_core.is_webview) {
+                    // Let `wait()` use safe main-thread WKWebView loop
                     _webinix_core.is_webview = true;
                     // Set close callback once
                     _webinix_macos_wv_set_close_cb(_webinix_wv_event_closed);

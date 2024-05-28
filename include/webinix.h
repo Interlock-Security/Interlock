@@ -140,6 +140,13 @@ enum webinix_events {
     WEBUI_EVENT_CALLBACK,         // 4. Function call event
 };
 
+typedef enum {
+    // Control if `webinix_show()` and `webinix_show_x()` should wait 
+    // for the window to connect before returns or not.
+    // Default: True
+    show_wait_connection = 0,
+} webinix_configs;
+
 // -- Structs -------------------------
 typedef struct webinix_event_t {
     size_t window;       // The window object number
@@ -550,6 +557,16 @@ WEBUI_EXPORT size_t webinix_get_child_process_id(size_t window);
  * @example bool ret = webinix_set_port(myWindow, 8080);
  */
 WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
+
+/**
+ * @brief Control the Webinix behaviour. It's better to call at the beginning.
+ *
+ * @param option The desired option from `webinix_configs` enum
+ * @param status The status of the option, `true` or `false`
+ *
+ * @example webinix_config(show_wait_connection, false);
+ */
+WEBUI_EXPORT void webinix_config(webinix_configs option, bool status);
 
 // -- SSL/TLS -------------------------
 
