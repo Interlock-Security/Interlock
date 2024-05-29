@@ -1635,6 +1635,38 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
     event_inf->response = buf;
 }
 
+void webinix_return_float(webinix_event_t* e, double f) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_return_float([%f])\n", f);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+        return;
+    _webinix_window_t * win = _webinix_core.wins[e->window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[e->event_number];
+    if (event_inf == NULL)
+        return;
+
+    // Free
+    if (event_inf->response != NULL)
+        _webinix_free_mem((void * ) event_inf->response);
+
+    // Float to Str
+    // 64-bit max is -9,223,372,036,854,775,808 (20 character)
+    char* buf = (char*)_webinix_malloc(20);
+    sprintf(buf, "%lf", f);
+
+    // Set response
+    event_inf->response = buf;
+}
+
 void webinix_return_string(webinix_event_t* e, const char* s) {
 
     #ifdef WEBUI_LOG
