@@ -17,7 +17,7 @@ void my_function_string(webinix_event_t* e) {
 void my_function_integer(webinix_event_t* e) {
 
 	// JavaScript:
-	// webinix.call('MyID_Two', 123, 456, 789);
+	// webinix.call('MyID_Two', 123, 456, 789, 12345.6789);
 
 	long long number_1 = webinix_get_int(e); // Or webinix_get_int_at(e, 0);
 	long long number_2 = webinix_get_int_at(e, 1);
@@ -26,6 +26,10 @@ void my_function_integer(webinix_event_t* e) {
 	printf("my_function_integer 1: %lld\n", number_1); // 123
 	printf("my_function_integer 2: %lld\n", number_2); // 456
 	printf("my_function_integer 3: %lld\n", number_3); // 789
+
+	double float_1 = webinix_get_float_at(e, 3);
+
+	printf("my_function_integer 4: %f\n", float_1); // 12345.6789
 }
 
 void my_function_boolean(webinix_event_t* e) {
@@ -124,7 +128,7 @@ int main() {
 	    "    <p>Call C functions with arguments (<em>See the logs in your terminal</em>)</p>"
 	    "    <button onclick=\"webinix.call('MyID_One', 'Hello', 'World');\">Call my_function_string()</button>"
 	    "    <br>"
-	    "    <button onclick=\"webinix.call('MyID_Two', 123, 456, 789);\">Call my_function_integer()</button>"
+	    "    <button onclick=\"webinix.call('MyID_Two', 123, 456, 789, 12345.6789);\">Call my_function_integer()</button>"
 	    "    <br>"
 	    "    <button onclick=\"webinix.call('MyID_Three', true, false);\">Call my_function_boolean()</button>"
 	    "    <br>"
