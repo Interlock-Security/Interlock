@@ -648,6 +648,29 @@ WEBUI_EXPORT long long int webinix_get_int_at(webinix_event_t* e, size_t index);
 WEBUI_EXPORT long long int webinix_get_int(webinix_event_t* e);
 
 /**
+ * @brief Get an argument as float at a specific index
+ *
+ * @param e The event struct
+ * @param index The argument position starting from 0
+ *
+ * @return Returns argument as float
+ *
+ * @example double myNum = webinix_get_float_at(e, 0);
+ */
+WEBUI_EXPORT double webinix_get_float_at(webinix_event_t* e, size_t index);
+
+/**
+ * @brief Get the first argument as float
+ *
+ * @param e The event struct
+ *
+ * @return Returns argument as float
+ *
+ * @example double myNum = webinix_get_float(e);
+ */
+WEBUI_EXPORT double webinix_get_float(webinix_event_t* e);
+
+/**
  * @brief Get an argument as string at a specific index
  *
  * @param e The event struct
