@@ -139,6 +139,7 @@ typedef struct webinix_event_inf_t {
     char* event_data[WEBUI_MAX_ARG + 1];  // Event data (string | num | bool | raw)
     size_t event_size[WEBUI_MAX_ARG + 1]; // Event data size (in bytes)
     char* response;                       // Event response (string)
+    size_t count;
 } webinix_event_inf_t;
 
 // WebView
@@ -1434,6 +1435,28 @@ const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
     }
 
     return "";
+}
+
+size_t webinix_get_count(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_get_count()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+        return 0;
+    _webinix_window_t * win = _webinix_core.wins[e->window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[e->event_number];
+    if (event_inf == NULL)
+        return 0;
+
+    return event_inf->count;
 }
 
 long long int webinix_get_int_at(webinix_event_t* e, size_t index) {
@@ -8160,8 +8183,10 @@ static WEBUI_THREAD_RECEIVE {
                             #endif
 
                             args_ptr = args_ptr + (arg_len + 1);
-                            token_num++;
                             token = strtok(NULL, ";");
+
+                            // Save total found arguments
+                            event_inf->count = ++token_num;
                         }
 
                         // Check data validity
