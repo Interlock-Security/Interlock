@@ -129,21 +129,6 @@ typedef pthread_cond_t webinix_condition_t;
 #define WEBUI_DISABLE_OPTIMIZATION_END
 #endif
 
-// Safe C STD
-#ifdef _WIN32
-#define WEBUI_SPF(buffer, buffer_size, format, ...) snprintf(buffer, (buffer_size - 1), format, ##__VA_ARGS__)
-#define WEBUI_TOK(str, delim, context) strtok_s(str, delim, context)
-#define WEBUI_SCOPY(dest, dest_size, src) strcpy_s(dest, (dest_size + 1), src)
-#define WEBUI_SCAT(dest, dest_size, src) strcat_s(dest, (dest_size + 1), src)
-#define WEBUI_FOPEN(file, filename, mode) fopen_s(&file, filename, mode)
-#else
-#define WEBUI_SPF(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
-#define WEBUI_TOK(str, delim, context) strtok_r(str, delim, context)
-#define WEBUI_SCOPY(dest, dest_size, src) strncpy(dest, src, (dest_size + 1))
-#define WEBUI_SCAT(dest, dest_size, src) strncat(dest, src, (dest_size + 1))
-#define WEBUI_FOPEN(file, filename, mode) ((file) = fopen(filename, mode))
-#endif
-
 // Compiler
 #if defined(_MSC_VER)
     #define WEBUI_COMPILER "MSVC"
@@ -483,6 +468,7 @@ static void _webinix_timer_clock_gettime(struct timespec * spec);
 static bool _webinix_set_root_folder(_webinix_window_t * win, const char* path);
 static const char* _webinix_generate_js_bridge(_webinix_window_t * win);
 static void _webinix_free_mem(void * ptr);
+static size_t _webinix_mb(size_t size);
 static bool _webinix_file_exist_mg(_webinix_window_t * win, struct mg_connection * conn);
 static bool _webinix_file_exist(char* path);
 static void _webinix_free_all_mem(void);
@@ -572,6 +558,21 @@ static int _webinix_http_log(const struct mg_connection * conn, const char* mess
 static WEBUI_THREAD_SERVER_START;
 static WEBUI_THREAD_RECEIVE;
 static WEBUI_THREAD_WEBVIEW;
+
+// Safe C STD
+#ifdef _WIN32
+#define WEBUI_SPF(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
+#define WEBUI_TOK(str, delim, context) strtok_s(str, delim, context)
+#define WEBUI_SCOPY(dest, dest_size, src) strcpy_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_SCAT(dest, dest_size, src) strcat_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_FOPEN(file, filename, mode) fopen_s(&file, filename, mode)
+#else
+#define WEBUI_SPF(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
+#define WEBUI_TOK(str, delim, context) strtok_r(str, delim, context)
+#define WEBUI_SCOPY(dest, dest_size, src) strncpy(dest, src, _webinix_mb(dest_size))
+#define WEBUI_SCAT(dest, dest_size, src) strncat(dest, src, _webinix_mb(dest_size))
+#define WEBUI_FOPEN(file, filename, mode) ((file) = fopen(filename, mode))
+#endif
 
 // -- Heap ----------------------------
 static _webinix_core_t _webinix_core;
@@ -3210,7 +3211,14 @@ static void _webinix_panic(void) {
     exit(EXIT_FAILURE);
 }
 
-static size_t _webinix_round_to_memory_block(size_t size) {
+static size_t _webinix_mb(size_t size) {
+
+    // Round `size` to fit a memory block
+    // 07 -> 8
+    // 14 -> 16
+    // 29 -> 32
+    // 55 -> 64
+    // ...
 
     // If size is negative
     if (size < 4)
@@ -3237,7 +3245,7 @@ static void * _webinix_malloc(size_t size) {
     // terminator if it's a string
     size++;
 
-    size = _webinix_round_to_memory_block(size);
+    size = _webinix_mb(size);
 
     void * block = NULL;
     for (size_t i = 0; i < 8; i++) {
