@@ -183,6 +183,8 @@ class window {
     // Get the ID of the last child process spawned by the browser.
     size_t get_child_process_id() const { return webinix_get_child_process_id(webinix_window); }
 
+    size_t get_best_browser() const { return webinix_get_best_browser(webinix_window); }
+
     // Set the web-server root folder path for this specific window.
     bool set_root_folder(const std::string_view path) const {
         return webinix_set_root_folder(webinix_window, path.data());
