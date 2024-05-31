@@ -185,6 +185,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | Zig                     | ✔️             | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
 | Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)     |
 | Delphi                  | ✔️             | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)|
+| QuickJS                 | ✔️             | [QuickUI](https://github.com/xland/QuickUI)               |
 
 ## Supported Web Browsers
 
