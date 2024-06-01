@@ -53,7 +53,7 @@ pub fn build(b: *Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    try add_links(webinix, enable_tls);
+    try addLinkerFlags(b, webinix, enable_tls);
 
     b.installArtifact(webinix);
 
@@ -63,7 +63,7 @@ pub fn build(b: *Build) !void {
     };
 }
 
-fn add_links(webinix: *Compile, enable_tls: bool) !void {
+fn addLinkerFlags(b: *Build, webinix: *Compile, enable_tls: bool) !void {
     const webinix_target = if (zig_ver < 12) webinix.target else webinix.rootModuleTarget();
     const is_windows = if (zig_ver < 12) webinix_target.isWindows() else webinix_target.os.tag == .windows;
 
@@ -76,23 +76,23 @@ fn add_links(webinix: *Compile, enable_tls: bool) !void {
     if (is_windows) try civetweb_flags.append("-DMUST_IMPLEMENT_CLOCK_GETTIME");
 
     webinix.addCSourceFile(.{
-        .file = .{ .path = "src/webinix.c" },
+        .file = if (zig_ver < 12) .{ .path = "src/webinix.c" } else b.path("src/webinix.c"),
         .flags = if (enable_tls) tls_flags else &[_][]const u8{"-DNO_SSL"},
     });
     webinix.addCSourceFile(.{
-        .file = .{ .path = "src/civetweb/civetweb.c" },
+        .file = if (zig_ver < 12) .{ .path = "src/civetweb/civetweb.c" } else b.path("src/civetweb/civetweb.c"),
         .flags = civetweb_flags.items,
     });
     webinix.linkLibC();
-    webinix.addIncludePath(.{ .path = "include" });
+    webinix.addIncludePath(if (zig_ver < 12) .{ .path = "include" } else b.path("include"));
     if (zig_ver < 12) {
         webinix.installHeader("include/webinix.h", "webinix.h");
     } else {
-        webinix.installHeader(Build.LazyPath{ .path = "include/webinix.h" }, "webinix.h");
+        webinix.installHeader(b.path("include/webinix.h"), "webinix.h");
     }
     if (webinix_target.isDarwin()) {
         webinix.addCSourceFile(.{
-            .file = .{ .path = "src/webview/wkwebview.m" },
+            .file = if (zig_ver < 12) .{ .path = "src/webview/wkwebview.m" } else b.path("src/webview/wkwebview.m"),
             .flags = &.{},
         });
         webinix.linkFramework("Cocoa");
@@ -120,7 +120,7 @@ fn build_examples(b: *Build, webinix: *Compile) !void {
     const target = if (zig_ver < 12) webinix.target else webinix.root_module.resolved_target.?;
     const optimize = if (zig_ver < 12) webinix.optimize else webinix.root_module.optimize.?;
 
-    const examples_path = (Build.LazyPath{ .path = "examples/C" }).getPath(b);
+    const examples_path = (if (zig_ver < 12) (Build.LazyPath{ .path = "examples/C" }) else b.path("examples/C")).getPath(b);
     var examples_dir = if (zig_ver < 12)
         try std.fs.openIterableDirAbsolute(examples_path, .{})
     else
@@ -137,7 +137,7 @@ fn build_examples(b: *Build, webinix: *Compile) !void {
         const exe = b.addExecutable(.{ .name = example_name, .target = target, .optimize = optimize });
         const path = try std.fmt.allocPrint(b.allocator, "examples/C/{s}/main.c", .{example_name});
 
-        exe.addCSourceFile(.{ .file = .{ .path = path }, .flags = &.{} });
+        exe.addCSourceFile(.{ .file = if (zig_ver < 12) .{ .path = path } else b.path(path), .flags = &.{} });
         exe.linkLibrary(webinix);
 
         const exe_install = b.addInstallArtifact(exe, .{});
@@ -145,8 +145,8 @@ fn build_examples(b: *Build, webinix: *Compile) !void {
         const step_name = try std.fmt.allocPrint(b.allocator, "run_{s}", .{example_name});
         const step_desc = try std.fmt.allocPrint(b.allocator, "run example {s}", .{example_name});
 
-        const cwd = try std.fmt.allocPrint(b.allocator, "{s}/{s}", .{ examples_path, example_name });
-        if (zig_ver < 12) exe_run.cwd = cwd else exe_run.setCwd(.{ .path = cwd });
+        const cwd = try std.fmt.allocPrint(b.allocator, "src/examples/{s}", .{example_name});
+        if (zig_ver < 12) exe_run.cwd = cwd else exe_run.setCwd(b.path(cwd));
 
         exe_run.step.dependOn(&exe_install.step);
         build_examples_step.dependOn(&exe_install.step);
