@@ -1438,9 +1438,20 @@ size_t webinix_bind(size_t window, const char* element, void( * func)(webinix_ev
 }
 
 size_t webinix_get_best_browser(size_t window) {
-  // This just exposes the existing function
-  _webinix_window_t * win = _webinix_core.wins[window];
-  return _webinix_find_the_best_browser(win);
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_get_best_browser([%zu])\n", window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+        return 1; // 1. Default recommended web browser
+    _webinix_window_t * win = _webinix_core.wins[window];
+    
+    return _webinix_find_the_best_browser(win);
 }
 
 const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
