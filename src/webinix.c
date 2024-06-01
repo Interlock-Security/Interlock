@@ -3226,6 +3226,10 @@ static size_t _webinix_mb(size_t size) {
     // 55 -> 64
     // ...
 
+    // Make sure we have the null
+    // terminator if it's a string
+    size++;
+
     // If size is negative
     if (size < 4)
         size = 4;
@@ -3246,10 +3250,6 @@ static void * _webinix_malloc(size_t size) {
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_malloc([%zu])\n", size);
     #endif
-
-    // Make sure we have the null
-    // terminator if it's a string
-    size++;
 
     size = _webinix_mb(size);
 
