@@ -203,15 +203,14 @@ WEBUI_EXPORT size_t webinix_get_new_window_id(void);
 WEBUI_EXPORT size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_event_t* e));
 
 /**
- * @brief Get the "best" browser to be used. If running "webinix::show()"
- * or passing AnyBrowser to "webinix::show_browser()", this function will
- * return the same browser that will be used.
+ * @brief Get the recommended web browser ID to use. If you 
+ * are already using one, this function will return the same ID.
  * 
  * @param window The window number
  * 
- * @return Returns the best browser to be used.
+ * @return Returns a web browser ID.
  * 
- * @example size_t browser = webinix_get_best_browser(myWindow);
+ * @example size_t browserID = webinix_get_best_browser(myWindow);
  */
 WEBUI_EXPORT size_t webinix_get_best_browser(size_t window);
 
