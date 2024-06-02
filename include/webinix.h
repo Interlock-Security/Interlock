@@ -578,7 +578,7 @@ WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
  *
  * @example webinix_config(show_wait_connection, false);
  */
-WEBUI_EXPORT void webinix_config(webinix_config option, bool status);
+WEBUI_EXPORT void webinix_set_config(webinix_config option, bool status);
 
 // -- SSL/TLS -------------------------
 
