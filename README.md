@@ -184,6 +184,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 | V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
 | Zig                     | ✔️             | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
 | Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)     |
+| Common Lisp             | ✔️             | [cl-webinix](https://github.com/garlic0x1/cl-webinix)|
 | Delphi                  | ✔️             | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)|
 | QuickJS                 | ✔️             | [QuickUI](https://github.com/xland/QuickUI)               |
 
