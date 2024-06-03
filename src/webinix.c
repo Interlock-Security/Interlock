@@ -1946,7 +1946,7 @@ bool webinix_set_tls_certificate(const char* certificate_pem, const char* privat
     return false;
 }
 
-void webinix_config(webinix_configs option, bool status) {
+void webinix_set_config(webinix_config option, bool status) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_config([%d], [%d])\n", option, status);

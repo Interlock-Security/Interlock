@@ -110,7 +110,7 @@
 #endif
 
 // -- Enums ---------------------------
-enum webinix_browsers {
+enum webinix_browser {
     NoBrowser = 0,  // 0. No web browser
     AnyBrowser = 1, // 1. Default recommended web browser
     Chrome,         // 2. Google Chrome
@@ -126,13 +126,13 @@ enum webinix_browsers {
     ChromiumBased,  // 12. Any Chromium based browser
 };
 
-enum webinix_runtimes {
+enum webinix_runtime {
     None = 0, // 0. Prevent Webinix from using any runtime for .js and .ts files
     Deno,     // 1. Use Deno runtime for .js and .ts files
     NodeJS,   // 2. Use Nodejs runtime for .js files
 };
 
-enum webinix_events {
+enum webinix_event {
     WEBUI_EVENT_DISCONNECTED = 0, // 0. Window disconnection event
     WEBUI_EVENT_CONNECTED,        // 1. Window connection event
     WEBUI_EVENT_MOUSE_CLICK,      // 2. Mouse click event
@@ -141,11 +141,11 @@ enum webinix_events {
 };
 
 typedef enum {
-    // Control if `webinix_show()` and `webinix_show_x()` should wait 
+    // Control if `webinix_show()` and `webinix_show_x()` should wait
     // for the window to connect before returns or not.
     // Default: True
     show_wait_connection = 0,
-} webinix_configs;
+} webinix_config;
 
 // -- Structs -------------------------
 typedef struct webinix_event_t {
@@ -573,12 +573,12 @@ WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
 /**
  * @brief Control the Webinix behaviour. It's better to call at the beginning.
  *
- * @param option The desired option from `webinix_configs` enum
+ * @param option The desired option from `webinix_config` enum
  * @param status The status of the option, `true` or `false`
  *
  * @example webinix_config(show_wait_connection, false);
  */
-WEBUI_EXPORT void webinix_config(webinix_configs option, bool status);
+WEBUI_EXPORT void webinix_set_config(webinix_config option, bool status);
 
 // -- SSL/TLS -------------------------
 
