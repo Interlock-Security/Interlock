@@ -9763,9 +9763,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
                 return false;
             }
 
-            // Let `wait()` use safe main-thread GTK WebView loop
-            _webinix_core.is_webview = true;
-
             // Initialize GTK
             gtk_init(NULL, NULL);
         }
@@ -9815,8 +9812,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
 
         // Initializing
-        // Expecting `_webinix_webview_thread` to change
-        // `mutex_is_webview_update` to false when success
+        // Expecting `_webinix_webview_thread` to change `mutex_is_webview_update` 
+        // to `false` when initialization is done, and `_webinix_core.is_webview`
+        // to `true` if loading the WebView is succeeded.
         _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
 
         // Wait for WebView thread to get
@@ -9831,18 +9829,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
                 // and loaded window successfully
                 break;
             }
-            if (_webinix_timer_is_end(&timer, 1000)) {
+            if (_webinix_timer_is_end(&timer, 2500)) {
                 // Timeout. WebView thread failed.
                 break;
             }
         }
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", 
-            (_webinix_mutex_is_webview_update(win, WEBUI_MUTEX_NONE) == false));
+        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", (_webinix_core.is_webview == true));
         #endif
 
-        return (_webinix_mutex_is_webview_update(win, WEBUI_MUTEX_NONE) == false);
+        return (_webinix_core.is_webview);
     };
 
     static WEBUI_THREAD_WEBVIEW {
@@ -9854,6 +9851,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         if (win == NULL) {
             _webinix_wv_close(win->webView);
             win->webView = NULL;
+            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
             WEBUI_THREAD_RETURN
         }
 
@@ -9861,6 +9859,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         if (!libgtk || !libwebkit) {
             _webinix_wv_close(win->webView);
             win->webView = NULL;
+            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
             WEBUI_THREAD_RETURN
         }
 
@@ -9871,6 +9870,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             #endif
 
             // Success
+            // Let `wait()` use safe main-thread GTK WebView loop
+            _webinix_core.is_webview = true;
             _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
 
             while (true) {
