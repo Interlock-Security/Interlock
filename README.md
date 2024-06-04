@@ -2,7 +2,7 @@
 
 ![Logo](https://raw.githubusercontent.com/webinix-dev/webinix-logo/main/webinix_240.png)
 
-# Webinix v2.5.0-Beta-1
+# Webinix v2.5.0-beta
 
 [build-status]: https://img.shields.io/github/actions/workflow/status/webinix-dev/webinix/ci.yml?branch=main&style=for-the-badge&logo=githubactions&labelColor=414868&logoColor=C0CAF5
 [last-commit]: https://img.shields.io/github/last-commit/webinix-dev/webinix?style=for-the-badge&logo=github&logoColor=C0CAF5&labelColor=414868
