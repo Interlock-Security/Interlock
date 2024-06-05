@@ -9950,7 +9950,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
     static bool _webinix_wv_navigate(_webinix_wv_macos_t* webView, char* url) {
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wv_navigate([%ls])\n", url);
+        printf("[Core]\t\t_webinix_wv_navigate([%s])\n", url);
         #endif
         _webinix_macos_wv_navigate(webView->index, (const char*)url);
         return false;
