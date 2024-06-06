@@ -6476,7 +6476,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
     // Get network ports
     if (win->custom_server_port > 0) win->server_port = win->custom_server_port;
-    else win->server_port = _webinix_get_free_port();
+    else if (win->server_port == 0) win->server_port = _webinix_get_free_port();
 
     // Generate the server URL
     win->url = (char*)_webinix_malloc(32); // [http][domain][port]
