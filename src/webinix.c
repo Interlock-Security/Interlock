@@ -2011,7 +2011,7 @@ void webinix_set_event_block(size_t window, bool status) {
 
     // Dereference
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
-        return false;
+        return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
     win->ws_block = status;
