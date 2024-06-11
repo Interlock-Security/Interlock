@@ -143,10 +143,20 @@ enum webinix_event {
 };
 
 typedef enum {
-    // Control if `webinix_show()` and `webinix_show_x()` should wait
-    // for the window to connect before returns or not.
+    // Control if `webinix_show()`, `webinix_show_browser()` and
+    // `webinix_show_wv()` should wait for the window to connect
+    // before returns or not.
+    //
     // Default: True
     show_wait_connection = 0,
+    // Control if Webinix should block and process the UI events
+    // one a time in a single thread `True`, or process every
+    // event in a new non-blocking thread `False`. This updates
+    // all windows. You can use `webinix_set_event_block()` for
+    // a specific single window update.
+    //
+    // Default: False
+    ui_event_block,
 } webinix_config;
 
 // -- Structs -------------------------
@@ -581,6 +591,19 @@ WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
  * @example webinix_config(show_wait_connection, false);
  */
 WEBUI_EXPORT void webinix_set_config(webinix_config option, bool status);
+
+/**
+ * @brief Control if UI events comming from this window should be processed
+ * one a time in a single blocking thread `True`, or process every event in
+ * a new non-blocking thread `False`. This update single window. You can use 
+ * `webinix_set_config(ui_event_block, ...)` to update all windows.
+ *
+ * @param window The window number
+ * @param status The blocking status `true` or `false`
+ *
+ * @example webinix_set_event_block(myWindow, true);
+ */
+WEBUI_EXPORT void webinix_set_event_block(size_t window, bool status);
 
 // -- SSL/TLS -------------------------
 
