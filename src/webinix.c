@@ -1990,7 +1990,7 @@ void webinix_set_config(webinix_config option, bool status) {
         case show_wait_connection:
             _webinix_core.config.show_wait_connection = status;
             break;
-        case ui_event_block:
+        case ui_event_blocking:
             _webinix_core.config.ws_block = status;
             // Update all created windows
             for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
@@ -2007,9 +2007,9 @@ void webinix_set_config(webinix_config option, bool status) {
     }
 }
 
-void webinix_set_event_block(size_t window, bool status) {
+void webinix_set_event_blocking(size_t window, bool status) {
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_event_block([%zu], [%d])\n", window, status);
+    printf("[User] webinix_set_event_blocking([%zu], [%d])\n", window, status);
     #endif
 
     // Initialization
