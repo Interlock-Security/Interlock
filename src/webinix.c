@@ -5472,6 +5472,7 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
         "--disable-sync-preferences",
         "--disable-component-update",
         "--allow-insecure-localhost",
+	"--auto-accept-camera-and-microphone-capture",
     };
 
     int c = 0;
