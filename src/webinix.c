@@ -363,6 +363,7 @@ typedef struct _webinix_core_t {
     size_t ptr_size[WEBUI_MAX_IDS * 2];
     size_t current_browser;
     _webinix_window_t * wins[WEBUI_MAX_IDS];
+    bool wins_reserved[WEBUI_MAX_IDS];
     size_t last_win_number;
     bool server_handled;
     webinix_mutex_t mutex_server_start;
@@ -868,7 +869,8 @@ size_t webinix_get_new_window_id(void) {
         return 0;
 
     for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.wins[i] == NULL) {
+        if (_webinix_core.wins[i] == NULL && !_webinix_core.wins_reserved[i]) {
+            _webinix_core.wins_reserved[i] = true;
             if (i > _webinix_core.last_win_number)
                 _webinix_core.last_win_number = i;
             return i;
@@ -1004,6 +1006,7 @@ void webinix_destroy(size_t window) {
     // Free window struct
     _webinix_free_mem((void * ) _webinix_core.wins[window]);
     _webinix_core.wins[window] = NULL;
+    _webinix_core.wins_reserved[window] = false;
 }
 
 bool webinix_is_shown(size_t window) {
