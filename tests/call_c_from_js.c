@@ -12,6 +12,7 @@ const char *doc =
     "      await webinix.assert_float(1.0, 2.3, 3.45);"
     "      await webinix.assert_string('foo', 'bar', 'baz');"
     "      await webinix.assert_bool(true, false, true);"
+    "      await webinix.assert_cprint();"
     "      await webinix.assert_close();"
     "    }, 500)"
     "  </script>"
@@ -80,6 +81,14 @@ void assert_bool(webinix_event_t *e) {
 	assert(b3 == true);
 }
 
+void assert_cprint(webinix_event_t *e) {
+	size_t count = webinix_get_count(e);
+	assert(count == 0);
+
+	// The print should be confirmed by checking the program's terminal output.
+	printf("Hello from the backend!\n");
+}
+
 void assert_close(webinix_event_t *e) {
 	// Closing often leads to a seqfault at the moment. Therefore, just a sysexit for now.
 	// webinix_close(e->window);
@@ -93,7 +102,9 @@ int main() {
 	webinix_bind(w, "assert_float", assert_float);
 	webinix_bind(w, "assert_string", assert_string);
 	webinix_bind(w, "assert_bool", assert_bool);
+	webinix_bind(w, "assert_cprint", assert_cprint);
 	webinix_bind(w, "assert_close", assert_close);
+
 	webinix_show(w, doc);
 	webinix_wait();
 	webinix_clean();
