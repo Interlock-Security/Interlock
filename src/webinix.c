@@ -6555,6 +6555,11 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
                     #endif
                     runBrowser = true;
                 }
+            } else {
+                #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_show_window() -> Starting server only mode (NoBrowser).\n");
+                #endif
+                runBrowser = true;
             }
         }
 
