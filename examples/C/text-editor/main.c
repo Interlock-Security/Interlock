@@ -2,7 +2,7 @@
 
 #include "webinix.h"
 
-void Close(webinix_event_t* e) {
+void close_app(webinix_event_t* e) {
 	printf("Exit.\n");
 
 	// Close all opened windows
@@ -18,7 +18,7 @@ int main() {
 	webinix_set_root_folder(MainWindow, "ui");
 
 	// Bind HTML elements with the specified ID to C functions
-	webinix_bind(MainWindow, "__close-btn", Close);
+	webinix_bind(MainWindow, "close_app", close_app);
 
 	// Show the window, preferably in a chromium based browser
 	if (!webinix_show_browser(MainWindow, "index.html", ChromiumBased))
