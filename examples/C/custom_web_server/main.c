@@ -50,9 +50,9 @@ int main() {
 	// Bind HTML elements with C functions
 	webinix_bind(window, "my_backend_func", my_backend_func);
 
-	// Set web server network port Webinix should use
-	// this mean `webinix.js` will be available at:
-	// http://localhost:8081/webinix.js
+	// Set the web-server/WebSocket port that Webinix should
+	// use. This means `webinix.js` will be available at:
+	// http://localhost:MY_PORT_NUMBER/webinix.js
 	webinix_set_port(window, 8081);
 
 	// Show a new window and show our custom web server
