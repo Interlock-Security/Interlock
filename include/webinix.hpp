@@ -88,8 +88,14 @@ class window {
             static webinix::window& get_window(const size_t index) { return *window_list[index]; }
         };
 
+        // Get how many arguments there are in an event.
+        size_t get_count(size_t index = 0) { return webinix_get_count(this); }
+
         // Get an argument as integer at a specific index.
         long long int get_int(size_t index = 0) { return webinix_get_int_at(this, index); }
+
+        // Get an argument as string at a specific index.
+        double get_float(size_t index = 0) { return webinix_get_float_at(this, index); }
 
         // Get the size in bytes of an argument at a specific index.
         size_t get_size(size_t index = 0) { return webinix_get_size_at(this, index); }
@@ -107,6 +113,9 @@ class window {
 
         // Return the response to JavaScript as integer.
         void return_int(long long int n) { webinix_return_int(this, n); }
+
+        // Return the response to JavaScript as integer.
+        void return_float(double f) { webinix_return_float(this, f); }
 
         // Return the response to JavaScript as string.
         void return_string(const std::string_view s) { webinix_return_string(this, s.data()); }
@@ -130,8 +139,8 @@ class window {
         event::handler::add(id, this, func);
     }
 
-    // Show a window using a embedded HTML, or a file. If the window is already opened then it will be
-    // refreshed.
+    // Show a window using a embedded HTML, or a file. If the window is already opened
+    // then it will be refreshed.
     bool show(const std::string_view content) const { return webinix_show(webinix_window, content.data()); }
 
     // Same as show(). But with a specific web browser.
@@ -167,8 +176,8 @@ class window {
     // Set window size
     void set_size(unsigned int width, unsigned int height) const { webinix_set_size(webinix_window, width, height); }
 
-    // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP link of `webinix.js`
-    // in case you are trying to use Webinix with an external web-server like NGNIX
+    // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP 
+    // link of `webinix.js` in case you are trying to use Webinix with an external web-server like NGNIX
     void set_port(size_t port) const { webinix_set_port(webinix_window, port); }
 
     // Set window position
@@ -211,6 +220,18 @@ class window {
 
     // Navigate to a specific URL.
     void navigate(const std::string_view url) const { webinix_navigate(webinix_window, url.data()); }
+
+    // Control if UI events coming from this window should be processed one at a time in a 
+    // single blocking thread `True`, or process every event in a new non-blocking thread `False`.
+    void set_event_blocking(bool status) const { webinix_set_event_blocking(webinix_window, status); }
+
+    // Show a WebView window using embedded HTML, or a file. If the window is already open, it will be refreshed.
+    bool show_wv(const std::string_view content) const {
+        return webinix_show_wv(webinix_window, content.data());
+    }
+
+    // Allow a specific window address to be accessible from a public network.
+    void set_public(bool status) const { webinix_set_public(webinix_window, status); }
 
     // -- JavaScript ----------------------
 
@@ -260,6 +281,16 @@ inline void clean() { webinix_clean(); }
 
 // Delete all local web-browser profiles folder. It should called at the end.
 inline void delete_all_profiles() { webinix_delete_all_profiles(); }
+
+// Get a free window number that can be used with `webinix_new_window_id()`.
+inline size_t get_new_window_id() { return webinix_get_new_window_id(); }
+
+// Control the Webinix behaviour. Should be called at the beginning.
+inline void set_config(webinix_config option, bool status) { webinix_set_config(option, status); }
+
+// Check if the app is still running.
+inline bool is_app_running() { return webinix_interface_is_app_running(); }
+
 } // namespace webinix
 
 #endif /* _WEBUI_HPP */
