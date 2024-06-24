@@ -303,6 +303,7 @@ typedef struct _webinix_window_t {
     bool has_events;
     char* server_root_path;
     bool kiosk_mode;
+    bool disable_high_contrast_support;
     bool hide;
     int width;
     int height;
@@ -897,6 +898,23 @@ void webinix_set_kiosk(size_t window, bool status) {
     _webinix_window_t * win = _webinix_core.wins[window];
 
     win->kiosk_mode = status;
+}
+
+void webinix_set_high_contrast_support(size_t window, bool status) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_high_contrast_support([%zu])\n", window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+        return;
+    _webinix_window_t * win = _webinix_core.wins[window];
+
+    win->disable_high_contrast_support = !status;
 }
 
 void webinix_close(size_t window) {
@@ -4288,7 +4306,10 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             _webinix_free_mem((void * ) win->profile_path);
         win->profile_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
         win->profile_name = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-        WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME);
+        if(!win->disable_high_contrast_support)
+            WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME);
+        else
+            WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME "-NoHC");
     }
 
     #ifdef WEBUI_LOG
@@ -4363,8 +4384,12 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
         // macOS
         const char* path_ini = "~/Library/Application Support/Firefox/profiles.ini";
         #endif
-        if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
+        if (!win->custom_profile){
+            if(!win->disable_high_contrast_support)
+                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
+            else
+                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxNoHighContrastProfile", temp, webinix_sep, webinix_sep);
+        }
 
         if (!_webinix_folder_exist(win->profile_path) ||
             !_webinix_is_firefox_ini_profile_exist(path_ini, win->profile_name)) {
@@ -4415,6 +4440,9 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             fputs("user_pref(\"browser.shell.checkDefaultBrowser\", false); ", file);
             fputs("user_pref(\"browser.tabs.warnOnClose\", false); ", file);
             fputs("user_pref(\"browser.tabs.inTitlebar\", 0); ", file);
+            if(win->disable_high_contrast_support){
+                fputs("user_pref(\"browser.display.document_color_use\", 1); ", file);
+            }
             fclose(file);
 
             // userChrome.css
@@ -5497,6 +5525,9 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
             // Kiosk Mode
             if (win->kiosk_mode)
                 c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--chrome-frame --kiosk");
+            // High Contrast Support
+            if (win->disable_high_contrast_support)
+                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--disable-features=ForcedColors");
             // Hide Mode
             if (win->hide)
                 c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--headless --headless=new");
