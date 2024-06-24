@@ -289,6 +289,15 @@ WEBUI_EXPORT void webinix_set_kiosk(size_t window, bool status);
 WEBUI_EXPORT void webinix_set_high_contrast_support(size_t window, bool status);
 
 /**
+ * @brief Get user high contrast preference.
+ *
+ * @return Returns True if user is using high contrast theme
+ *
+ * @example webinix_user_prefers_high_contrast();
+ */
+bool webinix_user_prefers_high_contrast();
+
+/**
  * @brief Wait until all opened windows get closed.
  *
  * @example webinix_wait();
