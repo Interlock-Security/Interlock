@@ -299,6 +299,15 @@ WEBUI_EXPORT void webinix_set_high_contrast(size_t window, bool status);
 WEBUI_EXPORT bool webinix_is_high_contrast();
 
 /**
+ * @brief Check if a web browser is installed.
+ *
+ * @return Returns True if the specified browser is available
+ *
+ * @example bool status = webinix_browser_exist(Chrome);
+ */
+WEBUI_EXPORT bool webinix_browser_exist(size_t browser);
+
+/**
  * @brief Wait until all opened windows get closed.
  *
  * @example webinix_wait();
