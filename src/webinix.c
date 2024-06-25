@@ -532,6 +532,7 @@ static bool _webinix_open_url_native(const char* url);
 static bool _webinix_is_valid_url(const char* url);
 static bool _webinix_port_is_used(size_t port_num);
 static char* _webinix_str_dup(const char* src);
+static void _webinix_bridge_api_handler(webinix_event_t* e);
 // WebView
 #ifdef _WIN32
 // Microsoft Windows
@@ -849,10 +850,13 @@ size_t webinix_new_window_id(size_t window_number) {
     // Generate a random token
     win->token = _webinix_generate_random_uint32();
 
+    // Auto bind JavaScript-Bridge Core API Handler
+    webinix_bind(window_number, "__webinix_core_api__", _webinix_bridge_api_handler);
+
     #ifdef WEBUI_LOG
     printf("[User] webinix_new_window_id() -> New window #%zu @ 0x%p\n", window_number, win);
-    printf("[User] webinix_new_window_id() -> New window Token 0x%08X (%"
-        PRIu32 ")\n", win->token, win->token);
+    printf("[User] webinix_new_window_id() -> New window Token 0x%08X (%" PRIu32 ")\n", 
+        win->token, win->token);
     #endif
 
     return window_number;
@@ -10203,3 +10207,22 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         WEBUI_THREAD_RETURN
     }
 #endif
+
+static void _webinix_bridge_api_handler(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_bridge_api_handler()\n");
+    #endif
+
+	// This function gets called by `webinix.js` to reach
+    // an internal core API. This is not a public user API.
+
+    const char* api_name = webinix_get_string(e);
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_bridge_api_handler() -> api_name: [%s]\n", api_name);
+    #endif
+
+    if (strcmp(api_name, "high_contrast") == 0) {
+        webinix_return_bool(e, webinix_is_high_contrast());
+    }
+}
