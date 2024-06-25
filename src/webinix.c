@@ -303,7 +303,7 @@ typedef struct _webinix_window_t {
     bool has_events;
     char* server_root_path;
     bool kiosk_mode;
-    bool disable_high_contrast_support;
+    bool disable_browser_high_contrast;
     bool hide;
     int width;
     int height;
@@ -900,10 +900,10 @@ void webinix_set_kiosk(size_t window, bool status) {
     win->kiosk_mode = status;
 }
 
-void webinix_set_high_contrast_support(size_t window, bool status) {
+void webinix_set_high_contrast(size_t window, bool status) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_high_contrast_support([%zu])\n", window);
+    printf("[User] webinix_set_high_contrast([%zu], [%d])\n", window, status);
     #endif
 
     // Initialization
@@ -914,13 +914,13 @@ void webinix_set_high_contrast_support(size_t window, bool status) {
         return;
     _webinix_window_t * win = _webinix_core.wins[window];
 
-    win->disable_high_contrast_support = !status;
+    win->disable_browser_high_contrast = !status;
 }
 
-bool webinix_user_prefers_high_contrast() {
+bool webinix_is_high_contrast() {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_high_contrast_support()\n");
+    printf("[User] webinix_is_high_contrast()\n");
     #endif
 
     // Initialization
@@ -929,33 +929,42 @@ bool webinix_user_prefers_high_contrast() {
     bool is_enabled = false;
 
     #ifdef _WIN32
-        char high_contrast_flags_as_char[WEBUI_MAX_PATH];
-
-        _webinix_get_windows_reg_value(
+        char hc[WEBUI_MAX_PATH];
+        if (_webinix_get_windows_reg_value(
             HKEY_CURRENT_USER,
-            L"Control Panel\\Accessibility\\"
-            L"HighContrast",
-            L"Flags", high_contrast_flags_as_char
-        );
-
-        int high_contrast_flags = atoi(high_contrast_flags_as_char);
-
-        is_enabled = (high_contrast_flags & 0x01) == 1;
-
+            L"Control Panel\\Accessibility\\HighContrast",
+            L"Flags",
+            hc))
+        {
+            long flags = strtol(hc, NULL, 10);
+            if (flags != LONG_MIN && flags != LONG_MAX) {
+                is_enabled = ((flags & 0x01) == 1);
+            }
+        }
     #elif __linux__
         FILE* process_output;
-        char buf[100];
-
+        char buf[128];
         process_output = popen("gsettings get org.gnome.desktop.a11y.interface high-contrast", "r");
-        if (process_output != NULL && fgets(buf, sizeof(buf), process_output) != NULL) { // Running the command is not failed and fgets works correctly
-            is_enabled = strstr(buf, "true") != NULL;
+        if (process_output != NULL) {
+            if (fgets(buf, sizeof(buf), process_output) != NULL) {
+                is_enabled = (strstr(buf, "true") != NULL);
+            }
+            pclose(process_output);
         }
-
-        pclose(process_output);
+    #else
+        FILE* process_output;
+        char buf[128];
+        process_output = popen("defaults read -g AppleInterfaceStyle", "r");
+        if (process_output != NULL) {
+            if (fgets(buf, sizeof(buf), process_output) != NULL) {
+                is_enabled = (strstr(buf, "Dark") != NULL);
+            }
+            pclose(process_output);
+        }
     #endif
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_high_contrast_support() -> %d", is_enabled);
+    printf("[User] webinix_is_high_contrast() -> %d\n", is_enabled);
     #endif
 
     return is_enabled;
@@ -4350,7 +4359,7 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             _webinix_free_mem((void * ) win->profile_path);
         win->profile_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
         win->profile_name = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-        if(!win->disable_high_contrast_support)
+        if(!win->disable_browser_high_contrast)
             WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME);
         else
             WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME "-NoHC");
@@ -4429,10 +4438,10 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
         const char* path_ini = "~/Library/Application Support/Firefox/profiles.ini";
         #endif
         if (!win->custom_profile){
-            if(!win->disable_high_contrast_support)
+            if(!win->disable_browser_high_contrast)
                 WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
             else
-                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxNoHighContrastProfile", temp, webinix_sep, webinix_sep);
+                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile-NoHC", temp, webinix_sep, webinix_sep);
         }
 
         if (!_webinix_folder_exist(win->profile_path) ||
@@ -4484,7 +4493,7 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             fputs("user_pref(\"browser.shell.checkDefaultBrowser\", false); ", file);
             fputs("user_pref(\"browser.tabs.warnOnClose\", false); ", file);
             fputs("user_pref(\"browser.tabs.inTitlebar\", 0); ", file);
-            if(win->disable_high_contrast_support){
+            if(win->disable_browser_high_contrast){
                 fputs("user_pref(\"browser.display.document_color_use\", 1); ", file);
             }
             fclose(file);
@@ -4501,8 +4510,8 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             if (file == NULL)
                 return false;
             fputs(
-	            "#navigator-toolbox{opacity:0 !important; height:0px !important; max-height:0px !important;"
-	            "width:0px !important; max-width:0px !important;}"
+                "#navigator-toolbox{opacity:0 !important; height:0px !important; max-height:0px !important;"
+                "width:0px !important; max-width:0px !important;}"
             , file);
             fclose(file);
         }
@@ -5550,7 +5559,7 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
         "--disable-sync-preferences",
         "--disable-component-update",
         "--allow-insecure-localhost",
-	"--auto-accept-camera-and-microphone-capture",
+        "--auto-accept-camera-and-microphone-capture",
     };
 
     int c = 0;
@@ -5573,7 +5582,7 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
             if (win->kiosk_mode)
                 c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--chrome-frame --kiosk");
             // High Contrast Support
-            if (win->disable_high_contrast_support)
+            if (win->disable_browser_high_contrast)
                 c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--disable-features=ForcedColors");
             // Hide Mode
             if (win->hide)
