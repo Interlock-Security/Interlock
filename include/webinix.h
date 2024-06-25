@@ -279,6 +279,25 @@ WEBUI_EXPORT bool webinix_show_wv(size_t window, const char* content);
 WEBUI_EXPORT void webinix_set_kiosk(size_t window, bool status);
 
 /**
+ * @brief Set the window high contrast support. It would be useful when default high contrast support of browser is not working fine or you want to build better high contrast theme by CSS.
+ *
+ * @param window The window number
+ * @param status True or False
+ *
+ * @example webinix_set_high_contrast_support(myWindow, true);
+ */
+WEBUI_EXPORT void webinix_set_high_contrast_support(size_t window, bool status);
+
+/**
+ * @brief Get user high contrast preference.
+ *
+ * @return Returns True if user is using high contrast theme
+ *
+ * @example webinix_user_prefers_high_contrast();
+ */
+bool webinix_user_prefers_high_contrast();
+
+/**
  * @brief Wait until all opened windows get closed.
  *
  * @example webinix_wait();
