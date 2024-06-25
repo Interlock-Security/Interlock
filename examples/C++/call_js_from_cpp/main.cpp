@@ -56,7 +56,7 @@ int main() {
       <html>
         <head>
           <meta charset="UTF-8">
-          <script src="webinix.js"></script>
+          <script src="/webinix.js"></script>
           <title>Call JavaScript from C++ Example</title>
           <style>
             body {
