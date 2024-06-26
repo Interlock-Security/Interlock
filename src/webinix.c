@@ -7528,6 +7528,7 @@ static WEBUI_THREAD_SERVER_START {
     #endif
 
     // Folder monitor thread
+    bool monitor_created = false;
     #ifdef _WIN32
     HANDLE monitor_thread = NULL;
     #else
@@ -7692,8 +7693,9 @@ static WEBUI_THREAD_SERVER_START {
                     );
                     #endif
 
-                    if (_webinix_core.config.folder_monitor && !monitor_thread) {
-                        // Folder monitor thread
+                    // Folder monitor thread
+                    if (_webinix_core.config.folder_monitor && !monitor_created) {
+                        monitor_created = true;
                         _webinix_monitor_arg_t* arg = (_webinix_monitor_arg_t * ) _webinix_malloc(sizeof(_webinix_monitor_arg_t));
                         arg->win_num = win->window_number;
                         arg->path = win->server_root_path;
