@@ -67,6 +67,7 @@
 #define WEBUI_CMD_SEND_RAW   0xF8    // Command: Send raw binary data to the UI
 #define WEBUI_CMD_ADD_ID     0xF7    // Command: Add new bind ID
 #define WEBUI_CMD_MULTI      0xF6    // Command: Multi packet data
+#define WEBUI_CMD_CHECK_TK   0xF5    // Command: Check validity of a client's token
 #define WEBUI_PROTOCOL_SIZE  (8)     // Protocol header size in bytes
 #define WEBUI_PROTOCOL_SIGN  (0)     // Protocol byte position: Signature (1 Byte)
 #define WEBUI_PROTOCOL_TOKEN (1)     // Protocol byte position: Token (4 Bytes)
@@ -97,6 +98,8 @@
 #define WEBUI_MAX_X          (3000)  // Maximal window X (4K Monitor)
 #define WEBUI_MAX_Y          (1800)  // Maximal window Y (4K Monitor)
 #define WEBUI_PROFILE_NAME   "Webinix" // Default browser profile name (Used only for Firefox)
+#define WEBUI_AUTH_COOKIE    (32)    // Authentification Cookie Len
+#define WEBUI_BROWSERS_COUNT (16)    // Total supported browser (enum webinix_browser) 
 
 #ifdef WEBUI_TLS
 #define WEBUI_SECURE         "TLS-Encryption"
@@ -151,6 +154,11 @@ typedef pthread_cond_t webinix_condition_t;
     #define WEBUI_COMPILER "Unknown"
 #endif
 
+// Verbose Log
+#ifdef WEBUI_LOG
+    // #define WEBUI_LOG_VERBOSE
+#endif
+
 // Timer
 typedef struct _webinix_timer_t {
     struct timespec start;
@@ -159,10 +167,12 @@ typedef struct _webinix_timer_t {
 
 // Event data
 typedef struct webinix_event_inf_t {
-    char* event_data[WEBUI_MAX_ARG + 1];  // Event data (string | num | bool | raw)
+    char* event_data[WEBUI_MAX_ARG + 1]; // Event data (string | num | bool | raw)
     size_t event_size[WEBUI_MAX_ARG + 1]; // Event data size (in bytes)
-    char* response;                       // Event response (string)
+    char* response; // Event response (string)
     size_t count;
+    struct mg_connection* client;
+    size_t client_id;
 } webinix_event_inf_t;
 
 // WebView
@@ -181,14 +191,14 @@ typedef struct webinix_event_inf_t {
         void* createWebViewControllerHandler_lpVtbl;
         // Webinix Window
         wchar_t* url;
-        volatile bool navigate;
-        volatile bool size;
-        volatile bool position;
-        volatile int width;
-        volatile int height;
-        volatile int x;
-        volatile int y;
-        volatile bool stop;
+        bool navigate;
+        bool size;
+        bool position;
+        int width;
+        int height;
+        int x;
+        int y;
+        bool stop;
     } _webinix_wv_win32_t;
 #elif __linux__
     void* libgtk;
@@ -220,11 +230,11 @@ typedef struct webinix_event_inf_t {
     gtk_window_move_func gtk_window_move = NULL;
     gtk_window_close_func gtk_window_close = NULL;
     gtk_window_resize_func gtk_window_resize = NULL;
-    gtk_window_set_position_func gtk_window_set_position = NULL;    
+    gtk_window_set_position_func gtk_window_set_position = NULL;
     g_signal_connect_data_func g_signal_connect_data = NULL;
     g_idle_add_func g_idle_add = NULL;
     // WebKit Symbol Addresses
-    typedef void *(*webkit_web_view_new_func)(void);    
+    typedef void *(*webkit_web_view_new_func)(void);
     typedef void (*webkit_web_view_load_uri_func)(void *, const char *);
     typedef const char *(*webkit_web_view_get_title_func)(void *);
     webkit_web_view_new_func webkit_web_view_new = NULL;
@@ -235,17 +245,17 @@ typedef struct webinix_event_inf_t {
         // Linux WebView
         void* gtk_win;
         void* gtk_wv;
-        volatile bool open;
+        bool open;
         // Webinix Window
         char* url;
-        volatile bool navigate;
-        volatile bool size;
-        volatile bool position;
-        volatile unsigned int width;
-        volatile unsigned int height;
-        volatile unsigned int x;
-        volatile unsigned int y;
-        volatile bool stop;
+        bool navigate;
+        bool size;
+        bool position;
+        unsigned int width;
+        unsigned int height;
+        unsigned int x;
+        unsigned int y;
+        bool stop;
     } _webinix_wv_linux_t;
 #else
     extern bool _webinix_macos_wv_new(int index);
@@ -264,33 +274,47 @@ typedef struct webinix_event_inf_t {
         int index;
         // Webinix Window
         char* url;
-        volatile bool navigate;
-        volatile bool size;
-        volatile bool position;
-        volatile unsigned int width;
-        volatile unsigned int height;
-        volatile unsigned int x;
-        volatile unsigned int y;
-        volatile bool stop;
+        bool navigate;
+        bool size;
+        bool position;
+        unsigned int width;
+        unsigned int height;
+        unsigned int x;
+        unsigned int y;
+        bool stop;
     } _webinix_wv_macos_t;
 #endif
 
 // Window
 typedef struct _webinix_window_t {
-    size_t window_number;
-    volatile bool server_running;
-    volatile bool connected;
-    volatile bool file_handled;
-    bool ws_block;
-    bool html_handled;
-    bool bridge_handled;
-    bool server_handled;
-    bool is_embedded_html;
-    bool is_closed;
-    size_t custom_server_port;
+    // Client
+    struct mg_connection* clients[WEBUI_MAX_IDS];
+    size_t clients_count;
+    bool clients_token_check[WEBUI_MAX_IDS];
+    // Server
+    bool wait; // Let server thread wait more time for websocket
+    bool server_running; // Slow check
+    bool connected; // Fast check
     size_t server_port;
     char* url;
     const char* html;
+    char* server_root_path;
+    #ifdef _WIN32
+    HANDLE server_thread;
+    #else
+    pthread_t server_thread;
+    #endif
+    // Window
+    uint32_t token;
+    size_t window_number;
+    char* html_elements[WEBUI_MAX_IDS];
+    bool has_all_events;
+    void(*cb[WEBUI_MAX_IDS])(webinix_event_t* e);
+    void(*cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char* , size_t, size_t);
+    bool ws_block;
+    bool is_embedded_html;
+    bool is_closed;
+    size_t custom_server_port;
     const char* icon;
     const char* icon_type;
     size_t current_browser;
@@ -300,8 +324,6 @@ typedef struct _webinix_window_t {
     char* profile_path;
     char* profile_name;
     size_t runtime;
-    bool has_events;
-    char* server_root_path;
     bool kiosk_mode;
     bool disable_browser_high_contrast;
     bool hide;
@@ -312,14 +334,7 @@ typedef struct _webinix_window_t {
     int y;
     bool position_set;
     size_t process_id;
-    #ifdef _WIN32
-    HANDLE server_thread;
-    #else
-    pthread_t server_thread;
-    #endif
-    const void * ( * files_handler)(const char* filename, int * length);
-    uint32_t token;
-    struct mg_connection * mg_connection;
+    const void*(*files_handler)(const char* filename, int* length);
     webinix_event_inf_t* events[WEBUI_MAX_IDS];
     size_t events_count;
     bool is_public;
@@ -327,7 +342,7 @@ typedef struct _webinix_window_t {
     char *proxy_server;
     // WebView
     bool allow_webview;
-    volatile bool update_webview;
+    bool update_webview;
     #ifdef _WIN32
     _webinix_wv_win32_t* webView;
     #elif __linux__
@@ -345,29 +360,29 @@ typedef struct _webinix_core_t {
         bool show_auto_js_inject;
         bool ws_block;
         bool folder_monitor;
+        bool multi_client;
     } config;
-    volatile size_t servers;
-    char* html_elements[WEBUI_MAX_IDS];
+    bool auth_cookie_set[WEBUI_BROWSERS_COUNT];
+    char auth_cookie[WEBUI_BROWSERS_COUNT][WEBUI_AUTH_COOKIE * 2];
+    size_t servers;
     size_t used_ports[WEBUI_MAX_IDS];
     size_t startup_timeout;
-    volatile bool exit_now;
-    volatile bool run_done[WEBUI_MAX_IDS]; // 2 Bytes ID
+    size_t cb_count;
+    bool exit_now;
+    bool run_done[WEBUI_MAX_IDS]; // 2 Bytes ID
     char* run_userBuffer[WEBUI_MAX_IDS];
     size_t run_userBufferLen[WEBUI_MAX_IDS];
     bool run_error[WEBUI_MAX_IDS];
     uint16_t run_last_id;
     bool initialized;
-    void( * cb[WEBUI_MAX_IDS])(webinix_event_t* e);
-    void( * cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char* , size_t, size_t);
     char* executable_path;
     void * ptr_list[WEBUI_MAX_IDS * 2];
     size_t ptr_position;
     size_t ptr_size[WEBUI_MAX_IDS * 2];
     size_t current_browser;
-    _webinix_window_t * wins[WEBUI_MAX_IDS];
+    _webinix_window_t* wins[WEBUI_MAX_IDS];
     bool wins_reserved[WEBUI_MAX_IDS];
     size_t last_win_number;
-    bool server_handled;
     webinix_mutex_t mutex_server_start;
     webinix_mutex_t mutex_send;
     webinix_mutex_t mutex_receive;
@@ -377,15 +392,16 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_win_connect;
     webinix_mutex_t mutex_exit_now;
     webinix_mutex_t mutex_webview_stop;
+    webinix_mutex_t mutex_http_handler;
+    webinix_mutex_t mutex_client;
     webinix_condition_t condition_wait;
     char* default_server_root_path;
     bool ui;
-    // bool little_endian;
     #ifdef WEBUI_TLS
-    uint8_t * root_cert;
-    uint8_t * root_key;
-    uint8_t * ssl_cert;
-    uint8_t * ssl_key;
+    uint8_t* root_cert;
+    uint8_t* root_key;
+    uint8_t* ssl_cert;
+    uint8_t* ssl_key;
     #endif
     // WebView
     bool is_browser_main_run;
@@ -403,22 +419,22 @@ _webinix_core_t;
 
 typedef struct _webinix_cb_arg_t {
     // Event
-    _webinix_window_t * window;
+    _webinix_window_t* window;
     size_t event_type;
     char* element;
     char* data;
     size_t event_number;
-    // Extras
-    char* webinix_internal_id;
 }
 _webinix_cb_arg_t;
 
 typedef struct _webinix_recv_arg_t {
-    _webinix_window_t * win;
+    _webinix_window_t* win;
     void * ptr;
     size_t len;
     size_t recvNum;
     int event_type;
+    struct mg_connection* client;
+    size_t client_id;
 }
 _webinix_recv_arg_t;
 
@@ -429,7 +445,7 @@ typedef struct _webinix_monitor_arg_t {
 _webinix_monitor_arg_t;
 
 typedef struct _webinix_cmd_async_t {
-    _webinix_window_t * win;
+    _webinix_window_t* win;
     char* cmd;
 }
 _webinix_cmd_async_t;
@@ -438,13 +454,13 @@ _webinix_cmd_async_t;
 #ifdef _WIN32
 static const char* webinix_sep = "\\";
 static DWORD WINAPI _webinix_run_browser_task(LPVOID _arg);
-static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show);
+static int _webinix_system_win32(_webinix_window_t* win, char* cmd, bool show);
 static int _webinix_system_win32_out(const char* cmd, char ** output, bool show);
 static bool _webinix_socket_test_listen_win32(size_t port_num);
 static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]);
 static bool _webinix_str_to_wide(const char *s, wchar_t **w);
 #define WEBUI_THREAD_SERVER_START DWORD WINAPI _webinix_server_thread(LPVOID arg)
-#define WEBUI_THREAD_RECEIVE DWORD WINAPI _webinix_process_thread(LPVOID _arg)
+#define WEBUI_THREAD_RECEIVE DWORD WINAPI _webinix_ws_process_thread(LPVOID _arg)
 #define WEBUI_THREAD_WEBVIEW DWORD WINAPI _webinix_webview_thread(LPVOID arg)
 #define WEBUI_THREAD_MONITOR DWORD WINAPI _webinix_folder_monitor_thread(LPVOID arg)
 #define WEBUI_THREAD_RETURN return 0;
@@ -452,87 +468,98 @@ static bool _webinix_str_to_wide(const char *s, wchar_t **w);
 static const char* webinix_sep = "/";
 static void * _webinix_run_browser_task(void * _arg);
 #define WEBUI_THREAD_SERVER_START void * _webinix_server_thread(void * arg)
-#define WEBUI_THREAD_RECEIVE void * _webinix_process_thread(void * _arg)
+#define WEBUI_THREAD_RECEIVE void * _webinix_ws_process_thread(void * _arg)
 #define WEBUI_THREAD_WEBVIEW void * _webinix_webview_thread(void * arg)
 #define WEBUI_THREAD_MONITOR void * _webinix_folder_monitor_thread(void * arg)
 #define WEBUI_THREAD_RETURN pthread_exit(NULL);
 #endif
 static void _webinix_init(void);
-static bool _webinix_show(_webinix_window_t * win, const char* content, size_t browser);
-static size_t _webinix_get_cb_index(char* webinix_internal_id);
-static size_t _webinix_set_cb_index(char* webinix_internal_id);
+static bool _webinix_show(_webinix_window_t* win, struct mg_connection* client, const char* content, size_t browser);
+static bool _webinix_get_cb_index(_webinix_window_t* win, char* element, size_t* id);
 static size_t _webinix_get_free_port(void);
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
-static void _webinix_ws_send(_webinix_window_t * win, char* packet, size_t packets_size);
+static void _webinix_send_client_ws(_webinix_window_t* win, struct mg_connection* client,
+    size_t client_id, char* packet, size_t packets_size);
 static void _webinix_window_event(
-    _webinix_window_t * win, int event_type, char* element, size_t event_number, char* webinix_internal_id
+    _webinix_window_t* win, size_t client_id, int event_type, char* element, size_t event_number
 );
-static int _webinix_cmd_sync(_webinix_window_t * win, char* cmd, bool show);
-static int _webinix_cmd_async(_webinix_window_t * win, char* cmd, bool show);
-static int _webinix_run_browser(_webinix_window_t * win, char* cmd);
+static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show);
+static int _webinix_cmd_async(_webinix_window_t* win, char* cmd, bool show);
+static int _webinix_run_browser(_webinix_window_t* win, char* cmd);
 static void _webinix_clean(void);
-static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser);
+static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser);
 static const char* _webinix_get_temp_path();
 static bool _webinix_folder_exist(char* folder);
 static void _webinix_delete_folder(char* folder);
-static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t browser);
-static bool _webinix_browser_start_chrome(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_edge(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_epic(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_vivaldi(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_brave(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_firefox(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_yandex(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start_chromium(_webinix_window_t * win, const char* address);
-static bool _webinix_browser_start(_webinix_window_t * win, const char* address, size_t _browser);
+static bool _webinix_browser_create_new_profile(_webinix_window_t* win, size_t browser);
+static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_edge(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_epic(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_vivaldi(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_brave(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_firefox(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_yandex(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start_chromium(_webinix_window_t* win, const char* address);
+static bool _webinix_browser_start(_webinix_window_t* win, const char* address, size_t _browser);
 static long _webinix_timer_diff(struct timespec * start, struct timespec* end);
-static void _webinix_timer_start(_webinix_timer_t * t);
-static bool _webinix_timer_is_end(_webinix_timer_t * t, size_t ms);
+static void _webinix_timer_start(_webinix_timer_t* t);
+static bool _webinix_timer_is_end(_webinix_timer_t* t, size_t ms);
 static void _webinix_timer_clock_gettime(struct timespec * spec);
-static bool _webinix_set_root_folder(_webinix_window_t * win, const char* path);
-static const char* _webinix_generate_js_bridge(_webinix_window_t * win);
+static bool _webinix_set_root_folder(_webinix_window_t* win, const char* path);
+static const char* _webinix_generate_js_bridge(_webinix_window_t* win, struct mg_connection* client);
 static void _webinix_free_mem(void * ptr);
 static size_t _webinix_mb(size_t size);
-static bool _webinix_file_exist_mg(_webinix_window_t * win, struct mg_connection * conn);
+static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection* client);
 static bool _webinix_file_exist(char* path);
 static void _webinix_free_all_mem(void);
-static bool _webinix_show_window(_webinix_window_t * win, const char* content, int type, size_t browser);
-static char* _webinix_generate_internal_id(_webinix_window_t * win, const char* element);
+static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* client,
+    const char* content, int type, size_t browser);
 static bool _webinix_is_empty(const char* s);
 static size_t _webinix_strlen(const char* s);
 static uint16_t _webinix_get_run_id(void);
 static void * _webinix_malloc(size_t size);
 static void _webinix_sleep(long unsigned int ms);
-static size_t _webinix_find_the_best_browser(_webinix_window_t * win);
+static size_t _webinix_find_the_best_browser(_webinix_window_t* win);
 static bool _webinix_is_process_running(const char* process_name);
 static void _webinix_panic(char* msg);
 static void _webinix_kill_pid(size_t pid);
-static _webinix_window_t * _webinix_dereference_win_ptr(void * ptr);
-static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, char* buffer, size_t len);
-static void _webinix_mutex_init(webinix_mutex_t * mutex);
-static void _webinix_mutex_lock(webinix_mutex_t * mutex);
-static void _webinix_mutex_unlock(webinix_mutex_t * mutex);
-static void _webinix_mutex_destroy(webinix_mutex_t * mutex);
-static bool _webinix_mutex_is_connected(_webinix_window_t * win, int update);
+static _webinix_window_t* _webinix_dereference_win_ptr(void * ptr);
+static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, char* buffer, size_t len);
+static void _webinix_mutex_init(webinix_mutex_t* mutex);
+static void _webinix_mutex_lock(webinix_mutex_t* mutex);
+static void _webinix_mutex_unlock(webinix_mutex_t* mutex);
+static void _webinix_mutex_destroy(webinix_mutex_t* mutex);
+static bool _webinix_mutex_is_connected(_webinix_window_t* win, int update);
 static bool _webinix_mutex_is_exit_now(int update);
 static bool _webinix_mutex_is_webview_update(_webinix_window_t* win, int update);
-static void _webinix_condition_init(webinix_condition_t * cond);
-static void _webinix_condition_wait(webinix_condition_t * cond, webinix_mutex_t * mutex);
-static void _webinix_condition_signal(webinix_condition_t * cond);
-static void _webinix_condition_destroy(webinix_condition_t * cond);
-static void _webinix_http_send(struct mg_connection * conn, const char* mime_type, const char* body);
-static void _webinix_http_send_error_page(struct mg_connection * conn, const char* body, int status);
-static int _webinix_http_handler(struct mg_connection * conn, void * _win);
-static int _webinix_ws_connect_handler(const struct mg_connection * conn, void * _win);
-static void _webinix_ws_ready_handler(struct mg_connection * conn, void * _win);
-static int _webinix_ws_data_handler(struct mg_connection * conn, int opcode, char* data, size_t datasize, void * _win);
-static void _webinix_ws_close_handler(const struct mg_connection * conn, void * _win);
-static void _webinix_receive(_webinix_window_t * win, int event_type, void * data, size_t len);
-static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, size_t recvNum, int event_type);
+static void _webinix_condition_init(webinix_condition_t* cond);
+static void _webinix_condition_wait(webinix_condition_t* cond, webinix_mutex_t* mutex);
+static void _webinix_condition_signal(webinix_condition_t* cond);
+static void _webinix_condition_destroy(webinix_condition_t* cond);
+static void _webinix_http_send(_webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, const char* body, size_t body_len, bool cache);
+static void _webinix_http_send_file(_webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, const char* path, bool cache);
+static void _webinix_http_send_header(_webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, size_t body_len, bool cache);
+static void _webinix_http_send_error(struct mg_connection* client, const char* body, int status);
+static int _webinix_http_handler(struct mg_connection* client, void * _win);
+static int _webinix_ws_connect_handler(const struct mg_connection* client, void * _win);
+static void _webinix_ws_ready_handler(struct mg_connection* client, void * _win);
+static int _webinix_ws_data_handler(struct mg_connection* client, int opcode, char* data, size_t datasize, void * _win);
+static void _webinix_ws_close_handler(const struct mg_connection* client, void * _win);
+static void _webinix_receive(_webinix_window_t* win, struct mg_connection* client, int event_type, void * data, size_t len);
+static void _webinix_ws_process(_webinix_window_t* win, struct mg_connection* client, size_t client_id, 
+    void* ptr, size_t len, size_t recvNum, int event_type);
+static bool _webinix_client_save(_webinix_window_t* win, struct mg_connection* client, size_t* client_id);
+static bool _webinix_client_get_id(_webinix_window_t* win, struct mg_connection* client, size_t* client_id);
+static void _webinix_client_remove(_webinix_window_t* win, struct mg_connection* client);
 static void _webinix_remove_firefox_profile_ini(const char* path, const char* profile_name);
 static bool _webinix_is_firefox_ini_profile_exist(const char* path, const char* profile_name);
-static void _webinix_send(_webinix_window_t * win, uint32_t token, uint16_t id, uint8_t cmd, const char* data, size_t len);
+static void _webinix_send_client(_webinix_window_t* win, struct mg_connection *client, 
+    uint16_t id, uint8_t cmd, const char* data, size_t len);
+static void _webinix_send_all(_webinix_window_t* win, uint16_t id, uint8_t cmd, const char* data, size_t len);
 static uint16_t _webinix_get_id(const char* data);
 static uint32_t _webinix_get_token(const char* data);
 static uint32_t _webinix_generate_random_uint32();
@@ -542,6 +569,8 @@ static bool _webinix_is_valid_url(const char* url);
 static bool _webinix_port_is_used(size_t port_num);
 static char* _webinix_str_dup(const char* src);
 static void _webinix_bridge_api_handler(webinix_event_t* e);
+static void _webinix_generate_cookie(char* cookie, size_t length);
+static bool _webinix_check_auth_cookie(_webinix_window_t *win, char* full_cookies);
 // WebView
 #ifdef _WIN32
 // Microsoft Windows
@@ -580,7 +609,7 @@ static bool _webinix_check_certificate(const char* certificate_pem, const char* 
 #ifdef WEBUI_LOG
 static void _webinix_print_hex(const char* data, size_t len);
 static void _webinix_print_ascii(const char* data, size_t len);
-static int _webinix_http_log(const struct mg_connection * conn, const char* message);
+static int _webinix_http_log(const struct mg_connection* client, const char* message);
 #endif
 static WEBUI_THREAD_SERVER_START;
 static WEBUI_THREAD_RECEIVE;
@@ -589,52 +618,41 @@ static WEBUI_THREAD_MONITOR;
 
 // Safe C STD
 #ifdef _WIN32
-#define WEBUI_TOK(str, delim, context) strtok_s(str, delim, context)
-#define WEBUI_FOPEN(file, filename, mode) fopen_s(&file, filename, mode)
-#define WEBUI_SPF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
-#define WEBUI_SPF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
-#define WEBUI_SCOPY_DYN(dest, dest_size, src) strcpy_s(dest, _webinix_mb(dest_size), src)
-#define WEBUI_SCOPY_STATIC(dest, dest_size, src) strcpy_s(dest, dest_size, src)
-#define WEBUI_SCAT_DYN(dest, dest_size, src) strcat_s(dest, _webinix_mb(dest_size), src)
-#define WEBUI_SCAT_STATIC(dest, dest_size, src) strcat_s(dest, dest_size, src)
+#define WEBUI_STR_TOK(str, delim, context) strtok_s(str, delim, context)
+#define WEBUI_FILE_OPEN(file, filename, mode) fopen_s(&file, filename, mode)
+#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
+#define WEBUI_SN_PRINTF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
+#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strcpy_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_STR_COPY_STATIC(dest, dest_size, src) strcpy_s(dest, dest_size, src)
+#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strcat_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_STR_CAT_STATIC(dest, dest_size, src) strcat_s(dest, dest_size, src)
 #else
-#define WEBUI_TOK(str, delim, context) strtok_r(str, delim, context)
-#define WEBUI_FOPEN(file, filename, mode) ((file) = fopen(filename, mode))
-#define WEBUI_SPF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
-#define WEBUI_SPF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
-#define WEBUI_SCOPY_DYN(dest, dest_size, src) strncpy(dest, src, _webinix_mb(dest_size))
-#define WEBUI_SCOPY_STATIC(dest, dest_size, src) strncpy(dest, src, dest_size)
-#define WEBUI_SCAT_DYN(dest, dest_size, src) strncat(dest, src, _webinix_mb(dest_size))
-#define WEBUI_SCAT_STATIC(dest, dest_size, src) strncat(dest, src, dest_size)
+#define WEBUI_STR_TOK(str, delim, context) strtok_r(str, delim, context)
+#define WEBUI_FILE_OPEN(file, filename, mode) ((file) = fopen(filename, mode))
+#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
+#define WEBUI_SN_PRINTF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
+#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strncpy(dest, src, _webinix_mb(dest_size))
+#define WEBUI_STR_COPY_STATIC(dest, dest_size, src) strncpy(dest, src, dest_size)
+#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strncat(dest, src, _webinix_mb(dest_size))
+#define WEBUI_STR_CAT_STATIC(dest, dest_size, src) strncat(dest, src, dest_size)
 #endif
 
 // Assert
-#define WEBUI_ASSERT(s) _webinix_panic(s); assert(0 && s);
+#define WEBUI_ASSERT(s) _webinix_panic(s);assert(0 && s);
 
 // -- Heap ----------------------------
-static _webinix_core_t _webinix_core;
+static _webinix_core_t _webinix;
 static const char* webinix_html_served = "<html><head><title>Access Denied</title><script src=\"/webinix.js\"></script><style>"
 "body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:linear-"
 "gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style>"
 "</head><body><h2>&#9888; Access Denied</h2><p>You can't access this content<br>because it's already in use in<br>another "
-"window.</p><br><a href=\"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
+"window.<br><br>Note: Multi-client mode is disabled.</p><br><a href=\"https://www.webinix.me\">"
+"<small>Webinix v" WEBUI_VERSION "</small></a></body></html>";
 static const char* webinix_html_res_not_available = "<html><head><title>Resource Not Available</title><script src=\"/webinix.js\">"
 "</script><style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-"
 "image:linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}"
 "</style></head><body><h2>&#9888; Resource Not Available</h2><p>The requested resource is not available.</p><br><a href=\""
-"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
-static const char* webinix_deno_not_found = "<html><head><title>Deno Not Found</title><script src=\"/webinix.js\"></script>"
-"<style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:"
-"linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}"
-"</style></head><body><h2>&#9888; Deno Not Found</h2><p>Deno is not found on this system.<br>Please download it from <a "
-"href=\"https://github.com/denoland/deno/releases\">https://github.com/denoland/deno/releases</a></p><br><a href=\""
-"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "<small></a></body></html>";
-static const char* webinix_nodejs_not_found = "<html><head><title>Node.js Not Found</title><script src=\"/webinix.js\"></script>"
-"<style>body{margin:0;background-repeat:no-repeat;background-attachment:fixed;background-color:#FF3CAC;background-image:"
-"linear-gradient(225deg,#FF3CAC 0%,#784BA0 45%,#2B86C5 100%);font-family:sans-serif;margin:20px;color:#fff}a{color:#fff}</style>"
-"</head><body><h2>&#9888; Node.js Not Found</h2><p>Node.js is not found on this system.<br>Please download it from <a href=\""
-"https://nodejs.org/en/download/\">https://nodejs.org/en/download/</a></p><br><a href=\"https://www.webinix.me\"><small>Webinix v"
-WEBUI_VERSION "<small></a></body></html>";
+"https://www.webinix.me\"><small>Webinix v" WEBUI_VERSION "</small></a></body></html>";
 static const char* webinix_def_icon = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\""
 " version=\"1.1\"><path d=\"M 35.315 15.983 C 30.885 17.816, 29.305 25.835, 33.500 25.195 C 34.600 25.027, 37.177 24.802, 39.227"
 " 24.695 C 44.084 24.441, 49.054 19.899, 47.386 17.239 C 46.146 15.262, 38.884 14.507, 35.315 15.983 M 54.602 17.835 C 54.058"
@@ -665,9 +683,9 @@ void webinix_run(size_t window, const char* script) {
         return;
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
         return;
@@ -678,10 +696,10 @@ void webinix_run(size_t window, const char* script) {
     // [Script]
 
     // Send the packet
-    _webinix_send(win, win->token, 0, WEBUI_CMD_JS_QUICK, script, js_len);
+    _webinix_send_all(win, 0, WEBUI_CMD_JS_QUICK, script, js_len);
 }
 
-void webinix_set_file_handler(size_t window, const void * ( * handler)(const char* filename, int * length)) {
+void webinix_set_file_handler(size_t window, const void*(*handler)(const char* filename, int* length)) {
 
     if (handler == NULL)
         return;
@@ -690,9 +708,9 @@ void webinix_set_file_handler(size_t window, const void * ( * handler)(const cha
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->files_handler = handler;
 }
@@ -710,13 +728,18 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Initializing response buffer
     if (buffer_length > 0)
         memset(buffer, 0, buffer_length);
+    
+    // Stop if multi clients mode as we can't
+    // send and receive from all clients
+    if (_webinix.config.multi_client)
+        return false;
 
     if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
         return false;
@@ -727,13 +750,13 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         return false;
 
     // Initializing pipe
+    _webinix_mutex_lock(&_webinix.mutex_js_run);
     uint16_t run_id = _webinix_get_run_id();
-    _webinix_mutex_lock( & _webinix_core.mutex_js_run);
-    _webinix_core.run_done[run_id] = false;
-    _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
-    _webinix_core.run_error[run_id] = false;
-    _webinix_core.run_userBuffer[run_id] = buffer;
-    _webinix_core.run_userBufferLen[run_id] = buffer_length;
+    _webinix.run_done[run_id] = false;
+    _webinix.run_error[run_id] = false;
+    _webinix.run_userBuffer[run_id] = buffer;
+    _webinix.run_userBufferLen[run_id] = buffer_length;
+    _webinix_mutex_unlock(&_webinix.mutex_js_run);
 
     // Packet Protocol Format:
     // [...]
@@ -741,7 +764,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     // [Script]
 
     // Send the packet
-    _webinix_send(win, win->token, run_id, WEBUI_CMD_JS, script, js_len);
+    _webinix_send_client(win, win->clients[0], run_id, WEBUI_CMD_JS, script, js_len);
 
     bool js_status = false;
 
@@ -751,9 +774,9 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         // Wait forever
         for (;;) {
             _webinix_sleep(1);
-            _webinix_mutex_lock( & _webinix_core.mutex_js_run);
-            js_status = _webinix_core.run_done[run_id];
-            _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+            _webinix_mutex_lock(&_webinix.mutex_js_run);
+            js_status = _webinix.run_done[run_id];
+            _webinix_mutex_unlock(&_webinix.mutex_js_run);
             if (js_status)
                 break;
         }
@@ -761,15 +784,15 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
 
         // Using timeout
         _webinix_timer_t timer;
-        _webinix_timer_start( & timer);
+        _webinix_timer_start(&timer);
         for (;;) {
             _webinix_sleep(1);
-            _webinix_mutex_lock( & _webinix_core.mutex_js_run);
-            js_status = _webinix_core.run_done[run_id];
-            _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+            _webinix_mutex_lock(&_webinix.mutex_js_run);
+            js_status = _webinix.run_done[run_id];
+            _webinix_mutex_unlock(&_webinix.mutex_js_run);
             if (js_status)
                 break;
-            if (_webinix_timer_is_end( & timer, (timeout_second * 1000)))
+            if (_webinix_timer_is_end(&timer, (timeout_second * 1000)))
                 break;
         }
     }
@@ -779,15 +802,15 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
         #ifdef WEBUI_LOG
         printf(
             "[User] webinix_script -> Response found. User buffer len: %zu bytes \n",
-            _webinix_core.run_userBufferLen[run_id]
+            _webinix.run_userBufferLen[run_id]
         );
         printf(
             "[User] webinix_script -> Response found. User buffer data: [%s] \n",
-            _webinix_core.run_userBuffer[run_id]
+            _webinix.run_userBuffer[run_id]
         );
         #endif
 
-        return !_webinix_core.run_error[run_id];
+        return !_webinix.run_error[run_id];
     } else {
 
         #ifdef WEBUI_LOG
@@ -802,9 +825,9 @@ WEBUI_DISABLE_OPTIMIZATION_START
 static uint32_t _webinix_generate_random_uint32() {
     uint32_t timestamp = (uint32_t) time(NULL);
     // Get the higher 16 bits
-    uint32_t high = ((uint32_t) rand() & 0xFFFF) + ((timestamp >> 16) & 0xFFFF);
+    uint32_t high = ((uint32_t) rand()&0xFFFF) + ((timestamp >> 16)&0xFFFF);
     // Get the lower 16 bits
-    uint32_t low = ((uint32_t) rand() & 0xFFFF) + (timestamp & 0xFFFF);
+    uint32_t low = ((uint32_t) rand()&0xFFFF) + (timestamp&0xFFFF);
     // Combine
     return (high << 16) | low;
 }
@@ -836,37 +859,32 @@ size_t webinix_new_window_id(size_t window_number) {
         return 0;
 
     // Destroy the window if already exist
-    if (_webinix_core.wins[window_number] != NULL)
+    if (_webinix.wins[window_number] != NULL)
         webinix_destroy(window_number);
 
     // Create a new window
-    _webinix_window_t * win = (_webinix_window_t * ) _webinix_malloc(sizeof(_webinix_window_t));
-    _webinix_core.wins[window_number] = win;
+    _webinix_window_t* win = (_webinix_window_t* ) _webinix_malloc(sizeof(_webinix_window_t));
+    _webinix.wins[window_number] = win;
 
     // Initialisation
-    win->ws_block = _webinix_core.config.ws_block;
+    win->ws_block = _webinix.config.ws_block;
     win->window_number = window_number;
     win->browser_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
     win->server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-    if (_webinix_is_empty(_webinix_core.default_server_root_path))
-        WEBUI_SPF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", WEBUI_DEFAULT_PATH);
+    if (_webinix_is_empty(_webinix.default_server_root_path))
+        WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", WEBUI_DEFAULT_PATH);
     else
-        WEBUI_SPF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", _webinix_core.default_server_root_path);
+        WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", _webinix.default_server_root_path);
 
     // Save window ID
-    if (window_number > _webinix_core.last_win_number)
-        _webinix_core.last_win_number = window_number;
-
-    // Generate a random token
-    win->token = _webinix_generate_random_uint32();
+    if (window_number > _webinix.last_win_number)
+        _webinix.last_win_number = window_number;
 
     // Auto bind JavaScript-Bridge Core API Handler
     webinix_bind(window_number, "__webinix_core_api__", _webinix_bridge_api_handler);
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_new_window_id() -> New window #%zu @ 0x%p\n", window_number, win);
-    printf("[User] webinix_new_window_id() -> New window Token 0x%08X (%" PRIu32 ")\n", 
-        win->token, win->token);
     #endif
 
     return window_number;
@@ -884,10 +902,10 @@ size_t webinix_get_new_window_id(void) {
         return 0;
 
     for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.wins[i] == NULL && !_webinix_core.wins_reserved[i]) {
-            _webinix_core.wins_reserved[i] = true;
-            if (i > _webinix_core.last_win_number)
-                _webinix_core.last_win_number = i;
+        if (_webinix.wins[i] == NULL && !_webinix.wins_reserved[i]) {
+            _webinix.wins_reserved[i] = true;
+            if (i > _webinix.last_win_number)
+                _webinix.last_win_number = i;
             return i;
         }
     }
@@ -907,9 +925,9 @@ void webinix_set_kiosk(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->kiosk_mode = status;
 }
@@ -924,9 +942,9 @@ void webinix_set_high_contrast(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->disable_browser_high_contrast = !status;
 }
@@ -961,7 +979,7 @@ bool webinix_is_high_contrast() {
         {
             long flags = strtol(hc, NULL, 10);
             if (flags != LONG_MIN && flags != LONG_MAX) {
-                is_enabled = ((flags & 0x01) == 1);
+                is_enabled = ((flags&0x01) == 1);
             }
         }
     #elif __linux__
@@ -1003,9 +1021,9 @@ void webinix_close(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (!win->webView) {
 
@@ -1016,7 +1034,7 @@ void webinix_close(size_t window) {
             // [CMD]
 
             // Send the packet
-            _webinix_send(win, win->token, 0, WEBUI_CMD_CLOSE, NULL, 0);
+            _webinix_send_all(win, 0, WEBUI_CMD_CLOSE, NULL, 0);
         }
     }
     else {
@@ -1024,7 +1042,7 @@ void webinix_close(size_t window) {
         // Stop WebView thread if any
         if (win->webView) {
             win->webView->stop = true;
-            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);    
+            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
         }
     }
 }
@@ -1039,9 +1057,9 @@ void webinix_destroy(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (win->server_running) {
 
@@ -1050,12 +1068,12 @@ void webinix_destroy(size_t window) {
 
         // Wait for server threads to stop
         _webinix_timer_t timer_1;
-        _webinix_timer_start( & timer_1);
+        _webinix_timer_start(&timer_1);
         for (;;) {
             _webinix_sleep(10);
             if (!win->server_running)
                 break;
-            if (_webinix_timer_is_end( & timer_1, 2500))
+            if (_webinix_timer_is_end(&timer_1, 2500))
                 break;
         }
 
@@ -1070,37 +1088,37 @@ void webinix_destroy(size_t window) {
 
             // Wait for server threads to stop
             _webinix_timer_t timer_2;
-            _webinix_timer_start( & timer_2);
+            _webinix_timer_start(&timer_2);
             for (;;) {
                 _webinix_sleep(10);
                 if (!win->server_running)
                     break;
-                if (_webinix_timer_is_end( & timer_2, 1500))
+                if (_webinix_timer_is_end(&timer_2, 1500))
                     break;
             }
         }
     }
 
     // Free memory resources
-    _webinix_free_mem((void * ) win->url);
-    _webinix_free_mem((void * ) win->html);
-    _webinix_free_mem((void * ) win->icon);
-    _webinix_free_mem((void * ) win->icon_type);
-    _webinix_free_mem((void * ) win->browser_path);
-    _webinix_free_mem((void * ) win->profile_path);
-    _webinix_free_mem((void * ) win->profile_name);
-    _webinix_free_mem((void * ) win->server_root_path);
+    _webinix_free_mem((void*)win->url);
+    _webinix_free_mem((void*)win->html);
+    _webinix_free_mem((void*)win->icon);
+    _webinix_free_mem((void*)win->icon_type);
+    _webinix_free_mem((void*)win->browser_path);
+    _webinix_free_mem((void*)win->profile_path);
+    _webinix_free_mem((void*)win->profile_name);
+    _webinix_free_mem((void*)win->server_root_path);
 
     // Free events
     for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
         if (win->events[i] != NULL)
-            _webinix_free_mem((void * ) win->events[i]);
+            _webinix_free_mem((void*)win->events[i]);
     }
 
     // Free window struct
-    _webinix_free_mem((void * ) _webinix_core.wins[window]);
-    _webinix_core.wins[window] = NULL;
-    _webinix_core.wins_reserved[window] = false;
+    _webinix_free_mem((void*)_webinix.wins[window]);
+    _webinix.wins[window] = NULL;
+    _webinix.wins_reserved[window] = false;
 }
 
 bool webinix_is_shown(size_t window) {
@@ -1113,9 +1131,9 @@ bool webinix_is_shown(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     return _webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE);
 }
@@ -1130,28 +1148,28 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Some wrappers do not guarantee pointers stay valid,
     // so, let's make our copy.
 
     // Icon
     size_t len = _webinix_strlen(icon);
-    const char* icon_cpy = (const char* ) _webinix_malloc(len);
+    const char* icon_cpy = (const char*)_webinix_malloc(len);
     memcpy((char*)icon_cpy, icon, len);
 
     // Icon Type
     len = _webinix_strlen(icon_type);
-    const char* icon_type_cpy = (const char* ) _webinix_malloc(len);
+    const char* icon_type_cpy = (const char*)_webinix_malloc(len);
     memcpy((char*)icon_type_cpy, icon_type, len);
 
     // Clean old sets if any
     if (win->icon != NULL)
-        _webinix_free_mem((void * ) win->icon);
+        _webinix_free_mem((void*)win->icon);
     if (win->icon_type != NULL)
-        _webinix_free_mem((void * ) win->icon_type);
+        _webinix_free_mem((void*)win->icon_type);
 
     win->icon = icon_cpy;
     win->icon_type = icon_type_cpy;
@@ -1167,9 +1185,9 @@ void webinix_navigate(size_t window, const char* url) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Web-Browser Window
     if (!win->webView) {
@@ -1183,7 +1201,7 @@ void webinix_navigate(size_t window, const char* url) {
         // [URL]
 
         // Send the packet
-        _webinix_send(win, win->token, 0, WEBUI_CMD_NAVIGATION, url, _webinix_strlen(url));
+        _webinix_send_all(win, 0, WEBUI_CMD_NAVIGATION, url, _webinix_strlen(url));
     }
     else {
         // WebView
@@ -1226,8 +1244,8 @@ void webinix_delete_all_profiles(void) {
     _webinix_init();
 
     // Loop trough windows
-    for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-        if (_webinix_core.wins[i] != NULL) {
+    for (size_t i = 1; i <= _webinix.last_win_number; i++) {
+        if (_webinix.wins[i] != NULL) {
             webinix_delete_profile(i);
         }
     }
@@ -1245,12 +1263,12 @@ static bool _webinix_is_firefox_ini_profile_exist(const char* path, const char* 
     char full_path[WEBUI_MAX_PATH];
     ExpandEnvironmentStringsA(path, full_path, sizeof(full_path));
     #else
-    // Linux & macOS
+    // Linux&macOS
     char full_path[WEBUI_MAX_PATH];
     if (path[0] == '~') {
         const char* home = getenv("HOME");
         if (home) {
-            WEBUI_SPF_STATIC(full_path, sizeof(full_path), "%s/%s", home, & path[1]);
+            WEBUI_SN_PRINTF_STATIC(full_path, sizeof(full_path), "%s/%s", home,&path[1]);
         } else {
             // If for some reason HOME isn't set
             // fall back to the original path.
@@ -1267,20 +1285,20 @@ static bool _webinix_is_firefox_ini_profile_exist(const char* path, const char* 
 
     // Open
     FILE* file;
-    WEBUI_FOPEN(file, full_path, "r");
+    WEBUI_FILE_OPEN(file, full_path, "r");
     if (!file)
         return false;
 
     char target[128] = {
         0x00
     };
-    WEBUI_SPF_STATIC(target, sizeof(target), "Name=%s", profile_name);
+    WEBUI_SN_PRINTF_STATIC(target, sizeof(target), "Name=%s", profile_name);
 
     char line[1024];
     while(fgets(line, sizeof(line), file)) {
         if (strstr(line, target) != NULL) {
             #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_is_firefox_ini_profile_exist() -> Target found.\n");
+            printf("[Core]\t\t_webinix_is_firefox_ini_profile_exist() -> Target found\n");
             #endif
             fclose(file);
             return true;
@@ -1303,12 +1321,12 @@ static void _webinix_remove_firefox_profile_ini(const char* path, const char* pr
     char full_path[WEBUI_MAX_PATH];
     ExpandEnvironmentStringsA(path, full_path, sizeof(full_path));
     #else
-    // Linux & macOS
+    // Linux&macOS
     char full_path[WEBUI_MAX_PATH];
     if (path[0] == '~') {
         const char* home = getenv("HOME");
         if (home) {
-            WEBUI_SPF_STATIC(full_path, sizeof(full_path), "%s/%s", home, & path[1]);
+            WEBUI_SN_PRINTF_STATIC(full_path, sizeof(full_path), "%s/%s", home,&path[1]);
         } else {
             // If for some reason HOME isn't set
             // fall back to the original path.
@@ -1325,7 +1343,7 @@ static void _webinix_remove_firefox_profile_ini(const char* path, const char* pr
 
     // Open
     FILE * file;
-    WEBUI_FOPEN(file, full_path, "r");
+    WEBUI_FILE_OPEN(file, full_path, "r");
     if (!file)
         return;
 
@@ -1339,7 +1357,7 @@ static void _webinix_remove_firefox_profile_ini(const char* path, const char* pr
     char target[128] = {
         0x00
     };
-    WEBUI_SPF_STATIC(target, sizeof(target), "Name=%s", profile_name);
+    WEBUI_SN_PRINTF_STATIC(target, sizeof(target), "Name=%s", profile_name);
 
     bool skip = false;
     while(fgets(buffer, sizeof(buffer), file)) {
@@ -1354,12 +1372,12 @@ static void _webinix_remove_firefox_profile_ini(const char* path, const char* pr
             if (strstr(buffer, target) != NULL) {
 
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_remove_firefox_profile_ini() -> Target found.\n");
+                printf("[Core]\t\t_webinix_remove_firefox_profile_ini() -> Target found\n");
                 #endif
                 skip = true;
                 continue;
             } else
-                WEBUI_SCAT_DYN(output, sizeof(output), buffer);
+                WEBUI_STR_CAT_DYN(output, sizeof(output), buffer);
         }
     }
 
@@ -1370,7 +1388,7 @@ static void _webinix_remove_firefox_profile_ini(const char* path, const char* pr
     #endif
 
     // Save
-    WEBUI_FOPEN(file, full_path, "w");
+    WEBUI_FILE_OPEN(file, full_path, "w");
     if (!file)
         return;
     fputs(output, file);
@@ -1387,9 +1405,9 @@ void webinix_delete_profile(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_core.wins[window] == NULL)
+    if (_webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (_webinix_folder_exist(win->profile_path)) {
 
@@ -1435,13 +1453,13 @@ bool webinix_show(size_t window, const char* content) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Show the window WebView, or using any browser
     win->allow_webview = true;
-    return _webinix_show(win, content, AnyBrowser);
+    return _webinix_show(win, NULL, content, AnyBrowser);
 }
 
 bool webinix_show_wv(size_t window, const char* content) {
@@ -1454,13 +1472,13 @@ bool webinix_show_wv(size_t window, const char* content) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Show the window using WebView only
     win->allow_webview = true;
-    return _webinix_show(win, content, NoBrowser);
+    return _webinix_show(win, NULL, content, NoBrowser);
 }
 
 bool webinix_show_browser(size_t window, const char* content, size_t browser) {
@@ -1473,90 +1491,68 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Show the window using a specific browser only
-    win->allow_webview = false;
-    return _webinix_show(win, content, browser);
+    win->allow_webview = (browser == WebView ? true : false);
+    return _webinix_show(win, NULL, content, browser);
 }
 
-size_t webinix_bind(size_t window, const char* element, void( * func)(webinix_event_t* e)) {
+size_t webinix_bind(size_t window, const char* element, void(*func)(webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_bind([%zu], [%s], [0x%p])\n", window, element, func);
+    printf("[User] webinix_bind([%zu])\n", window);
     #endif
 
     // Initialization
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
-    size_t len = 0;
-    if (_webinix_is_empty(element))
-        win->has_events = true;
-    else
-        len = _webinix_strlen(element);
+    // Search
+    size_t cb_index = 0;
+    bool exist = _webinix_get_cb_index(win, element, &cb_index);    
 
-    // [win num][/][element]
-    size_t bf_len = (3 + 1 + len);
-    char* webinix_internal_id = _webinix_malloc(bf_len);
-    WEBUI_SPF_DYN(webinix_internal_id, (bf_len), "%zu/%s", win->window_number, element);
-
-    size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
-
-    if (cb_index > 0) {
-
-        // Replace a reference
-        _webinix_core.cb[cb_index] = func;
-        _webinix_free_mem((void * ) webinix_internal_id);
-    } else {
-
-        // New reference
-        cb_index = _webinix_set_cb_index(webinix_internal_id);
-
-        if (cb_index > 0) {
-
-            _webinix_core.cb[cb_index] = func;
-
-            if (win->bridge_handled) {
-
-                // The bridge is already generated and handled
-                // to this UI. We need to send this new binding
-                // ID to to the UI.
-
-                if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
-                    _webinix_timer_t timer;
-                    _webinix_timer_start( & timer);
-                    for (;;) {
-                        _webinix_sleep(10);
-                        if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
-                            break;
-                        if (_webinix_timer_is_end( & timer, 3000))
-                            break;
-                    }
-                }
-
-                // Packet Protocol Format:
-                // [...]
-                // [CMD]
-                // [NewElement]
-
-                // Send the packet
-                _webinix_send(
-                    win, win->token, 0, WEBUI_CMD_ADD_ID, (const char* ) webinix_internal_id,
-                    _webinix_strlen(webinix_internal_id)
-                );
-            }
-        } else
-            _webinix_free_mem((void * ) webinix_internal_id);
+    // All events
+    if (_webinix_is_empty(element)) {
+        win->has_all_events = true;
+        size_t index = (exist ? cb_index : _webinix.cb_count++);
+        win->html_elements[index] = (const char*)"";
+        win->cb[index] = func;
+        #ifdef WEBUI_LOG
+        printf("[User] webinix_bind() -> Save bind (all events) at %zu\n", index);
+        #endif
+        return index;
     }
 
-    return cb_index;
+    // New bind
+    char* element_cpy = _webinix_str_dup(element);
+    size_t index = (exist ? cb_index : _webinix.cb_count++);
+    win->html_elements[index] = element_cpy;
+    win->cb[index] = func;
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_bind() -> Save bind at %zu\n", index);
+    #endif
+
+    // Send to all connected clients the new binding ID
+    // Packet Protocol Format:
+
+    // [...]
+    // [CMD]
+    // [NewElement]
+    // Send the packet
+
+    _webinix_send_all(
+        win, 0, WEBUI_CMD_ADD_ID,
+        element, _webinix_strlen(element_cpy)
+    );
+
+    return index;
 }
 
 size_t webinix_get_best_browser(size_t window) {
@@ -1569,9 +1565,9 @@ size_t webinix_get_best_browser(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return 1; // 1. Default recommended web browser
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
     
     return _webinix_find_the_best_browser(win);
 }
@@ -1589,9 +1585,9 @@ const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
         return NULL;
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return NULL;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1601,7 +1597,7 @@ const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
     if (event_inf->event_data[index] != NULL) {
         size_t len = _webinix_strlen(event_inf->event_data[index]);
         if (len > 0 && len <= WEBUI_MAX_BUF)
-            return (const char* ) event_inf->event_data[index];
+            return (const char*)event_inf->event_data[index];
     }
 
     return "";
@@ -1617,9 +1613,9 @@ size_t webinix_get_count(webinix_event_t* e) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1635,7 +1631,7 @@ long long int webinix_get_int_at(webinix_event_t* e, size_t index) {
     printf("[User] webinix_get_int_at([%zu])\n", index);
     #endif
 
-    // Initialization & Dereference
+    // Initialization&Dereference
     // are done by webinix_get_string()
 
     if (index > WEBUI_MAX_ARG)
@@ -1649,7 +1645,7 @@ long long int webinix_get_int_at(webinix_event_t* e, size_t index) {
     if (len > 0 && len <= 20) {
         // 64-bit max is -9,223,372,036,854,775,808 (20 character)
         char* endptr;
-        return strtoll((const char* ) str, &endptr, 10);
+        return strtoll((const char*)str, &endptr, 10);
     }
 
     return 0;
@@ -1661,7 +1657,7 @@ double webinix_get_float_at(webinix_event_t* e, size_t index) {
     printf("[User] webinix_get_float_at([%zu])\n", index);
     #endif
 
-    // Initialization & Dereference
+    // Initialization&Dereference
     // are done by webinix_get_string()
 
     if (index > WEBUI_MAX_ARG)
@@ -1687,7 +1683,7 @@ bool webinix_get_bool_at(webinix_event_t* e, size_t index) {
     printf("[User] webinix_get_bool_at([%zu])\n", index);
     #endif
 
-    // Initialization & Dereference
+    // Initialization&Dereference
     // are done by webinix_get_string()
 
     if (index > WEBUI_MAX_ARG)
@@ -1716,9 +1712,9 @@ size_t webinix_get_size_at(webinix_event_t* e, size_t index) {
         return 0;
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1783,9 +1779,9 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1794,12 +1790,12 @@ void webinix_return_int(webinix_event_t* e, long long int n) {
 
     // Free
     if (event_inf->response != NULL)
-        _webinix_free_mem((void * ) event_inf->response);
+        _webinix_free_mem((void*)event_inf->response);
 
     // Int to Str
     // 64-bit max is -9,223,372,036,854,775,808 (20 character)
     char* buf = (char*)_webinix_malloc(20);
-    WEBUI_SPF_DYN(buf, 20, "%lld", n);
+    WEBUI_SN_PRINTF_DYN(buf, 20, "%lld", n);
 
     // Set response
     event_inf->response = buf;
@@ -1815,9 +1811,9 @@ void webinix_return_float(webinix_event_t* e, double f) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1826,12 +1822,12 @@ void webinix_return_float(webinix_event_t* e, double f) {
 
     // Free
     if (event_inf->response != NULL)
-        _webinix_free_mem((void * ) event_inf->response);
+        _webinix_free_mem((void*)event_inf->response);
 
     // Float to Str
     // 64-bit max is -9,223,372,036,854,775,808 (20 character)
     char* buf = (char*)_webinix_malloc(20);
-    WEBUI_SPF_DYN(buf, 20, "%lf", f);
+    WEBUI_SN_PRINTF_DYN(buf, 20, "%lf", f);
 
     // Set response
     event_inf->response = buf;
@@ -1850,9 +1846,9 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1861,7 +1857,7 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
 
     // Free
     if (event_inf->response != NULL)
-        _webinix_free_mem((void * ) event_inf->response);
+        _webinix_free_mem((void*)event_inf->response);
 
     // Copy Str
     size_t len = _webinix_strlen(s);
@@ -1882,9 +1878,9 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[e->event_number];
@@ -1893,12 +1889,12 @@ void webinix_return_bool(webinix_event_t* e, bool b) {
 
     // Free
     if (event_inf->response != NULL)
-        _webinix_free_mem((void * ) event_inf->response);
+        _webinix_free_mem((void*)event_inf->response);
 
     // Bool to Str
     int len = 1;
     char* buf = (char*)_webinix_malloc(len);
-    WEBUI_SPF_DYN(buf, len, "%d", b);
+    WEBUI_SN_PRINTF_DYN(buf, len, "%d", b);
 
     // Set response
     event_inf->response = buf;
@@ -1914,9 +1910,9 @@ size_t webinix_get_parent_process_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     return win->process_id;
 }
@@ -1944,7 +1940,7 @@ static bool _webinix_check_certificate(const char* certificate_pem, const char* 
     SSL_CTX_set_security_level(ctx, 0);
 
     // Load Certificate
-    BIO * bio_cert = BIO_new_mem_buf((void * ) certificate_pem, -1);
+    BIO * bio_cert = BIO_new_mem_buf((void*)certificate_pem, -1);
     X509 * cert = PEM_read_bio_X509(bio_cert, NULL, 0, NULL);
     if (cert == NULL) {
         #ifdef WEBUI_LOG
@@ -1969,7 +1965,7 @@ static bool _webinix_check_certificate(const char* certificate_pem, const char* 
     }
 
     // Load Key
-    BIO * bio_key = BIO_new_mem_buf((void * ) private_key_pem, -1);
+    BIO * bio_key = BIO_new_mem_buf((void*)private_key_pem, -1);
     EVP_PKEY * private_key = PEM_read_bio_PrivateKey(bio_key, NULL, 0, NULL);
     if (private_key == NULL) {
         #ifdef WEBUI_LOG
@@ -2043,23 +2039,23 @@ bool webinix_set_tls_certificate(const char* certificate_pem, const char* privat
         }
 
         // Free generated self-signed
-        _webinix_free_mem((void * ) _webinix_core.root_cert);
-        _webinix_free_mem((void * ) _webinix_core.root_key);
-        _webinix_free_mem((void * ) _webinix_core.ssl_cert);
-        _webinix_free_mem((void * ) _webinix_core.ssl_key);
+        _webinix_free_mem((void*)_webinix.root_cert);
+        _webinix_free_mem((void*)_webinix.root_key);
+        _webinix_free_mem((void*)_webinix.ssl_cert);
+        _webinix_free_mem((void*)_webinix.ssl_key);
 
         // Set user TLS
         char* ssl_cert = (char*)_webinix_malloc(certificate_len);
         char* ssl_key = (char*)_webinix_malloc(private_key_len);
-        WEBUI_SPF_DYN(ssl_cert, certificate_len, "%s", certificate_pem);
-        WEBUI_SPF_DYN(ssl_key, private_key_len, "%s", private_key_pem);
-        _webinix_core.ssl_cert = ssl_cert;
-        _webinix_core.ssl_key = ssl_key;
+        WEBUI_SN_PRINTF_DYN(ssl_cert, certificate_len, "%s", certificate_pem);
+        WEBUI_SN_PRINTF_DYN(ssl_key, private_key_len, "%s", private_key_pem);
+        _webinix.ssl_cert = ssl_cert;
+        _webinix.ssl_key = ssl_key;
 
         #ifdef WEBUI_LOG
         printf("[User] webinix_set_tls_certificate() -> SSL/TLS Certificate:\n");
-        printf("%s\n", (const char* ) _webinix_core.ssl_cert);
-        printf("%s\n", (const char* ) _webinix_core.ssl_key);
+        printf("%s\n", (const char*)_webinix.ssl_cert);
+        printf("%s\n", (const char*)_webinix.ssl_key);
         #endif
 
         return true;
@@ -2085,17 +2081,20 @@ void webinix_set_config(webinix_config option, bool status) {
 
     switch (option) {
         case show_wait_connection:
-            _webinix_core.config.show_wait_connection = status;
+            _webinix.config.show_wait_connection = status;
             break;
         case folder_monitor:
-            _webinix_core.config.folder_monitor = status;
+            _webinix.config.folder_monitor = status;
+            break;
+        case multi_client:
+            _webinix.config.multi_client = status;
             break;
         case ui_event_blocking:
-            _webinix_core.config.ws_block = status;
+            _webinix.config.ws_block = status;
             // Update all created windows
-            for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-                if (_webinix_core.wins[i] != NULL) {
-                    _webinix_core.wins[i]->ws_block = status;
+            for (size_t i = 1; i <= _webinix.last_win_number; i++) {
+                if (_webinix.wins[i] != NULL) {
+                    _webinix.wins[i]->ws_block = status;
                 }
             }
             break;
@@ -2116,9 +2115,9 @@ void webinix_set_event_blocking(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->ws_block = status;
 }
@@ -2133,9 +2132,9 @@ bool webinix_set_port(size_t window, size_t port) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (_webinix_port_is_used(port))
         return false;
@@ -2154,9 +2153,9 @@ size_t webinix_get_child_process_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     #ifdef _WIN32
     DWORD childProcessId = 0;
@@ -2164,12 +2163,12 @@ size_t webinix_get_child_process_id(size_t window) {
     if (hSnapshot != INVALID_HANDLE_VALUE) {
         PROCESSENTRY32 pe32;
         pe32.dwSize = sizeof(PROCESSENTRY32);
-        if (Process32First(hSnapshot, & pe32)) {
+        if (Process32First(hSnapshot,&pe32)) {
             do {
                 if (pe32.th32ParentProcessID == win->process_id) {
                     childProcessId = pe32.th32ProcessID;
                 }
-            } while(Process32Next(hSnapshot, & pe32));
+            } while(Process32Next(hSnapshot,&pe32));
         }
         CloseHandle(hSnapshot);
     }
@@ -2186,15 +2185,15 @@ size_t webinix_get_child_process_id(size_t window) {
         // numbers)
         if (entry->d_type == DT_DIR && strspn(entry->d_name, "0123456789") == _webinix_strlen(entry->d_name)) {
             char statFilepath[1024];
-            WEBUI_SPF_STATIC(statFilepath, sizeof(statFilepath), "/proc/%s/stat", entry->d_name);
+            WEBUI_SN_PRINTF_STATIC(statFilepath, sizeof(statFilepath), "/proc/%s/stat", entry->d_name);
             FILE * f;
-            WEBUI_FOPEN(f, statFilepath, "r");
+            WEBUI_FILE_OPEN(f, statFilepath, "r");
             if (f) {
                 pid_t pid, ppid;
                 char comm[1024];
                 char state;
-                // Extract data from the stat file; fields are space-delimited
-                if (fscanf(f, "%d %s %c %d", & pid, comm, & state, & ppid) == 4) {
+                // Extract data from the stat file;fields are space-delimited
+                if (fscanf(f, "%d %s %c %d",&pid, comm,&state,&ppid) == 4) {
                     if ((intmax_t) ppid == (intmax_t) win->process_id) {
                         // Convert directory name (string) to integer PID
                         lastChildPid = atoi(entry->d_name);
@@ -2216,7 +2215,7 @@ size_t webinix_get_child_process_id(size_t window) {
         0
     };
     size_t size;
-    if (sysctl(mib, 3, NULL, & size, NULL, 0) < 0) {
+    if (sysctl(mib, 3, NULL,&size, NULL, 0) < 0) {
         return win->process_id;
     }
     // Allocate memory and get all process information
@@ -2224,7 +2223,7 @@ size_t webinix_get_child_process_id(size_t window) {
     if (!procList) {
         return win->process_id;
     }
-    if (sysctl(mib, 3, procList, & size, NULL, 0) < 0) {
+    if (sysctl(mib, 3, procList,&size, NULL, 0) < 0) {
         free(procList);
         return win->process_id;
     }
@@ -2251,9 +2250,9 @@ void webinix_set_hide(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->hide = status;
 }
@@ -2268,9 +2267,9 @@ void webinix_set_size(size_t window, unsigned int width, unsigned int height) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (width < WEBUI_MIN_WIDTH || width > WEBUI_MAX_WIDTH || height < WEBUI_MIN_HEIGHT ||
         height > WEBUI_MAX_HEIGHT) {
@@ -2289,7 +2288,7 @@ void webinix_set_size(size_t window, unsigned int width, unsigned int height) {
         // web-browser window
         if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
             char script[128];
-            WEBUI_SPF_STATIC(script, sizeof(script), "window.resizeTo(%u, %u);", width, height);
+            WEBUI_SN_PRINTF_STATIC(script, sizeof(script), "window.resizeTo(%u, %u);", width, height);
             webinix_run(window, script);
         }
     }
@@ -2300,7 +2299,7 @@ void webinix_set_size(size_t window, unsigned int width, unsigned int height) {
             win->webView->width = width;
             win->webView->height = height;
             win->webView->size = true;
-            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);    
+            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
         }
     }
 }
@@ -2315,9 +2314,9 @@ void webinix_set_position(size_t window, unsigned int x, unsigned int y) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     int X = x;
     int Y = y;
@@ -2338,7 +2337,7 @@ void webinix_set_position(size_t window, unsigned int x, unsigned int y) {
         // web-browser window
         if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
             char script[128];
-            WEBUI_SPF_STATIC(script, sizeof(script), "window.moveTo(%u, %u);", X, Y);
+            WEBUI_SN_PRINTF_STATIC(script, sizeof(script), "window.moveTo(%u, %u);", X, Y);
             webinix_run(window, script);
         }
     }
@@ -2349,7 +2348,7 @@ void webinix_set_position(size_t window, unsigned int x, unsigned int y) {
             win->webView->x = X;
             win->webView->y = Y;
             win->webView->position = true;
-            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);    
+            _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
         }
     }
 }
@@ -2364,9 +2363,9 @@ void webinix_set_profile(size_t window, const char* name, const char* path) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Some wrappers do not guarantee pointers stay valid,
     // so, let's make our copy.
@@ -2387,9 +2386,9 @@ void webinix_set_profile(size_t window, const char* name, const char* path) {
 
     // Free
     if (win->profile_name != NULL)
-        _webinix_free_mem((void * ) win->profile_name);
+        _webinix_free_mem((void*)win->profile_name);
     if (win->profile_path != NULL)
-        _webinix_free_mem((void * ) win->profile_path);
+        _webinix_free_mem((void*)win->profile_path);
 
     // Save
     win->profile_name = name_cpy;
@@ -2414,9 +2413,9 @@ void webinix_set_proxy(size_t window, const char* proxy_server) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Some wrappers do not guarantee pointers stay valid,
     // so, let's make our copy.
@@ -2455,9 +2454,9 @@ const char* webinix_get_url(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return NULL;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Check if server is started
     if (_webinix_is_empty(win->url)) {
@@ -2478,9 +2477,9 @@ void webinix_set_public(size_t window, bool status) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     win->is_public = status;
 }
@@ -2498,9 +2497,9 @@ void webinix_send_raw(size_t window, const char* function, const void * raw, siz
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Generate data
     size_t data_len = _webinix_strlen(function) + 1 + size;
@@ -2528,9 +2527,7 @@ void webinix_send_raw(size_t window, const char* function, const void * raw, siz
     // [Function, Null, RawData]
 
     // Send the packet
-    _webinix_send(win, win->token, 0, WEBUI_CMD_SEND_RAW, (const char* ) buf, data_len);
-
-    // TODO: Add response feature here like `webinix_script()`.
+    _webinix_send_all(win, 0, WEBUI_CMD_SEND_RAW, (const char*)buf, data_len);
 }
 
 char* webinix_encode(const char* str) {
@@ -2555,7 +2552,7 @@ char* webinix_encode(const char* str) {
     size_t buf_len = (((len + 2) / 3) * 4) + 8;
     char* buf = (char*)_webinix_malloc(buf_len);
 
-    int ret = mg_base64_encode((const unsigned char* ) str, len, buf, & buf_len);
+    int ret = mg_base64_encode((const unsigned char*)str, len, buf,&buf_len);
 
     if (ret > (-1)) {
 
@@ -2563,7 +2560,7 @@ char* webinix_encode(const char* str) {
         #ifdef WEBUI_LOG
         printf("[User] webinix_encode() -> Failed (%d).\n", ret);
         #endif
-        _webinix_free_mem((void * ) buf);
+        _webinix_free_mem((void*)buf);
         return NULL;
     }
 
@@ -2595,9 +2592,9 @@ char* webinix_decode(const char* str) {
     #endif
 
     size_t buf_len = (((len + 2) / 3) * 4) + 8;
-    unsigned char* buf = (unsigned char* ) _webinix_malloc(buf_len);
+    unsigned char* buf = (unsigned char*)_webinix_malloc(buf_len);
 
-    int ret = mg_base64_decode(str, len, buf, & buf_len);
+    int ret = mg_base64_decode(str, len, buf,&buf_len);
 
     if (ret > (-1)) {
 
@@ -2605,7 +2602,7 @@ char* webinix_decode(const char* str) {
         #ifdef WEBUI_LOG
         printf("[User] webinix_decode() -> Failed (%d).\n", ret);
         #endif
-        _webinix_free_mem((void * ) buf);
+        _webinix_free_mem((void*)buf);
         return NULL;
     }
 
@@ -2657,28 +2654,31 @@ void webinix_exit(void) {
         return;
 
     // Close all windows
-    for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-        if (_webinix_core.wins[i] != NULL) {
-            if (_webinix_core.wins[i]->connected) {
+    for (size_t i = 1; i <= _webinix.last_win_number; i++) {
+        if (_webinix.wins[i] != NULL) {
+            if (_webinix_mutex_is_connected(_webinix.wins[i], WEBUI_MUTEX_NONE)) {
 
-                if (!_webinix_core.wins[i]->webView) {
+                if (!_webinix.wins[i]->webView) {
+
+                    // Web browser
 
                     // Packet Protocol Format:
                     // [...]
                     // [CMD]
 
                     // Send the packet
-                    _webinix_send(
-                        _webinix_core.wins[i], _webinix_core.wins[i]->token, 0, 
-                        WEBUI_CMD_CLOSE, NULL, 0
-                    );                          
+                    _webinix_send_all(
+                        _webinix.wins[i], 0, WEBUI_CMD_CLOSE, NULL, 0
+                    );
                 }
                 else {
 
+                    // WebView
+
                     // Stop WebView thread if any
-                    if (_webinix_core.wins[i]->webView) {
-                        _webinix_core.wins[i]->webView->stop = true;
-                        _webinix_mutex_is_webview_update(_webinix_core.wins[i], WEBUI_MUTEX_TRUE);    
+                    if (_webinix.wins[i]->webView) {
+                        _webinix.wins[i]->webView->stop = true;
+                        _webinix_mutex_is_webview_update(_webinix.wins[i], WEBUI_MUTEX_TRUE);
                     }        
                 }
             }
@@ -2693,7 +2693,7 @@ void webinix_exit(void) {
     _webinix_sleep(500);
 
     // Fire the mutex condition for wait()
-    _webinix_condition_signal( & _webinix_core.condition_wait);
+    _webinix_condition_signal(&_webinix.condition_wait);
     #ifdef __APPLE__
     _webinix_macos_wv_stop();
     #endif
@@ -2710,22 +2710,22 @@ void webinix_wait(void) {
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE))
         return;
 
-    if (_webinix_core.startup_timeout > 0) {
+    if (_webinix.startup_timeout > 0) {
 
         // Check if there is atleast one window (UI)
         // is running. Otherwise the mutex condition
         // signal will never come
-        if (!_webinix_core.ui) {
+        if (!_webinix.ui) {
 
             #ifdef WEBUI_LOG
-            printf("[Loop] webinix_wait() -> No window is found. Stop.\n");
+            printf("[Loop] webinix_wait() -> No window is found. Stop\n");
             #endif
             return;
         }
 
         #ifdef WEBUI_LOG
         printf("[Loop] webinix_wait() -> Waiting (Timeout in %zu seconds)\n", 
-            _webinix_core.startup_timeout);
+            _webinix.startup_timeout);
         #endif
 
         // The mutex conditional signal will
@@ -2744,17 +2744,17 @@ void webinix_wait(void) {
 
     // Main loop
     #ifdef _WIN32
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // Windows Web browser main loop
 
             #ifdef WEBUI_LOG
             printf("[Loop] webinix_wait() -> Windows web browser loop\n");
             #endif
 
-            _webinix_core.is_browser_main_run = true;
-            _webinix_mutex_lock( & _webinix_core.mutex_wait);
-            _webinix_condition_wait( & _webinix_core.condition_wait, & _webinix_core.mutex_wait);
-            _webinix_core.is_browser_main_run = false;
+            _webinix.is_browser_main_run = true;
+            _webinix_mutex_lock(&_webinix.mutex_wait);
+            _webinix_condition_wait(&_webinix.condition_wait,&_webinix.mutex_wait);
+            _webinix.is_browser_main_run = false;
         }
         else {
             // Windows WebView main loop
@@ -2763,21 +2763,21 @@ void webinix_wait(void) {
             printf("[Loop] webinix_wait() -> Windows WebView loop\n");
             #endif
 
-            _webinix_mutex_lock( & _webinix_core.mutex_wait);
-            _webinix_condition_wait( & _webinix_core.condition_wait, & _webinix_core.mutex_wait);
+            _webinix_mutex_lock(&_webinix.mutex_wait);
+            _webinix_condition_wait(&_webinix.condition_wait,&_webinix.mutex_wait);
         }
     #elif __linux__
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // Linux Web browser main loop
 
             #ifdef WEBUI_LOG
             printf("[Loop] webinix_wait() -> Linux web browser loop\n");
             #endif
 
-            _webinix_core.is_browser_main_run = true;
-            _webinix_mutex_lock( & _webinix_core.mutex_wait);
-            _webinix_condition_wait( & _webinix_core.condition_wait, & _webinix_core.mutex_wait);
-            _webinix_core.is_browser_main_run = false;
+            _webinix.is_browser_main_run = true;
+            _webinix_mutex_lock(&_webinix.mutex_wait);
+            _webinix_condition_wait(&_webinix.condition_wait,&_webinix.mutex_wait);
+            _webinix.is_browser_main_run = false;
         }
         else {
             // Linux WebView main loop
@@ -2786,7 +2786,7 @@ void webinix_wait(void) {
             printf("[Loop] webinix_wait() -> Linux WebView loop\n");
             #endif
 
-            _webinix_core.is_gtk_main_run = true;
+            _webinix.is_gtk_main_run = true;
 
             while (true) {
 
@@ -2798,20 +2798,20 @@ void webinix_wait(void) {
                     break;
             }
 
-            _webinix_core.is_gtk_main_run = false;
+            _webinix.is_gtk_main_run = false;
         }
     #else
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // macOS Web browser main loop
 
             #ifdef WEBUI_LOG
             printf("[Loop] webinix_wait() -> macOS web browser loop\n");
             #endif
 
-            _webinix_core.is_browser_main_run = true;
-            _webinix_mutex_lock( & _webinix_core.mutex_wait);
-            _webinix_condition_wait( & _webinix_core.condition_wait, & _webinix_core.mutex_wait);
-            _webinix_core.is_browser_main_run = false;
+            _webinix.is_browser_main_run = true;
+            _webinix_mutex_lock(&_webinix.mutex_wait);
+            _webinix_condition_wait(&_webinix.condition_wait,&_webinix.mutex_wait);
+            _webinix.is_browser_main_run = false;
         }
         else {
             // macOS WebView main loop
@@ -2820,7 +2820,7 @@ void webinix_wait(void) {
             printf("[Loop] webinix_wait() -> macOS WebView loop\n");
             #endif
 
-            _webinix_core.is_wkwebview_main_run = true;
+            _webinix.is_wkwebview_main_run = true;
 
             while (true) {
 
@@ -2830,7 +2830,7 @@ void webinix_wait(void) {
                     break;
             }
 
-            _webinix_core.is_wkwebview_main_run = false;
+            _webinix.is_wkwebview_main_run = false;
         }
     #endif
 
@@ -2840,7 +2840,7 @@ void webinix_wait(void) {
 
     // Clean
     #ifdef _WIN32
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // Windows Web browser Clean
 
             // ...
@@ -2849,15 +2849,15 @@ void webinix_wait(void) {
             // Windows WebView Clean
 
             PostQuitMessage(0);
-            if (_webinix_core.webview_cacheFolder) {
-                _webinix_delete_folder(_webinix_core.webview_cacheFolder);
-                _webinix_free_mem((void*) _webinix_core.webview_cacheFolder);
-                _webinix_core.webview_cacheFolder = NULL;
+            if (_webinix.webview_cacheFolder) {
+                _webinix_delete_folder(_webinix.webview_cacheFolder);
+                _webinix_free_mem((void*) _webinix.webview_cacheFolder);
+                _webinix.webview_cacheFolder = NULL;
             }
             _webinix_sleep(750);
         }
     #elif __linux__
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // Linux Web browser Clean
 
             // ...
@@ -2870,11 +2870,11 @@ void webinix_wait(void) {
                 gtk_main_iteration_do(0);
             }
             // Close all windows if any
-            for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-                if (_webinix_core.wins[i] != NULL) {
-                    if (_webinix_core.wins[i]->webView) {
-                        _webinix_core.wins[i]->webView->stop = true;
-                        _webinix_mutex_is_webview_update(_webinix_core.wins[i], WEBUI_MUTEX_TRUE);
+            for (size_t i = 1; i <= _webinix.last_win_number; i++) {
+                if (_webinix.wins[i] != NULL) {
+                    if (_webinix.wins[i]->webView) {
+                        _webinix.wins[i]->webView->stop = true;
+                        _webinix_mutex_is_webview_update(_webinix.wins[i], WEBUI_MUTEX_TRUE);
                     }
                 }
             }
@@ -2882,7 +2882,7 @@ void webinix_wait(void) {
             _webinix_sleep(750);
         }
     #else
-        if (!_webinix_core.is_webview) {
+        if (!_webinix.is_webview) {
             // macOS Web browser Clean
 
             // ...
@@ -2895,10 +2895,10 @@ void webinix_wait(void) {
     #endif
 
     #ifdef WEBUI_LOG
-    printf("[Loop] webinix_wait() -> Main loop exit successfully.\n");
+    printf("[Loop] webinix_wait() -> Main loop exit successfully\n");
     #endif
 
-    _webinix_mutex_unlock( & _webinix_core.mutex_wait);
+    _webinix_mutex_unlock(&_webinix.mutex_wait);
 }
 
 void webinix_set_timeout(size_t second) {
@@ -2915,7 +2915,7 @@ void webinix_set_timeout(size_t second) {
     if (second > WEBUI_MAX_TIMEOUT)
         second = WEBUI_MAX_TIMEOUT;
 
-    _webinix_core.startup_timeout = second;
+    _webinix.startup_timeout = second;
 }
 
 void webinix_set_runtime(size_t window, size_t runtime) {
@@ -2928,9 +2928,9 @@ void webinix_set_runtime(size_t window, size_t runtime) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (runtime != Deno && runtime != NodeJS)
         win->runtime = None;
@@ -2948,14 +2948,14 @@ bool webinix_set_root_folder(size_t window, const char* path) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return false;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     if (win->server_running || _webinix_is_empty(path) || (_webinix_strlen(path) > WEBUI_MAX_PATH) ||
         !_webinix_folder_exist((char*)path)) {
 
-        WEBUI_SPF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", WEBUI_DEFAULT_PATH);
+        WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", WEBUI_DEFAULT_PATH);
         #ifdef WEBUI_LOG
         printf("[User] webinix_set_root_folder() -> failed\n");
         #endif
@@ -2963,9 +2963,9 @@ bool webinix_set_root_folder(size_t window, const char* path) {
     }
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_root_folder() -> Success.\n");
+    printf("[User] webinix_set_root_folder() -> Success\n");
     #endif
-    WEBUI_SPF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", path);
+    WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", path);
     return true;
 }
 
@@ -2982,7 +2982,7 @@ bool webinix_set_default_root_folder(const char* path) {
 
     if (_webinix_is_empty(path) || (_webinix_strlen(path) > WEBUI_MAX_PATH) || !_webinix_folder_exist((char*)path)) {
 
-        _webinix_core.default_server_root_path[0] = '\0';
+        _webinix.default_server_root_path[0] = '\0';
         #ifdef WEBUI_LOG
         printf("[User] webinix_set_default_root_folder() -> failed\n");
         #endif
@@ -2990,16 +2990,16 @@ bool webinix_set_default_root_folder(const char* path) {
     }
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_set_default_root_folder() -> Success.\n");
+    printf("[User] webinix_set_default_root_folder() -> Success\n");
     #endif
-    WEBUI_SPF_DYN(_webinix_core.default_server_root_path, WEBUI_MAX_PATH, "%s", path);
+    WEBUI_SN_PRINTF_DYN(_webinix.default_server_root_path, WEBUI_MAX_PATH, "%s", path);
 
     // Update all windows. This will works only
     // for non-running windows.
-    for (size_t i = 1; i <= _webinix_core.last_win_number; i++) {
-        if (_webinix_core.wins[i] != NULL) {
-            WEBUI_SPF_DYN(_webinix_core.wins[i]->server_root_path, WEBUI_MAX_PATH, 
-                "%s", _webinix_core.default_server_root_path);
+    for (size_t i = 1; i <= _webinix.last_win_number; i++) {
+        if (_webinix.wins[i] != NULL) {
+            WEBUI_SN_PRINTF_DYN(_webinix.wins[i]->server_root_path, WEBUI_MAX_PATH, 
+                "%s", _webinix.default_server_root_path);
         }
     }
 
@@ -3017,70 +3017,57 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[e->window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[e->window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Check for all events-bind functions
-    if (win->has_events) {
-
-        char* events_id = _webinix_generate_internal_id(win, "");
-        size_t events_cb_index = _webinix_get_cb_index(events_id);
-        _webinix_free_mem((void * ) events_id);
-
-        if (events_cb_index > 0 && _webinix_core.cb_interface[events_cb_index] != NULL) {
-
+    if (win->has_all_events) {
+        size_t events_cb_index = 0;
+        bool exist = _webinix_get_cb_index(win, "", &events_cb_index); 
+        if (exist && win->cb_interface[events_cb_index] != NULL) {
             // Call user all-events cb
             #ifdef WEBUI_LOG
             printf(
                 "[Core]\t\t_webinix_interface_bind_handler() -> User all-events callback @ 0x%p\n",
-                _webinix_core.cb_interface[events_cb_index]
+                win->cb_interface[events_cb_index]
             );
             printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->event_type [%zu]\n", e->event_type);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->element [%s]\n", e->element);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->event_number %zu\n", e->event_number);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->bind_id %zu\n", e->bind_id);
             #endif
-
             // Call all-events cb
             #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user "
                 "all-events callback\n[Call]\n");
             #endif
-            _webinix_core.cb_interface[events_cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
+            win->cb_interface[events_cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
         }
     }
 
     // Check for the regular bind functions
     if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) && !_webinix_is_empty(e->element)) {
-
-        // Generate Webinix internal id
-        char* webinix_internal_id = _webinix_generate_internal_id(win, e->element);
-        size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
-
-        if (cb_index > 0 && _webinix_core.cb_interface[cb_index] != NULL) {
-
+        size_t cb_index = 0;
+        bool exist = _webinix_get_cb_index(win, e->element, &cb_index);
+        if (exist && win->cb_interface[cb_index] != NULL) {
             #ifdef WEBUI_LOG
             printf(
                 "[Core]\t\t_webinix_interface_bind_handler() -> User callback @ 0x%p\n",
-                _webinix_core.cb_interface[cb_index]
+                win->cb_interface[cb_index]
             );
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->event_type [%zu]\n", e->event_type);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->element [%s]\n", e->element);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->event_number %zu\n", e->event_number);
             printf("[Core]\t\t_webinix_interface_bind_handler() -> e->bind_id %zu\n", e->bind_id);
             #endif
-
             // Call cb
             #ifdef WEBUI_LOG
             printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user "
                 "callback\n[Call]\n");
             #endif
-            _webinix_core.cb_interface[cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
+            win->cb_interface[cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
         }
-
-        // Free
-        _webinix_free_mem((void * ) webinix_internal_id);
     }
 
     #ifdef WEBUI_LOG
@@ -3105,6 +3092,11 @@ const char* webinix_interface_get_string_at(size_t window, size_t event_number, 
     printf("[User] webinix_interface_get_string_at([%zu], [%zu], [%zu])\n", window, event_number, index);
     #endif
 
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // New Event
     webinix_event_t e;
     e.window = window;
@@ -3112,6 +3104,7 @@ const char* webinix_interface_get_string_at(size_t window, size_t event_number, 
     e.element = NULL;
     e.event_number = event_number;
     e.bind_id = 0;
+    e.client_id = win->events[event_number]->client_id;
 
     return webinix_get_string_at(&e, index);
 }
@@ -3122,6 +3115,11 @@ long long int webinix_interface_get_int_at(size_t window, size_t event_number, s
     printf("[User] webinix_interface_get_int_at([%zu], [%zu], [%zu])\n", window, event_number, index);
     #endif
 
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // New Event
     webinix_event_t e;
     e.window = window;
@@ -3129,6 +3127,7 @@ long long int webinix_interface_get_int_at(size_t window, size_t event_number, s
     e.element = NULL;
     e.event_number = event_number;
     e.bind_id = 0;
+    e.client_id = win->events[event_number]->client_id;
 
     return webinix_get_int_at(&e, index);
 }
@@ -3139,6 +3138,11 @@ bool webinix_interface_get_bool_at(size_t window, size_t event_number, size_t in
     printf("[User] webinix_interface_get_bool_at([%zu], [%zu], [%zu])\n", window, event_number, index);
     #endif
 
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // New Event
     webinix_event_t e;
     e.window = window;
@@ -3146,6 +3150,7 @@ bool webinix_interface_get_bool_at(size_t window, size_t event_number, size_t in
     e.element = NULL;
     e.event_number = event_number;
     e.bind_id = 0;
+    e.client_id = win->events[event_number]->client_id;
 
     return webinix_get_bool_at(&e, index);
 }
@@ -3156,6 +3161,11 @@ size_t webinix_interface_get_size_at(size_t window, size_t event_number, size_t 
     printf("[User] webinix_interface_get_size_at([%zu], [%zu], [%zu])\n", window, event_number, index);
     #endif
 
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // New Event
     webinix_event_t e;
     e.window = window;
@@ -3163,19 +3173,25 @@ size_t webinix_interface_get_size_at(size_t window, size_t event_number, size_t 
     e.element = NULL;
     e.event_number = event_number;
     e.bind_id = 0;
+    e.client_id = win->events[event_number]->client_id;
 
     return webinix_get_size_at(&e, index);
 }
 
-size_t webinix_interface_bind(size_t window, const char* element, void( * func)(size_t, size_t, char* , size_t, size_t)) {
+size_t webinix_interface_bind(size_t window, const char* element, void(*func)(size_t, size_t, char* , size_t, size_t)) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_interface_bind([%zu], [%s], [0x%p])\n", window, element, func);
     #endif
 
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // Bind
     size_t cb_index = webinix_bind(window, element, _webinix_interface_bind_handler);
-    _webinix_core.cb_interface[cb_index] = func;
+    win->cb_interface[cb_index] = func;
     return cb_index;
 }
 
@@ -3191,9 +3207,9 @@ void webinix_interface_set_response(size_t window, size_t event_number, const ch
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     // Get event inf
     webinix_event_inf_t* event_inf = win->events[event_number];
@@ -3202,12 +3218,12 @@ void webinix_interface_set_response(size_t window, size_t event_number, const ch
 
     // Free
     if (event_inf->response != NULL)
-        _webinix_free_mem((void * ) event_inf->response);
+        _webinix_free_mem((void*)event_inf->response);
 
     // Set the response
     size_t len = _webinix_strlen(response);
     event_inf->response = (char*)_webinix_malloc(len);
-    WEBUI_SCOPY_DYN(event_inf->response, len, response);
+    WEBUI_STR_COPY_DYN(event_inf->response, len, response);
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_interface_set_response() -> Internal buffer [%s] \n", event_inf->response);
@@ -3231,14 +3247,14 @@ bool webinix_interface_is_app_running(void) {
         return false;
 
     // Get app status
-    if (_webinix_core.startup_timeout > 0) {
-        if (_webinix_core.servers < 1)
+    if (_webinix.startup_timeout > 0) {
+        if (_webinix.servers < 1)
             app_is_running = false;
     }
 
     #ifdef WEBUI_LOG
     if (!app_is_running)
-        printf("[User] webinix_is_app_running() -> App Stopped.\n");
+        printf("[User] webinix_is_app_running() -> App Stopped\n");
     #endif
 
     return app_is_running;
@@ -3254,9 +3270,9 @@ size_t webinix_interface_get_window_id(size_t window) {
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix_core.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
         return 0;
-    _webinix_window_t * win = _webinix_core.wins[window];
+    _webinix_window_t* win = _webinix.wins[window];
 
     return win->window_number;
 }
@@ -3264,16 +3280,16 @@ size_t webinix_interface_get_window_id(size_t window) {
 // -- Core's Functions ----------------
 static bool _webinix_ptr_exist(void * ptr) {
 
-    #ifdef WEBUI_LOG
-    // printf("[Core]\t\t_webinix_ptr_exist()\n");
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_ptr_exist()\n");
     #endif
 
     if (ptr == NULL)
         return false;
 
-    for (size_t i = 0; i < _webinix_core.ptr_position; i++) {
+    for (size_t i = 0; i < _webinix.ptr_position; i++) {
 
-        if (_webinix_core.ptr_list[i] == ptr)
+        if (_webinix.ptr_list[i] == ptr)
             return true;
     }
 
@@ -3282,7 +3298,7 @@ static bool _webinix_ptr_exist(void * ptr) {
 
 static void _webinix_ptr_add(void * ptr, size_t size) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_ptr_add(0x%p)\n", ptr);
     #endif
 
@@ -3291,63 +3307,61 @@ static void _webinix_ptr_add(void * ptr, size_t size) {
 
     if (!_webinix_ptr_exist(ptr)) {
 
-        for (size_t i = 0; i < _webinix_core.ptr_position; i++) {
+        for (size_t i = 0; i < _webinix.ptr_position; i++) {
 
-            if (_webinix_core.ptr_list[i] == NULL) {
+            if (_webinix.ptr_list[i] == NULL) {
 
-                #ifdef WEBUI_LOG
-                // printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr,
-                // size);
+                #ifdef WEBUI_LOG_VERBOSE
+                printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
                 #endif
 
-                _webinix_core.ptr_list[i] = ptr;
-                _webinix_core.ptr_size[i] = size;
+                _webinix.ptr_list[i] = ptr;
+                _webinix.ptr_size[i] = size;
                 return;
             }
         }
 
-        #ifdef WEBUI_LOG
-        // printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr,
-        // size);
+        #ifdef WEBUI_LOG_VERBOSE
+        printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
         #endif
 
-        _webinix_core.ptr_list[_webinix_core.ptr_position] = ptr;
-        _webinix_core.ptr_size[_webinix_core.ptr_position] = size;
-        _webinix_core.ptr_position++;
-        if (_webinix_core.ptr_position >= WEBUI_MAX_IDS)
-            _webinix_core.ptr_position = (WEBUI_MAX_IDS - 1);
+        _webinix.ptr_list[_webinix.ptr_position] = ptr;
+        _webinix.ptr_size[_webinix.ptr_position] = size;
+        _webinix.ptr_position++;
+        if (_webinix.ptr_position >= WEBUI_MAX_IDS)
+            _webinix.ptr_position = (WEBUI_MAX_IDS - 1);
     }
 }
 
 static void _webinix_free_mem(void * ptr) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_free_mem(0x%p)\n", ptr);
     #endif
 
     if (ptr == NULL)
         return;
 
-    for (size_t i = 0; i < _webinix_core.ptr_position; i++) {
+    for (size_t i = 0; i < _webinix.ptr_position; i++) {
 
-        if (_webinix_core.ptr_list[i] == ptr) {
+        if (_webinix.ptr_list[i] == ptr) {
 
-            #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_free_mem(0x%p) -> Free %zu bytes\n", ptr, _webinix_core.ptr_size[i]);
+            #ifdef WEBUI_LOG_VERBOSE
+            printf("[Core]\t\t_webinix_free_mem(0x%p) -> Free %zu bytes\n", ptr, _webinix.ptr_size[i]);
             #endif
 
             free(ptr);
 
-            _webinix_core.ptr_size[i] = 0;
-            _webinix_core.ptr_list[i] = NULL;
+            _webinix.ptr_size[i] = 0;
+            _webinix.ptr_list[i] = NULL;
         }
     }
 
-    for (int i = _webinix_core.ptr_position; i >= 0; i--) {
+    for (int i = _webinix.ptr_position; i >= 0;i--) {
 
-        if (_webinix_core.ptr_list[i] == NULL) {
+        if (_webinix.ptr_list[i] == NULL) {
 
-            _webinix_core.ptr_position = i;
+            _webinix.ptr_position = i;
             break;
         }
     }
@@ -3366,15 +3380,15 @@ static void _webinix_free_all_mem(void) {
     freed = true;
 
     void * ptr = NULL;
-    for (size_t i = 0; i < _webinix_core.ptr_position; i++) {
+    for (size_t i = 0; i < _webinix.ptr_position; i++) {
 
-        ptr = _webinix_core.ptr_list[i];
+        ptr = _webinix.ptr_list[i];
 
         if (ptr != NULL) {
 
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_free_all_mem() -> Free %zu bytes @ 0x%p\n", _webinix_core.ptr_size[i], ptr
+                "[Core]\t\t_webinix_free_all_mem() -> Free %zu bytes @ 0x%p\n", _webinix.ptr_size[i], ptr
             );
             #endif
 
@@ -3423,7 +3437,7 @@ static size_t _webinix_mb(size_t size) {
 
 static void * _webinix_malloc(size_t size) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_malloc([%zu])\n", size);
     #endif
 
@@ -3451,24 +3465,24 @@ static void * _webinix_malloc(size_t size) {
 
     memset(block, 0, size);
 
-    _webinix_ptr_add((void * ) block, size);
+    _webinix_ptr_add((void*)block, size);
 
     return block;
 }
 
-static _webinix_window_t * _webinix_dereference_win_ptr(void * ptr) {
+static _webinix_window_t* _webinix_dereference_win_ptr(void * ptr) {
 
-    #ifdef WEBUI_LOG
-    // printf("[Core]\t\t_webinix_dereference_win_ptr()\n");
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_dereference_win_ptr()\n");
     #endif
 
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE))
         return NULL;
 
-    _webinix_window_t * win = (_webinix_window_t * ) ptr;
+    _webinix_window_t* win = (_webinix_window_t* ) ptr;
 
     for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.wins[i] == win)
+        if (_webinix.wins[i] == win)
             return win;
     }
 
@@ -3479,7 +3493,7 @@ static _webinix_window_t * _webinix_dereference_win_ptr(void * ptr) {
 
 static void _webinix_sleep(long unsigned int ms) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     // printf("[Core]\t\t_webinix_sleep([%zu])\n", ms);
     #endif
 
@@ -3489,13 +3503,13 @@ static void _webinix_sleep(long unsigned int ms) {
     struct timespec req;
     req.tv_sec = ms / 1000; // Convert ms to seconds
     req.tv_nsec = (ms % 1000) * 1000000L; // Convert remainder to nanoseconds
-    nanosleep( & req, NULL);
+    nanosleep(&req, NULL);
     #endif
 }
 
 static long _webinix_timer_diff(struct timespec * start, struct timespec* end) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     // printf("[Core]\t\t_webinix_timer_diff()\n");
     #endif
 
@@ -3505,13 +3519,13 @@ static long _webinix_timer_diff(struct timespec * start, struct timespec* end) {
 
 static void _webinix_timer_clock_gettime(struct timespec * spec) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     // printf("[Core]\t\t_webinix_timer_clock_gettime()\n");
     #endif
 
     #ifdef _WIN32
     __int64 wintime;
-    GetSystemTimeAsFileTime((FILETIME * ) & wintime);
+    GetSystemTimeAsFileTime((FILETIME * )&wintime);
     wintime -= ((__int64) 116444736000000000);
     spec->tv_sec = wintime / ((__int64) 10000000);
     spec->tv_nsec = wintime % ((__int64) 10000000) * 100;
@@ -3520,24 +3534,24 @@ static void _webinix_timer_clock_gettime(struct timespec * spec) {
     #endif
 }
 
-static void _webinix_timer_start(_webinix_timer_t * t) {
+static void _webinix_timer_start(_webinix_timer_t* t) {
 
-    #ifdef WEBUI_LOG
-    // printf("[Core]\t\t_webinix_timer_start()\n");
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_timer_start()\n");
     #endif
 
-    _webinix_timer_clock_gettime( & t->start);
+    _webinix_timer_clock_gettime(&t->start);
 }
 
-static bool _webinix_timer_is_end(_webinix_timer_t * t, size_t ms) {
+static bool _webinix_timer_is_end(_webinix_timer_t* t, size_t ms) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     // printf("[Core]\t\t_webinix_timer_is_end()\n");
     #endif
 
-    _webinix_timer_clock_gettime( & t->now);
+    _webinix_timer_clock_gettime(&t->now);
 
-    size_t def = (size_t) _webinix_timer_diff( & t->start, & t->now);
+    size_t def = (size_t) _webinix_timer_diff(&t->start,&t->now);
     if (def > ms)
         return true;
     return false;
@@ -3545,8 +3559,8 @@ static bool _webinix_timer_is_end(_webinix_timer_t * t, size_t ms) {
 
 static bool _webinix_is_empty(const char* s) {
 
-    #ifdef WEBUI_LOG
-    // printf("[Core]\t\t_webinix_is_empty()\n");
+    #ifdef WEBUI_LOG_VERBOSE
+    //printf("[Core]\t\t_webinix_is_empty()\n");
     #endif
 
     if ((s != NULL) && (s[0] != '\0'))
@@ -3556,8 +3570,8 @@ static bool _webinix_is_empty(const char* s) {
 
 static size_t _webinix_strlen(const char* s) {
 
-    #ifdef WEBUI_LOG
-    // printf("[Core]\t\t_webinix_strlen()\n");
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_strlen()\n");
     #endif
 
     if (_webinix_is_empty(s))
@@ -3572,16 +3586,16 @@ static size_t _webinix_strlen(const char* s) {
     return length;
 }
 
-static bool _webinix_file_exist_mg(_webinix_window_t * win, struct mg_connection * conn) {
+static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection* client) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_file_exist_mg()\n");
     #endif
 
     char* file;
     char* full_path;
 
-    const struct mg_request_info * ri = mg_get_request_info(conn);
+    const struct mg_request_info * ri = mg_get_request_info(client);
     const char* url = ri->local_uri;
     size_t url_len = _webinix_strlen(url);
 
@@ -3589,25 +3603,25 @@ static bool _webinix_file_exist_mg(_webinix_window_t * win, struct mg_connection
     file = (char*)_webinix_malloc(url_len);
     const char* p = url;
     p++; // Skip "/"
-    WEBUI_SPF_DYN(file, url_len, "%.*s", (int)(url_len - 1), p);
+    WEBUI_SN_PRINTF_DYN(file, url_len, "%.*s", (int)(url_len - 1), p);
 
     // Get full path
     // [current folder][/][file]
     size_t bf_len = (_webinix_strlen(win->server_root_path) + 1 + _webinix_strlen(file));
     full_path = (char*)_webinix_malloc(bf_len);
-    WEBUI_SPF_DYN(full_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, file);
+    WEBUI_SN_PRINTF_DYN(full_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, file);
 
     bool exist = _webinix_file_exist(full_path);
 
-    _webinix_free_mem((void * ) file);
-    _webinix_free_mem((void * ) full_path);
+    _webinix_free_mem((void*)file);
+    _webinix_free_mem((void*)full_path);
 
     return exist;
 }
 
 static bool _webinix_is_valid_url(const char* url) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_is_valid_url([%.8s...])\n", url);
     #endif
 
@@ -3629,12 +3643,12 @@ static bool _webinix_open_url_native(const char* url) {
     return ((INT_PTR) result > 32);
     #elif defined(__APPLE__)
     char command[1024];
-    WEBUI_SPF_STATIC(command, sizeof(command), "open \"%s\"", url);
+    WEBUI_SN_PRINTF_STATIC(command, sizeof(command), "open \"%s\"", url);
     return (system(command) == 0);
     #else
     // Assuming Linux
     char command[1024];
-    WEBUI_SPF_STATIC(command, sizeof(command), "xdg-open \"%s\"", url);
+    WEBUI_SN_PRINTF_STATIC(command, sizeof(command), "xdg-open \"%s\"", url);
     return (system(command) == 0);
     #endif
 }
@@ -3654,12 +3668,12 @@ static bool _webinix_file_exist(char* path) {
     char full_path[WEBUI_MAX_PATH];
     ExpandEnvironmentStringsA(path, full_path, sizeof(full_path));
     #else
-    // Linux & macOS
+    // Linux&macOS
     char full_path[WEBUI_MAX_PATH];
     if (path[0] == '~') {
         const char* home = getenv("HOME");
         if (home) {
-            WEBUI_SPF_STATIC(full_path, sizeof(full_path), "%s/%s", home, & path[1]);
+            WEBUI_SN_PRINTF_STATIC(full_path, sizeof(full_path), "%s/%s", home,&path[1]);
         } else {
             // If for some reason HOME isn't set
             // fall back to the original path.
@@ -3670,7 +3684,7 @@ static bool _webinix_file_exist(char* path) {
     }
     #endif
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_file_exist() -> Parsed to [%s]\n", full_path);
     #endif
 
@@ -3680,8 +3694,8 @@ static bool _webinix_file_exist(char* path) {
     if (!_webinix_str_to_wide(full_path, &wfilePath))
         return false;
     DWORD dwAttrib = GetFileAttributesW(wfilePath);
-    _webinix_free_mem((void * ) wfilePath);
-    return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+    _webinix_free_mem((void*)wfilePath);
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib&FILE_ATTRIBUTE_DIRECTORY));
     #else
     // Linux / macOS
     return (WEBUI_FILE_EXIST(full_path, 0) == 0);
@@ -3710,10 +3724,9 @@ static uint16_t _webinix_get_run_id(void) {
     printf("[Core]\t\t_webinix_get_run_id()\n");
     #endif
 
-    if (_webinix_core.run_last_id >= WEBUI_MAX_IDS)
-        _webinix_core.run_last_id = 0;
-
-    return _webinix_core.run_last_id++;
+    if (_webinix.run_last_id >= WEBUI_MAX_IDS)
+        _webinix.run_last_id = 0;
+    return _webinix.run_last_id++;
 }
 
 static bool _webinix_socket_test_listen_mg(size_t port_num) {
@@ -3724,7 +3737,7 @@ static bool _webinix_socket_test_listen_mg(size_t port_num) {
 
     // HTTP Port Test
     char* test_port = (char*)_webinix_malloc(64);
-    WEBUI_SPF_DYN(test_port, 64, "127.0.0.1:%zu", port_num);
+    WEBUI_SN_PRINTF_DYN(test_port, 64, "127.0.0.1:%zu", port_num);
 
     // Start HTTP Server
     const char* http_options[] = {
@@ -3735,8 +3748,8 @@ static bool _webinix_socket_test_listen_mg(size_t port_num) {
     };
     struct mg_callbacks http_callbacks;
     struct mg_context * http_ctx;
-    memset( & http_callbacks, 0, sizeof(http_callbacks));
-    http_ctx = mg_start( & http_callbacks, 0, http_options);
+    memset(&http_callbacks, 0, sizeof(http_callbacks));
+    http_ctx = mg_start(&http_callbacks, 0, http_options);
 
     if (http_ctx == NULL) {
 
@@ -3815,7 +3828,7 @@ static char* _webinix_get_file_name_from_url(const char* url) {
     return file;
 }
 
-static char* _webinix_get_full_path(_webinix_window_t * win, const char* file) {
+static char* _webinix_get_full_path(_webinix_window_t* win, const char* file) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_full_path([%s])\n", file);
@@ -3828,11 +3841,11 @@ static char* _webinix_get_full_path(_webinix_window_t * win, const char* file) {
     // [current folder][/][file]
     size_t bf_len = (_webinix_strlen(win->server_root_path) + 1 + _webinix_strlen(file));
     char* full_path = (char*)_webinix_malloc(bf_len);
-    WEBUI_SPF_DYN(full_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, file);
+    WEBUI_SN_PRINTF_DYN(full_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, file);
 
     #ifdef _WIN32
     // Replace `/` by `\`
-    for (int i = 0; full_path[i] != '\0'; i++) {
+    for (int i = 0;full_path[i] != '\0'; i++) {
         if (full_path[i] == '/') {
             full_path[i] = * webinix_sep;
         }
@@ -3840,16 +3853,16 @@ static char* _webinix_get_full_path(_webinix_window_t * win, const char* file) {
     #endif
 
     // Clean
-    _webinix_free_mem((void * ) file);
+    _webinix_free_mem((void*)file);
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_get_full_path() -> Full path: [%s]\n", full_path);
     #endif
 
     return full_path;
 }
 
-static int _webinix_serve_file(_webinix_window_t * win, struct mg_connection * conn) {
+static int _webinix_serve_file(_webinix_window_t* win, struct mg_connection* client) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_serve_file()\n");
@@ -3859,7 +3872,7 @@ static int _webinix_serve_file(_webinix_window_t * win, struct mg_connection * c
 
     int http_status_code = 0;
 
-    const struct mg_request_info * ri = mg_get_request_info(conn);
+    const struct mg_request_info * ri = mg_get_request_info(client);
     const char* url = ri->local_uri;
 
     if (win->files_handler != NULL) {
@@ -3876,18 +3889,12 @@ static int _webinix_serve_file(_webinix_window_t * win, struct mg_connection * c
             if (length == 0)
                 length = _webinix_strlen(data);
 
-            // Send header
-            mg_send_http_ok(
-                conn, // 200
-                mg_get_builtin_mime_type(url), length
-            );
-
-            // Send body
-            mg_write(conn, data, length);
-
+            // Send user data (200)
+            _webinix_http_send(win, client, mg_get_builtin_mime_type(url), data, length, false);
+            
             // Safely free resources if end-user allocated
             // using `webinix_malloc()`. Otherwise just do nothing.
-            webinix_free((void * ) data);
+            webinix_free((void*)data);
 
             http_status_code = 200;
         }
@@ -3908,24 +3915,24 @@ static int _webinix_serve_file(_webinix_window_t * win, struct mg_connection * c
         if (_webinix_file_exist(full_path)) {
 
             // 200 - File exist
-            mg_send_file(conn, full_path);
+            _webinix_http_send_file(win, client, mg_get_builtin_mime_type(url), full_path, false);
             http_status_code = 200;
-        } else {
+        }
+        else {
 
             // 404 - File not exist
-            _webinix_http_send_error_page(conn, webinix_html_res_not_available, 404);
-
+            _webinix_http_send_error(client, webinix_html_res_not_available, 404);
             http_status_code = 404;
         }
 
-        _webinix_free_mem((void * ) full_path);
-        _webinix_free_mem((void * ) file);
+        _webinix_free_mem((void*)full_path);
+        _webinix_free_mem((void*)file);
     }
 
     return http_status_code;
 }
 
-static bool _webinix_deno_exist(_webinix_window_t * win) {
+static bool _webinix_deno_exist(_webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_deno_exist()\n");
@@ -3944,7 +3951,7 @@ static bool _webinix_deno_exist(_webinix_window_t * win) {
         return false;
 }
 
-static bool _webinix_nodejs_exist(_webinix_window_t * win) {
+static bool _webinix_nodejs_exist(_webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_nodejs_exist()\n");
@@ -3978,12 +3985,12 @@ static const char* _webinix_interpret_command(const char* cmd) {
     #ifdef _WIN32
     // Redirect stderr to stdout
     char cmd_with_redirection[512] = {0};
-    WEBUI_SPF_STATIC(cmd_with_redirection, sizeof(cmd_with_redirection), "cmd.exe /c %s 2>&1", cmd);
-    _webinix_system_win32_out(cmd_with_redirection, & out, false);
+    WEBUI_SN_PRINTF_STATIC(cmd_with_redirection, sizeof(cmd_with_redirection), "cmd.exe /c %s 2>&1", cmd);
+    _webinix_system_win32_out(cmd_with_redirection,&out, false);
     #else
     // Redirect stderr to stdout
     char cmd_with_redirection[512] = {0};
-    WEBUI_SPF_STATIC(cmd_with_redirection, sizeof(cmd_with_redirection), "%s 2>&1", cmd);
+    WEBUI_SN_PRINTF_STATIC(cmd_with_redirection, sizeof(cmd_with_redirection), "%s 2>&1", cmd);
 
     FILE * pipe = WEBUI_POPEN(cmd_with_redirection, "r");
 
@@ -3994,17 +4001,17 @@ static const char* _webinix_interpret_command(const char* cmd) {
     out = (char*)_webinix_malloc(WEBUI_STDOUT_BUF);
     char* line = (char*)_webinix_malloc(1024);
     while(fgets(line, 1024, pipe) != NULL)
-        WEBUI_SCAT_DYN(out, WEBUI_STDOUT_BUF, line);
+        WEBUI_STR_CAT_DYN(out, WEBUI_STDOUT_BUF, line);
     WEBUI_PCLOSE(pipe);
 
     // Clean
-    _webinix_free_mem((void * ) line);
+    _webinix_free_mem((void*)line);
     #endif
 
-    return (const char* ) out;
+    return (const char*)out;
 }
 
-static void _webinix_condition_init(webinix_condition_t * cond) {
+static void _webinix_condition_init(webinix_condition_t* cond) {
 
     #ifdef _WIN32
     InitializeConditionVariable(cond);
@@ -4013,7 +4020,7 @@ static void _webinix_condition_init(webinix_condition_t * cond) {
     #endif
 }
 
-static void _webinix_condition_wait(webinix_condition_t * cond, webinix_mutex_t * mutex) {
+static void _webinix_condition_wait(webinix_condition_t* cond, webinix_mutex_t* mutex) {
 
     #ifdef _WIN32
     SleepConditionVariableCS(cond, mutex, INFINITE);
@@ -4022,7 +4029,7 @@ static void _webinix_condition_wait(webinix_condition_t * cond, webinix_mutex_t 
     #endif
 }
 
-static void _webinix_condition_signal(webinix_condition_t * cond) {
+static void _webinix_condition_signal(webinix_condition_t* cond) {
 
     #ifdef _WIN32
     WakeConditionVariable(cond);
@@ -4031,7 +4038,7 @@ static void _webinix_condition_signal(webinix_condition_t * cond) {
     #endif
 }
 
-static void _webinix_condition_destroy(webinix_condition_t * cond) {
+static void _webinix_condition_destroy(webinix_condition_t* cond) {
 
     #ifdef _WIN32
     // No need
@@ -4041,7 +4048,7 @@ static void _webinix_condition_destroy(webinix_condition_t * cond) {
     #endif
 }
 
-static void _webinix_mutex_init(webinix_mutex_t * mutex) {
+static void _webinix_mutex_init(webinix_mutex_t* mutex) {
 
     #ifdef _WIN32
     InitializeCriticalSection(mutex);
@@ -4050,7 +4057,7 @@ static void _webinix_mutex_init(webinix_mutex_t * mutex) {
     #endif
 }
 
-static void _webinix_mutex_lock(webinix_mutex_t * mutex) {
+static void _webinix_mutex_lock(webinix_mutex_t* mutex) {
 
     #ifdef _WIN32
     EnterCriticalSection(mutex);
@@ -4059,7 +4066,7 @@ static void _webinix_mutex_lock(webinix_mutex_t * mutex) {
     #endif
 }
 
-static void _webinix_mutex_unlock(webinix_mutex_t * mutex) {
+static void _webinix_mutex_unlock(webinix_mutex_t* mutex) {
 
     #ifdef _WIN32
     LeaveCriticalSection(mutex);
@@ -4068,7 +4075,7 @@ static void _webinix_mutex_unlock(webinix_mutex_t * mutex) {
     #endif
 }
 
-static void _webinix_mutex_destroy(webinix_mutex_t * mutex) {
+static void _webinix_mutex_destroy(webinix_mutex_t* mutex) {
 
     #ifdef _WIN32
     DeleteCriticalSection(mutex);
@@ -4077,7 +4084,7 @@ static void _webinix_mutex_destroy(webinix_mutex_t * mutex) {
     #endif
 }
 
-static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection * conn, char* index) {
+static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection* client, char* index) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_interpret_file()\n");
@@ -4091,7 +4098,7 @@ static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection
     char* full_path = NULL;
     const char* query = NULL;
 
-    const struct mg_request_info * ri = mg_get_request_info(conn);
+    const struct mg_request_info * ri = mg_get_request_info(client);
     const char* url = ri->local_uri;
 
     // Get file full path
@@ -4122,10 +4129,10 @@ static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection
         if (!_webinix_file_exist(full_path)) {
 
             // File not exist - 404
-            _webinix_http_send_error_page(conn, webinix_html_res_not_available, 404);
+            _webinix_http_send_error(client, webinix_html_res_not_available, 404);
 
-            _webinix_free_mem((void * ) file);
-            _webinix_free_mem((void * ) full_path);
+            _webinix_free_mem((void*)file);
+            _webinix_free_mem((void*)full_path);
             return 404;
         }
 
@@ -4142,15 +4149,15 @@ static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection
                 size_t bf_len = (128 + _webinix_strlen(full_path) + _webinix_strlen(query));
                 char* cmd = (char*)_webinix_malloc(bf_len);
                 #ifdef _WIN32
-                WEBUI_SPF_DYN(
+                WEBUI_SN_PRINTF_DYN(
                     cmd, bf_len,
-                    "Set NO_COLOR=1 & Set DENO_NO_UPDATE_CHECK=1 & deno run --quiet --allow-all --unstable-ffi --allow-ffi \"%s\" \"%s\"",
+                    "Set NO_COLOR=1&Set DENO_NO_UPDATE_CHECK=1&deno run --quiet --allow-all --unstable-ffi --allow-ffi \"%s\" \"%s\"",
                     full_path, query
                 );
                 #else
-                WEBUI_SPF_DYN(
+                WEBUI_SN_PRINTF_DYN(
                     cmd, bf_len,
-                    "NO_COLOR=1; DENO_NO_UPDATE_CHECK=1; deno run --quiet --allow-all --unstable-ffi --allow-ffi \"%s\" \"%s\"",
+                    "NO_COLOR=1;DENO_NO_UPDATE_CHECK=1;deno run --quiet --allow-all --unstable-ffi --allow-ffi \"%s\" \"%s\"",
                     full_path, query
                 );
                 #endif
@@ -4160,27 +4167,24 @@ static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection
 
                 if (out != NULL) {
 
-                    // Send Deno output
-                    _webinix_http_send(
-                        conn, // 200
-                        "text/plain", out
-                    );
-                } else {
+                    // Send Deno output 200
+                    _webinix_http_send(win, client, "text/plain", out, _webinix_strlen(out), false);
+                }
+                else {
 
                     // Deno interpretation failed.
-                    // Serve as a normal text-based file
-                    mg_send_file(conn, full_path);
+                    // Send back an empty `200 OK`
+                    _webinix_http_send(win, client, "text/plain", "", 0, false);
                 }
 
-                _webinix_free_mem((void * ) cmd);
-                _webinix_free_mem((void * ) out);
-            } else {
+                _webinix_free_mem((void*)cmd);
+                _webinix_free_mem((void*)out);
+            }
+            else {
 
                 // Deno not installed
-
-                _webinix_http_send_error_page(conn, webinix_deno_not_found, 500);
-
-                interpret_http_stat = 500;
+                // Send back an empty `200 OK`
+                _webinix_http_send(win, client, "text/plain", "", 0, false);
             }
         } else if (win->runtime == NodeJS) {
 
@@ -4192,106 +4196,101 @@ static int _webinix_interpret_file(_webinix_window_t * win, struct mg_connection
                 // [node][file]
                 size_t bf_len = (16 + _webinix_strlen(full_path));
                 char* cmd = (char*)_webinix_malloc(bf_len);
-                WEBUI_SPF_DYN(cmd, bf_len, "node \"%s\" \"%s\"", full_path, query);
+                WEBUI_SN_PRINTF_DYN(cmd, bf_len, "node \"%s\" \"%s\"", full_path, query);
 
                 // Run command
                 const char* out = _webinix_interpret_command(cmd);
 
                 if (out != NULL) {
 
-                    // Send Node.js output
-                    _webinix_http_send(
-                        conn, // 200
-                        "text/plain", out
-                    );
-                } else {
+                    // Send Node.js output 200
+                    _webinix_http_send(win, client, "text/plain", out, _webinix_strlen(out), false);
+                }
+                else {
 
                     // Node.js interpretation failed.
-                    // Serve as a normal text-based file
-                    mg_send_file(conn, full_path);
+                    // Send back an empty `200 OK`
+                    _webinix_http_send(win, client, "text/plain", "", 0, false);
                 }
 
-                _webinix_free_mem((void * ) cmd);
-                _webinix_free_mem((void * ) out);
+                _webinix_free_mem((void*)cmd);
+                _webinix_free_mem((void*)out);
             } else {
 
                 // Node.js not installed
-                _webinix_http_send_error_page(conn, webinix_nodejs_not_found, 500);
-
-                interpret_http_stat = 500;
+                // Send back an empty `200 OK`
+                _webinix_http_send(win, client, "text/plain", "", 0, false);
             }
         } else {
 
             // Unknown runtime
             // Serve as a normal text-based file
-            mg_send_file(conn, full_path);
+            _webinix_http_send_file(win, client, mg_get_builtin_mime_type(url), full_path, false);
         }
     } else {
 
         // Unknown file extension
 
         // Serve as a normal text-based file
-        interpret_http_stat = _webinix_serve_file(win, conn);
+        interpret_http_stat = _webinix_serve_file(win, client);
     }
 
-    _webinix_free_mem((void * ) file);
-    _webinix_free_mem((void * ) full_path);
+    _webinix_free_mem((void*)file);
+    _webinix_free_mem((void*)full_path);
 
     return interpret_http_stat;
 }
 
-static const char* _webinix_generate_js_bridge(_webinix_window_t * win) {
+static const char* _webinix_generate_js_bridge(_webinix_window_t* win, struct mg_connection* client) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_generate_js_bridge()\n");
     #endif
 
-    _webinix_mutex_lock( & _webinix_core.mutex_bridge);
+    _webinix_mutex_lock(&_webinix.mutex_bridge);
 
-    uint32_t token = 0;
-
-    // Get Token Authorization
-    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
-        // First connection
+    // Token
+    uint32_t token = 0x00000000;
+    if (!_webinix.config.multi_client) {
+        // Single client mode
+        if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
+            // Non-authorized request to `webinix.js` because
+            // the single client already connected.
+            _webinix_mutex_unlock(&_webinix.mutex_bridge);
+            return NULL;
+        }
+        if (win->token == 0) {
+            win->token = _webinix_generate_random_uint32();
+            token = win->token;
+        }
+    }
+    else {
+        // Multi client mode
+        if (win->token == 0) {
+            win->token = _webinix_generate_random_uint32();
+        }
         token = win->token;
     }
-    #ifdef WEBUI_LOG
-    // Non-authorized connection
-    else
-        printf("[Core]\t\t_webinix_generate_js_bridge() -> Non-authorized "
-            "connection.\n");
-    #endif
-
-    if (token == 0) {
-
-        // This is a request to `webinix.js` from a non-authorized UI
-        // however, even if this non-authorized UI embed a hard-coded
-        // version of `webinix.js`. The token will be deffirent from `win->token`
-        // so requests will be sended but Webinix won't respond.
-
-        _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
-        return NULL;
-    }
-
-    win->bridge_handled = true;
 
     // Calculate the cb size
     size_t cb_mem_size = 64; // To hold 'const _webinix_bind_list = ["elem1", "elem2",];'
-    for (size_t i = 1; i < WEBUI_MAX_IDS; i++)
-        if (_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i]))
-            cb_mem_size += _webinix_strlen(_webinix_core.html_elements[i]) + 3;
+    for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+        if (!_webinix_is_empty(win->html_elements[i])) {
+            cb_mem_size += _webinix_strlen(win->html_elements[i]) + 3;
+        }
+    }
 
     // Generate the cb array
     char* event_cb_js_array = (char*)_webinix_malloc(cb_mem_size);
-    WEBUI_SCAT_DYN(event_cb_js_array, cb_mem_size, "[");
-    for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i])) {
-            WEBUI_SCAT_DYN(event_cb_js_array, cb_mem_size, "\"");
-            WEBUI_SCAT_DYN(event_cb_js_array, cb_mem_size, _webinix_core.html_elements[i]);
-            WEBUI_SCAT_DYN(event_cb_js_array, cb_mem_size, "\",");
+    WEBUI_STR_CAT_DYN(event_cb_js_array, cb_mem_size, "[");
+    for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+        if (!_webinix_is_empty(win->html_elements[i])) {
+            WEBUI_STR_CAT_DYN(event_cb_js_array, cb_mem_size, "\"");
+            WEBUI_STR_CAT_DYN(event_cb_js_array, cb_mem_size, win->html_elements[i]);
+            WEBUI_STR_CAT_DYN(event_cb_js_array, cb_mem_size, "\",");
         }
     }
-    WEBUI_SCAT_DYN(event_cb_js_array, cb_mem_size, "]");
+    WEBUI_STR_CAT_DYN(event_cb_js_array, cb_mem_size, "]");
 
     // Generate the full Webinix Bridge
     #ifdef WEBUI_LOG
@@ -4299,14 +4298,14 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t * win) {
     #else
     const char* log = "false";
     #endif
-    size_t len = 256 + cb_mem_size + _webinix_strlen((const char* ) webinix_javascript_bridge);
+    size_t len = 256 + cb_mem_size + _webinix_strlen((const char*)webinix_javascript_bridge);
     char* js = (char*)_webinix_malloc(len);
     #ifdef WEBUI_TLS
     const char* TLS = "true";
     #else
     const char* TLS = "false";
     #endif
-    int c = WEBUI_SPF_DYN(
+    int c = WEBUI_SN_PRINTF_DYN(
         js, len,
         "%s\n document.addEventListener(\"DOMContentLoaded\",function(){ globalThis.webinix = "
         "new WebuiBridge({ secure: %s, token: %" PRIu32 ", port: %zu, winNum: %zu, bindList: %s, log: %s, ",
@@ -4314,54 +4313,53 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t * win) {
     );
     // Window Size
     if (win->size_set)
-        c += WEBUI_SPF_DYN(js + c, len, "winW: %u, winH: %u, ", win->width, win->height);
+        c += WEBUI_SN_PRINTF_DYN(js + c, len, "winW: %u, winH: %u, ", win->width, win->height);
     // Window Position
     if (win->position_set)
-        c += WEBUI_SPF_DYN(js + c, len, "winX: %u, winY: %u, ", win->x, win->y);
+        c += WEBUI_SN_PRINTF_DYN(js + c, len, "winX: %u, winY: %u, ", win->x, win->y);
     // Close
-    WEBUI_SCAT_DYN(js, len, "}); }); ");
+    WEBUI_STR_CAT_DYN(js, len, "});});");
 
     // Free
-    _webinix_free_mem((void * ) event_cb_js_array);
-
-    _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
+    _webinix_free_mem((void*)event_cb_js_array);
+    _webinix_mutex_unlock(&_webinix.mutex_bridge);
     return js;
 }
 
-static bool _webinix_mutex_is_connected(_webinix_window_t * win, int update) {
+static bool _webinix_mutex_is_connected(_webinix_window_t* win, int update) {
 
     bool status = false;
-    _webinix_mutex_lock( & _webinix_core.mutex_win_connect);
+    _webinix_mutex_lock(&_webinix.mutex_win_connect);
     if (update == WEBUI_MUTEX_TRUE) win->connected = true;
     else if (update == WEBUI_MUTEX_FALSE) win->connected = false;
-    status = win->connected;
-    _webinix_mutex_unlock( & _webinix_core.mutex_win_connect);
+    status = ((win->clients_count > 0) && (win->connected));
+    _webinix_mutex_unlock(&_webinix.mutex_win_connect);
     return status;
 }
 
 static bool _webinix_mutex_is_exit_now(int update) {
 
     bool status = false;
-    _webinix_mutex_lock( & _webinix_core.mutex_exit_now);
-    if (update == WEBUI_MUTEX_TRUE) _webinix_core.exit_now = true;
-    else if (update == WEBUI_MUTEX_FALSE) _webinix_core.exit_now = false;
-    status = _webinix_core.exit_now;
-    _webinix_mutex_unlock( & _webinix_core.mutex_exit_now);
+    _webinix_mutex_lock(&_webinix.mutex_exit_now);
+    if (update == WEBUI_MUTEX_TRUE) _webinix.exit_now = true;
+    else if (update == WEBUI_MUTEX_FALSE) _webinix.exit_now = false;
+    status = _webinix.exit_now;
+    _webinix_mutex_unlock(&_webinix.mutex_exit_now);
     return status;
 }
 
 static bool _webinix_mutex_is_webview_update(_webinix_window_t* win, int update) {
 
     bool status = false;
-    _webinix_mutex_lock( & _webinix_core.mutex_webview_stop);
+    _webinix_mutex_lock(&_webinix.mutex_webview_stop);
     if (update == WEBUI_MUTEX_TRUE) win->update_webview = true;
     else if (update == WEBUI_MUTEX_FALSE) win->update_webview = false;
     status = win->update_webview;
-    _webinix_mutex_unlock( & _webinix_core.mutex_webview_stop);
+    _webinix_mutex_unlock(&_webinix.mutex_webview_stop);
     return status;
 }
 
-static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t browser) {
+static bool _webinix_browser_create_new_profile(_webinix_window_t* win, size_t browser) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_create_new_profile(%zu)\n", browser);
@@ -4380,15 +4378,15 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
 
         // Webinix profile
         if (win->profile_name != NULL)
-            _webinix_free_mem((void * ) win->profile_name);
+            _webinix_free_mem((void*)win->profile_name);
         if (win->profile_path != NULL)
-            _webinix_free_mem((void * ) win->profile_path);
+            _webinix_free_mem((void*)win->profile_path);
         win->profile_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
         win->profile_name = (char*)_webinix_malloc(WEBUI_MAX_PATH);
         if(!win->disable_browser_high_contrast)
-            WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME);
+            WEBUI_STR_COPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME);
         else
-            WEBUI_SCOPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME "-NoHC");
+            WEBUI_STR_COPY_DYN(win->profile_name, WEBUI_MAX_PATH, WEBUI_PROFILE_NAME "-NoHC");
     }
 
     #ifdef WEBUI_LOG
@@ -4405,43 +4403,43 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
 
         // Google Chrome
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixChromeProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixChromeProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Edge) {
 
         // Edge
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixEdgeProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixEdgeProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Epic) {
 
         // Epic
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixEpicProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixEpicProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Vivaldi) {
 
         // Vivaldi
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixVivaldiProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixVivaldiProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Brave) {
 
         // Brave
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixBraveProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixBraveProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Yandex) {
 
         // Yandex
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixYandexProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixYandexProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Chromium) {
 
         // Chromium
         if (!win->custom_profile)
-            WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixChromiumProfile", temp, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixChromiumProfile", temp, webinix_sep, webinix_sep);
         return true;
     } else if (browser == Firefox) {
 
@@ -4465,9 +4463,9 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
         #endif
         if (!win->custom_profile){
             if(!win->disable_browser_high_contrast)
-                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
+                WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, webinix_sep, webinix_sep);
             else
-                WEBUI_SPF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile-NoHC", temp, webinix_sep, webinix_sep);
+                WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile-NoHC", temp, webinix_sep, webinix_sep);
         }
 
         if (!_webinix_folder_exist(win->profile_path) ||
@@ -4484,19 +4482,19 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
             _webinix_delete_folder(win->profile_path);
 
             // Creating the Firefox profile
-            WEBUI_SPF_STATIC(
+            WEBUI_SN_PRINTF_STATIC(
                 buf, sizeof(buf), "%s -CreateProfile \"%s %s\"", win->browser_path, win->profile_name, win->profile_path
             );
             _webinix_cmd_sync(win, buf, false);
 
             // Wait for Firefox profile to be created
             _webinix_timer_t timer;
-            _webinix_timer_start( & timer);
+            _webinix_timer_start(&timer);
             for (;;) {
                 _webinix_sleep(1000);
                 if (_webinix_folder_exist(win->profile_path))
                     break;
-                if (_webinix_timer_is_end( & timer, 10000))
+                if (_webinix_timer_is_end(&timer, 10000))
                     break;
             }
 
@@ -4507,37 +4505,37 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t * win, size_t 
 
             // prefs.js
             FILE * file;
-            WEBUI_SPF_STATIC(buf, sizeof(buf), "%s%sprefs.js", win->profile_path, webinix_sep);
-            WEBUI_FOPEN(file, buf, "a");
+            WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "%s%sprefs.js", win->profile_path, webinix_sep);
+            WEBUI_FILE_OPEN(file, buf, "a");
             if (file == NULL)
                 return false;
             fputs(
                 "user_pref(\"toolkit.legacyUserProfileCustomizations.stylesheets\","
-                " true); ",
+                " true);",
                 file
             );
-            fputs("user_pref(\"browser.shell.checkDefaultBrowser\", false); ", file);
-            fputs("user_pref(\"browser.tabs.warnOnClose\", false); ", file);
-            fputs("user_pref(\"browser.tabs.inTitlebar\", 0); ", file);
+            fputs("user_pref(\"browser.shell.checkDefaultBrowser\", false);", file);
+            fputs("user_pref(\"browser.tabs.warnOnClose\", false);", file);
+            fputs("user_pref(\"browser.tabs.inTitlebar\", 0);", file);
             if(win->disable_browser_high_contrast){
-                fputs("user_pref(\"browser.display.document_color_use\", 1); ", file);
+                fputs("user_pref(\"browser.display.document_color_use\", 1);", file);
             }
             fclose(file);
 
             // userChrome.css
-            WEBUI_SPF_STATIC(buf, sizeof(buf), "\"%s%schrome%s\"", win->profile_path, webinix_sep, webinix_sep);
+            WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "\"%s%schrome%s\"", win->profile_path, webinix_sep, webinix_sep);
             if (!_webinix_folder_exist(buf)) {
 
-                WEBUI_SPF_STATIC(buf, sizeof(buf), "mkdir \"%s%schrome%s\"", win->profile_path, webinix_sep, webinix_sep);
+                WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "mkdir \"%s%schrome%s\"", win->profile_path, webinix_sep, webinix_sep);
                 _webinix_cmd_sync(win, buf, false); // Create directory
             }
-            WEBUI_SPF_STATIC(buf, sizeof(buf), "%s%schrome%suserChrome.css", win->profile_path, webinix_sep, webinix_sep);
-            WEBUI_FOPEN(file, buf, "a");
+            WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "%s%schrome%suserChrome.css", win->profile_path, webinix_sep, webinix_sep);
+            WEBUI_FILE_OPEN(file, buf, "a");
             if (file == NULL)
                 return false;
             fputs(
-                "#navigator-toolbox{opacity:0 !important; height:0px !important; max-height:0px !important;"
-                "width:0px !important; max-width:0px !important;}"
+                "#navigator-toolbox{opacity:0 !important;height:0px !important;max-height:0px !important;"
+                "width:0px !important;max-width:0px !important;}"
             , file);
             fclose(file);
         }
@@ -4579,9 +4577,9 @@ static void _webinix_delete_folder(char* folder) {
 
     char command[1024];
     #if defined(_WIN32)
-    WEBUI_SPF_STATIC(command, sizeof(command), "cmd /c \"rmdir /s /q \"%s\"\" > nul 2>&1", folder);
+    WEBUI_SN_PRINTF_STATIC(command, sizeof(command), "cmd /c \"rmdir /s /q \"%s\"\" > nul 2>&1", folder);
     #else
-    WEBUI_SPF_STATIC(command, sizeof(command), "rm -rf \"%s\" >>/dev/null 2>>/dev/null", folder);
+    WEBUI_SN_PRINTF_STATIC(command, sizeof(command), "rm -rf \"%s\" >>/dev/null 2>>/dev/null", folder);
     #endif
 
     // Try 6 times in 3 seconds
@@ -4603,21 +4601,6 @@ static void _webinix_delete_folder(char* folder) {
     }
 }
 
-static char* _webinix_generate_internal_id(_webinix_window_t * win, const char* element) {
-
-    #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_generate_internal_id([%zu], [%s])\n", win->window_number, element);
-    #endif
-
-    // Generate Webinix internal id
-    size_t element_len = _webinix_strlen(element);
-    size_t internal_id_size = 3 + 1 + element_len; // [win num][/][name]
-    char* webinix_internal_id = (char*)_webinix_malloc(internal_id_size);
-    WEBUI_SPF_DYN(webinix_internal_id, internal_id_size, "%zu/%s", win->window_number, element);
-
-    return webinix_internal_id;
-}
-
 static uint32_t _webinix_get_token(const char* data) {
 
     #ifdef WEBUI_LOG
@@ -4626,18 +4609,11 @@ static uint32_t _webinix_get_token(const char* data) {
 
     uint32_t token = 0;
 
-    // if (_webinix_core.little_endian)
     // Little-endian
-    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN] & 0xFF);
-    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 1] & 0xFF) << 8;
-    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 2] & 0xFF) << 16;
-    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 3] & 0xFF) << 24;
-    // else
-    //     // Big-endian
-    //     token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN] & 0xFF) << 24;
-    //     token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 1] & 0xFF) << 16;
-    //     token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 2] & 0xFF) << 8;
-    //     token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 3] & 0xFF);
+    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN]&0xFF);
+    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 1]&0xFF) << 8;
+    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 2]&0xFF) << 16;
+    token |= ((uint32_t) data[WEBUI_PROTOCOL_TOKEN + 3]&0xFF) << 24;
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_token() -> 0x%08X\n", token);
@@ -4654,14 +4630,9 @@ static uint16_t _webinix_get_id(const char* data) {
 
     uint16_t id = 0;
 
-    // if (_webinix_core.little_endian)
     // Little-endian
-    id |= ((uint16_t) data[WEBUI_PROTOCOL_ID] & 0xFF);
-    id |= ((uint16_t) data[WEBUI_PROTOCOL_ID + 1] & 0xFF) << 8;
-    // else
-    //     // Big-endian
-    //     id |= ((uint16_t) data[WEBUI_PROTOCOL_ID] & 0xFF) << 8;
-    //     id |= ((uint16_t) data[WEBUI_PROTOCOL_ID + 1] & 0xFF);
+    id |= ((uint16_t) data[WEBUI_PROTOCOL_ID]&0xFF);
+    id |= ((uint16_t) data[WEBUI_PROTOCOL_ID + 1]&0xFF) << 8;
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_id() -> 0x%04X\n", id);
@@ -4670,14 +4641,50 @@ static uint16_t _webinix_get_id(const char* data) {
     return id;
 }
 
-static void _webinix_send(_webinix_window_t * win, uint32_t token, uint16_t id, uint8_t cmd, const char* data, size_t len) {
+static void _webinix_send_all(_webinix_window_t* win, uint16_t id, uint8_t cmd, const char* data, size_t len) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_send()\n");
-    printf("[Core]\t\t_webinix_send() -> Token = 0x%08X \n", token);
-    printf("[Core]\t\t_webinix_send() -> ID = 0x%04X \n", id);
-    printf("[Core]\t\t_webinix_send() -> CMD = 0x%02x \n", cmd);
-    printf("[Core]\t\t_webinix_send() -> Data = %zu bytes \n", len);
+    printf("[Core]\t\t_webinix_send_all()\n");
+    #endif
+
+    // Send the WebSocket packet to a all connected clients if
+    // `multi_client` mode is enabled, if not then send packet
+    // to the only single connected client `win->clients[0]`.
+    
+    // Send the packet
+    if (_webinix.config.multi_client) {
+        // Loop trough all connected clients
+        for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+            if ((win->clients[i] != NULL) && (win->clients_token_check[i])) {
+                _webinix_send_client(win, win->clients[i], 0, cmd, data, len);
+            }
+        }
+    } else {
+        // Single client
+        if ((win->clients[0] != NULL) && (win->clients_token_check[0])) {
+            _webinix_send_client(win, win->clients[0], 0, cmd, data, len);
+        }
+    }
+}
+
+static void _webinix_send_client(
+    _webinix_window_t* win, struct mg_connection *client, 
+    uint16_t id, uint8_t cmd, const char* data, size_t len) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_send_client()\n");
+    #endif
+
+    size_t client_id = 0;
+    if (!_webinix_client_get_id(win, client, &client_id))
+        return;
+    if ((win->clients[client_id] == NULL) || (!win->clients_token_check[client_id]))
+        return;
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_send_client() -> ID = 0x%04X \n", id);
+    printf("[Core]\t\t_webinix_send_client() -> CMD = 0x%02x \n", cmd);
+    printf("[Core]\t\t_webinix_send_client() -> Data = %zu bytes \n", len);
     #endif
 
     // Protocol
@@ -4694,42 +4701,16 @@ static void _webinix_send(_webinix_window_t * win, uint32_t token, uint16_t id, 
     // Signature (1 Byte)
     packet[WEBUI_PROTOCOL_SIGN] = WEBUI_SIGNATURE;
 
-    // if (_webinix_core.little_endian) {
-
     // Little-endian
-
     // Token (4 Bytes)
-    // packet[WEBUI_PROTOCOL_TOKEN] = token & 0xFF;
-    // packet[WEBUI_PROTOCOL_TOKEN + 1] = (token >> 8) & 0xFF;
-    // packet[WEBUI_PROTOCOL_TOKEN + 2] = (token >> 16) & 0xFF;
-    // packet[WEBUI_PROTOCOL_TOKEN + 3] = (token >> 24) & 0xFF;
     packet[WEBUI_PROTOCOL_TOKEN] = 0xFF;
     packet[WEBUI_PROTOCOL_TOKEN + 1] = 0xFF;
     packet[WEBUI_PROTOCOL_TOKEN + 2] = 0xFF;
     packet[WEBUI_PROTOCOL_TOKEN + 3] = 0xFF;
 
     // ID (2 Bytes)
-    packet[WEBUI_PROTOCOL_ID] = id & 0xFF;
-    packet[WEBUI_PROTOCOL_ID + 1] = (id >> 8) & 0xFF;
-    // }
-    // else {
-
-    //     // Big-endian
-
-    //     // Token (4 Bytes)
-    //     // packet[WEBUI_PROTOCOL_TOKEN] = (token >> 24) & 0xFF;
-    //     // packet[WEBUI_PROTOCOL_TOKEN + 1] = (token >> 16) & 0xFF;
-    //     // packet[WEBUI_PROTOCOL_TOKEN + 2] = (token >> 8) & 0xFF;
-    //     // packet[WEBUI_PROTOCOL_TOKEN + 3] = token & 0xFF;
-    //     packet[WEBUI_PROTOCOL_TOKEN] = 0xFF;
-    //     packet[WEBUI_PROTOCOL_TOKEN + 1] = 0xFF;
-    //     packet[WEBUI_PROTOCOL_TOKEN + 2] = 0xFF;
-    //     packet[WEBUI_PROTOCOL_TOKEN + 3] = 0xFF;
-
-    //     // ID (2 Bytes)
-    //     packet[WEBUI_PROTOCOL_ID] = (id >> 8) & 0xFF;
-    //     packet[WEBUI_PROTOCOL_ID + 1] = id & 0xFF;
-    // }
+    packet[WEBUI_PROTOCOL_ID] = id&0xFF;
+    packet[WEBUI_PROTOCOL_ID + 1] = (id >> 8)&0xFF;
 
     // Command (1 Byte)
     packet[WEBUI_PROTOCOL_CMD] = cmd;
@@ -4743,16 +4724,16 @@ static void _webinix_send(_webinix_window_t * win, uint32_t token, uint16_t id, 
     }
 
     // Send packet
-    _webinix_ws_send(win, packet, packet_len);
+    _webinix_send_client_ws(win, client, client_id, packet, packet_len);
 
     // Free
-    _webinix_free_mem((void * ) packet);
+    _webinix_free_mem((void*)packet);
 }
 
 static char* _webinix_str_dup(const char* src) {
     size_t len = _webinix_strlen(src);
-    char* dst = (char* ) _webinix_malloc(len);
-    WEBUI_SCOPY_DYN(dst, len, src);
+    char* dst = (char*)_webinix_malloc(len);
+    WEBUI_STR_COPY_DYN(dst, len, src);
     return dst;
 }
 
@@ -4767,7 +4748,7 @@ static const char* _webinix_get_temp_path() {
     #ifdef _MSC_VER
     char* WinUserProfile = NULL;
     size_t sz = 0;
-    if (_dupenv_s( & WinUserProfile, & sz, "USERPROFILE") != 0 || WinUserProfile == NULL)
+    if (_dupenv_s(&WinUserProfile,&sz, "USERPROFILE") != 0 || WinUserProfile == NULL)
         return "";
     #else
     char* WinUserProfile = getenv("USERPROFILE");
@@ -4802,23 +4783,23 @@ static bool _webinix_is_google_chrome_folder(const char* folder) {
     // by checking if `master_preferences` file exist or `initial_preferences`
     // Ref: https://support.google.com/chrome/a/answer/187948?hl=en
 
-    WEBUI_SPF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\master_preferences", folder);
+    WEBUI_SN_PRINTF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\master_preferences", folder);
     if (!_webinix_file_exist(browser_full_path)) {
 
-        WEBUI_SPF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\initial_preferences", folder);
+        WEBUI_SN_PRINTF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\initial_preferences", folder);
         if (!_webinix_file_exist(browser_full_path))
             return false; // This is Chromium or something else
     }
 
     // Make sure the browser executable file exist
-    WEBUI_SPF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\chrome.exe", folder);
+    WEBUI_SN_PRINTF_STATIC(browser_full_path, WEBUI_MAX_PATH, "%s\\chrome.exe", folder);
     if (!_webinix_file_exist(browser_full_path))
         return false;
 
     return true;
 }
 
-static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
+static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_exist([%zu])\n", browser);
@@ -4855,7 +4836,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_is_google_chrome_folder(browser_folder)) {
 
                 // Google Chrome Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
                 ChromeExist = true;
                 return true;
             }
@@ -4873,7 +4854,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_is_google_chrome_folder(browser_folder)) {
 
                 // Google Chrome Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
                 ChromeExist = true;
                 return true;
             }
@@ -4886,7 +4867,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Google Chrome on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Google Chrome\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Google Chrome.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Google Chrome.app\" --args");
             ChromeExist = true;
             return true;
         } else
@@ -4896,12 +4877,12 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Google Chrome on Linux
         if (_webinix_cmd_sync(win, "google-chrome --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "google-chrome");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "google-chrome");
             ChromeExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "google-chrome-stable --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "google-chrome-stable");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "google-chrome-stable");
             ChromeExist = true;
             return true;
         } else
@@ -4936,7 +4917,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Edge Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 EdgeExist = true;
                 return true;
             }
@@ -4954,7 +4935,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Edge Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 EdgeExist = true;
                 return true;
             }
@@ -4967,7 +4948,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Edge on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Microsoft Edge\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Microsoft Edge.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Microsoft Edge.app\" --args");
             EdgeExist = true;
             return true;
         } else
@@ -4978,17 +4959,17 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Edge on Linux
         if (_webinix_cmd_sync(win, "microsoft-edge-stable --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-stable");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-stable");
             EdgeExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "microsoft-edge-beta --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-beta");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-beta");
             EdgeExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "microsoft-edge-dev --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-dev");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "microsoft-edge-dev");
             EdgeExist = true;
             return true;
         } else
@@ -5023,7 +5004,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Epic Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 EpicExist = true;
                 return true;
             }
@@ -5041,7 +5022,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Epic Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 EpicExist = true;
                 return true;
             }
@@ -5054,7 +5035,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Epic on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Epic\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Epic.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Epic.app\" --args");
             EpicExist = true;
             return true;
         } else
@@ -5064,7 +5045,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Epic on Linux
         if (_webinix_cmd_sync(win, "epic --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "epic");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "epic");
             EpicExist = true;
             return true;
         } else
@@ -5098,7 +5079,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Vivaldi Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 VivaldiExist = true;
                 return true;
             }
@@ -5116,7 +5097,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Vivaldi Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 VivaldiExist = true;
                 return true;
             }
@@ -5129,7 +5110,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Vivaldi on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Vivaldi\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Vivaldi.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Vivaldi.app\" --args");
             VivaldiExist = true;
             return true;
         } else
@@ -5139,17 +5120,17 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Vivaldi on Linux
         if (_webinix_cmd_sync(win, "vivaldi --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi");
             VivaldiExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "vivaldi-stable --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi-stable");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi-stable");
             VivaldiExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "vivaldi-snapshot --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi-snapshot");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "vivaldi-snapshot");
             VivaldiExist = true;
             return true;
         } else
@@ -5183,7 +5164,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Brave Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 BraveExist = true;
                 return true;
             }
@@ -5201,7 +5182,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Brave Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 BraveExist = true;
                 return true;
             }
@@ -5214,7 +5195,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Brave on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Brave Browser\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Brave Browser.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Brave Browser.app\" --args");
             BraveExist = true;
             return true;
         } else
@@ -5224,7 +5205,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Brave on Linux
         if (_webinix_cmd_sync(win, "brave --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "brave");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "brave");
             BraveExist = true;
             return true;
         } else
@@ -5258,7 +5239,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Firefox Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 FirefoxExist = true;
                 return true;
             }
@@ -5276,7 +5257,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Firefox Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 FirefoxExist = true;
                 return true;
             }
@@ -5289,7 +5270,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Firefox on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Firefox\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Firefox.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Firefox.app\" --args");
             FirefoxExist = true;
             return true;
         } else
@@ -5300,7 +5281,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
 
         if (_webinix_cmd_sync(win, "firefox -v", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "firefox");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "firefox");
             FirefoxExist = true;
             return true;
         } else
@@ -5336,7 +5317,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Yandex Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 YandexExist = true;
                 return true;
             }
@@ -5354,7 +5335,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (_webinix_file_exist(browser_fullpath)) {
 
                 // Yandex Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\"", browser_fullpath);
                 YandexExist = true;
                 return true;
             }
@@ -5367,7 +5348,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Yandex on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Yandex\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Yandex.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Yandex.app\" --args");
             YandexExist = true;
             return true;
         } else
@@ -5377,7 +5358,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Yandex on Linux
         if (_webinix_cmd_sync(win, "yandex-browser --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "yandex-browser");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "yandex-browser");
             YandexExist = true;
             return true;
         } else
@@ -5411,7 +5392,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (!_webinix_is_google_chrome_folder(browser_folder)) {
 
                 // Chromium Found (one user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
                 ChromiumExist = true;
                 return true;
             }
@@ -5429,7 +5410,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
             if (!_webinix_is_google_chrome_folder(browser_folder)) {
 
                 // Chromium Found (multi-user)
-                if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
+                if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "\"%s\\chrome.exe\"", browser_folder);
                 ChromiumExist = true;
                 return true;
             }
@@ -5442,7 +5423,7 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Chromium on macOS
         if (_webinix_cmd_sync(win, "open -R -a \"Chromium\"", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Chromium.app\" --args");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "open --new -a \"Chromium.app\" --args");
             ChromiumExist = true;
             return true;
         } else
@@ -5452,12 +5433,12 @@ static bool _webinix_browser_exist(_webinix_window_t * win, size_t browser) {
         // Chromium on Linux
         if (_webinix_cmd_sync(win, "chromium-browser --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "chromium-browser");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "chromium-browser");
             ChromiumExist = true;
             return true;
         } else if (_webinix_cmd_sync(win, "chromium --version", false) == 0) {
 
-            if(win) WEBUI_SPF_DYN(win->browser_path, WEBUI_MAX_PATH, "chromium");
+            if(win) WEBUI_SN_PRINTF_DYN(win->browser_path, WEBUI_MAX_PATH, "chromium");
             ChromiumExist = true;
             return true;
         } else
@@ -5493,22 +5474,24 @@ static void _webinix_clean(void) {
     _webinix_free_all_mem();
 
     // Destroy all mutex
-    _webinix_mutex_destroy( & _webinix_core.mutex_server_start);
-    _webinix_mutex_destroy( & _webinix_core.mutex_send);
-    _webinix_mutex_destroy( & _webinix_core.mutex_receive);
-    _webinix_mutex_destroy( & _webinix_core.mutex_wait);
-    _webinix_mutex_destroy( & _webinix_core.mutex_js_run);
-    _webinix_mutex_destroy( & _webinix_core.mutex_win_connect);
-    _webinix_mutex_destroy( & _webinix_core.mutex_exit_now);
-    _webinix_mutex_destroy( & _webinix_core.mutex_webview_stop);
-    _webinix_condition_destroy( & _webinix_core.condition_wait);
+    _webinix_mutex_destroy(&_webinix.mutex_server_start);
+    _webinix_mutex_destroy(&_webinix.mutex_send);
+    _webinix_mutex_destroy(&_webinix.mutex_receive);
+    _webinix_mutex_destroy(&_webinix.mutex_wait);
+    _webinix_mutex_destroy(&_webinix.mutex_js_run);
+    _webinix_mutex_destroy(&_webinix.mutex_win_connect);
+    _webinix_mutex_destroy(&_webinix.mutex_exit_now);
+    _webinix_mutex_destroy(&_webinix.mutex_webview_stop);
+    _webinix_mutex_destroy(&_webinix.mutex_http_handler);
+    _webinix_mutex_destroy(&_webinix.mutex_client);
+    _webinix_condition_destroy(&_webinix.condition_wait);
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\tWebinix exit successfully.\n");
+    printf("[Core]\t\tWebinix exit successfully\n");
     #endif
 }
 
-static int _webinix_cmd_sync(_webinix_window_t * win, char* cmd, bool show) {
+static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_sync()\n");
@@ -5522,14 +5505,14 @@ static int _webinix_cmd_sync(_webinix_window_t * win, char* cmd, bool show) {
     // Sync command
     #ifdef _WIN32
     // Using: _CMD_
-    WEBUI_SPF_STATIC(buf, sizeof(buf), "cmd /c \"%s\" > nul 2>&1", cmd);
+    WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "cmd /c \"%s\" > nul 2>&1", cmd);
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_sync() -> Running [%s] \n", buf);
     #endif
     return _webinix_system_win32(win, buf, show);
     #else
     // Using: _CMD_
-    WEBUI_SPF_STATIC(buf, sizeof(buf), "%s >>/dev/null 2>>/dev/null", cmd);
+    WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "%s >>/dev/null 2>>/dev/null", cmd);
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_sync() -> Running [%s] \n", buf);
     #endif
@@ -5539,7 +5522,7 @@ static int _webinix_cmd_sync(_webinix_window_t * win, char* cmd, bool show) {
     #endif
 }
 
-static int _webinix_cmd_async(_webinix_window_t * win, char* cmd, bool show) {
+static int _webinix_cmd_async(_webinix_window_t* win, char* cmd, bool show) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_async()\n");
@@ -5553,14 +5536,14 @@ static int _webinix_cmd_async(_webinix_window_t * win, char* cmd, bool show) {
     // Asynchronous command
     #ifdef _WIN32
     // Using: START "" _CMD_
-    WEBUI_SPF_STATIC(buf, sizeof(buf), "cmd /c \"START \"\" %s\" > nul 2>&1", cmd);
+    WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "cmd /c \"START \"\" %s\" > nul 2>&1", cmd);
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_async() -> Running [%s] \n", buf);
     #endif
     return _webinix_system_win32(win, buf, show);
     #else
     // Using: _CMD_ &
-    WEBUI_SPF_STATIC(buf, sizeof(buf), "%s >>/dev/null 2>>/dev/null &", cmd);
+    WEBUI_SN_PRINTF_STATIC(buf, sizeof(buf), "%s >>/dev/null 2>>/dev/null &", cmd);
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_cmd_async() -> Running [%s] \n", buf);
     #endif
@@ -5570,7 +5553,7 @@ static int _webinix_cmd_async(_webinix_window_t * win, char* cmd, bool show) {
     #endif
 }
 
-static int _webinix_run_browser(_webinix_window_t * win, char* cmd) {
+static int _webinix_run_browser(_webinix_window_t* win, char* cmd) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_run_browser()\n");
@@ -5580,7 +5563,7 @@ static int _webinix_run_browser(_webinix_window_t * win, char* cmd) {
     return _webinix_cmd_async(win, cmd, false);
 }
 
-static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, char* buffer, size_t len) {
+static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, char* buffer, size_t len) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_browser_args([%zu])\n", browser);
@@ -5615,50 +5598,50 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
         case Chromium:
             // Profile
             if (!_webinix_is_empty(win->profile_path))
-                c = WEBUI_SPF_DYN(buffer, len, " --user-data-dir=\"%s\"", win->profile_path);
+                c = WEBUI_SN_PRINTF_DYN(buffer, len, " --user-data-dir=\"%s\"", win->profile_path);
             // Basic
             for (int i = 0; i < (int)(sizeof(chromium_options) / sizeof(chromium_options[0])); i++) {
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", chromium_options[i]);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", chromium_options[i]);
             }
             // Kiosk Mode
             if (win->kiosk_mode)
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--chrome-frame --kiosk");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--chrome-frame --kiosk");
             // High Contrast Support
             if (win->disable_browser_high_contrast)
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--disable-features=ForcedColors");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--disable-features=ForcedColors");
             // Hide Mode
             if (win->hide)
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--headless --headless=new");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--headless --headless=new");
             // Window Size
             if (win->size_set)
-                c += WEBUI_SPF_DYN(buffer + c, len, " --window-size=%u,%u", win->width, win->height);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " --window-size=%u,%u", win->width, win->height);
             // Window Position
             if (win->position_set)
-                c += WEBUI_SPF_DYN(buffer + c, len, " --window-position=%u,%u", win->x, win->y);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " --window-position=%u,%u", win->x, win->y);
             // Proxy
             if (win->proxy_set)
-                c += WEBUI_SPF_DYN(buffer + c, len, " --proxy-server=%s", win->proxy_server);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " --proxy-server=%s", win->proxy_server);
             else
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--no-proxy-server");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--no-proxy-server");
 
             // URL (END)
-            c += WEBUI_SPF_DYN(buffer + c, len, " %s", "--app=");
+            c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--app=");
             return c;
         case Firefox:
             // Profile
             if (!_webinix_is_empty(win->profile_name))
-                c = WEBUI_SPF_DYN(buffer, len, " -P %s", win->profile_name);
+                c = WEBUI_SN_PRINTF_DYN(buffer, len, " -P %s", win->profile_name);
             // Basic
-            c += WEBUI_SPF_DYN(buffer + c, len, " -purgecaches");
+            c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " -purgecaches");
             // Kiosk Mode
             if (win->kiosk_mode)
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "-kiosk");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "-kiosk");
             // Hide Mode
             if (win->hide)
-                c += WEBUI_SPF_DYN(buffer + c, len, " %s", "-headless");
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "-headless");
             // Window Size
             if (win->size_set)
-                c += WEBUI_SPF_DYN(buffer + c, len, " -width %u -height %u", win->width, win->height);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " -width %u -height %u", win->width, win->height);
             // Window Position
             // Firefox does not support window positioning.
             // Proxy
@@ -5671,18 +5654,18 @@ static int _webinix_get_browser_args(_webinix_window_t * win, size_t browser, ch
             }
 
             // URL (END)
-            c += WEBUI_SPF_DYN(buffer + c, len, " -new-window ");
+            c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " -new-window ");
             return c;
     }
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_browser_args() -> Unknown Browser (%zu)\n", browser);
     #endif
-    WEBUI_SCOPY_DYN(buffer, len, "");
+    WEBUI_STR_COPY_DYN(buffer, len, "");
     return 0;
 }
 
-static bool _webinix_browser_start_chrome(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_chrome([%s])\n", address);
@@ -5703,18 +5686,18 @@ static bool _webinix_browser_start_chrome(_webinix_window_t * win, const char* a
     _webinix_get_browser_args(win, Chrome, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Chrome;
-        _webinix_core.current_browser = Chrome;
+        _webinix.current_browser = Chrome;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_edge(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_edge(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_edge([%s])\n", address);
@@ -5735,18 +5718,18 @@ static bool _webinix_browser_start_edge(_webinix_window_t * win, const char* add
     _webinix_get_browser_args(win, Edge, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Edge;
-        _webinix_core.current_browser = Edge;
+        _webinix.current_browser = Edge;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_epic(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_epic(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_epic([%s])\n", address);
@@ -5767,18 +5750,18 @@ static bool _webinix_browser_start_epic(_webinix_window_t * win, const char* add
     _webinix_get_browser_args(win, Epic, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Epic;
-        _webinix_core.current_browser = Epic;
+        _webinix.current_browser = Epic;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_vivaldi(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_vivaldi(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_vivaldi([%s])\n", address);
@@ -5799,18 +5782,18 @@ static bool _webinix_browser_start_vivaldi(_webinix_window_t * win, const char* 
     _webinix_get_browser_args(win, Vivaldi, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Vivaldi;
-        _webinix_core.current_browser = Vivaldi;
+        _webinix.current_browser = Vivaldi;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_brave(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_brave(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_brave([%s])\n", address);
@@ -5831,18 +5814,18 @@ static bool _webinix_browser_start_brave(_webinix_window_t * win, const char* ad
     _webinix_get_browser_args(win, Brave, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Brave;
-        _webinix_core.current_browser = Brave;
+        _webinix.current_browser = Brave;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_firefox(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_firefox(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_firefox([%s])\n", address);
@@ -5863,18 +5846,18 @@ static bool _webinix_browser_start_firefox(_webinix_window_t * win, const char* 
     _webinix_get_browser_args(win, Firefox, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Firefox;
-        _webinix_core.current_browser = Firefox;
+        _webinix.current_browser = Firefox;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_yandex(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_yandex(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_yandex([%s])\n", address);
@@ -5895,18 +5878,18 @@ static bool _webinix_browser_start_yandex(_webinix_window_t * win, const char* a
     _webinix_get_browser_args(win, Yandex, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Yandex;
-        _webinix_core.current_browser = Yandex;
+        _webinix.current_browser = Yandex;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start_chromium(_webinix_window_t * win, const char* address) {
+static bool _webinix_browser_start_chromium(_webinix_window_t* win, const char* address) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start_chromium([%s])\n", address);
@@ -5927,18 +5910,18 @@ static bool _webinix_browser_start_chromium(_webinix_window_t * win, const char*
     _webinix_get_browser_args(win, Chromium, arg, sizeof(arg));
 
     char full[1024] = {0};
-    WEBUI_SPF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
+    WEBUI_SN_PRINTF_STATIC(full, sizeof(full), "%s%s%s", win->browser_path, arg, address);
 
     if (_webinix_run_browser(win, full) == 0) {
 
         win->current_browser = Chromium;
-        _webinix_core.current_browser = Chromium;
+        _webinix.current_browser = Chromium;
         return true;
     } else
         return false;
 }
 
-static bool _webinix_browser_start(_webinix_window_t * win, const char* address, size_t _browser) {
+static bool _webinix_browser_start(_webinix_window_t* win, const char* address, size_t _browser) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_browser_start([%s], [%zu])\n", address, _browser);
@@ -5955,13 +5938,13 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
     // Find the best web browser to use
     size_t browser = _browser;
     if (browser == AnyBrowser) {
-        browser =
-            _webinix_core.current_browser != 0 ? _webinix_core.current_browser : _webinix_find_the_best_browser(win);
+        browser = _webinix.current_browser != 0 ? 
+        _webinix.current_browser : _webinix_find_the_best_browser(win);
     }
 
     // Current browser used in the last opened window
-    if (browser == AnyBrowser && _webinix_core.current_browser != 0)
-        browser = _webinix_core.current_browser;
+    if (browser == AnyBrowser && _webinix.current_browser != 0)
+        browser = _webinix.current_browser;
 
     // #1 - Chrome - Works perfectly
     // #2 - Edge - Works perfectly like Chrome
@@ -5970,8 +5953,7 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
     // #5 - Brave - Shows a policy notification in the first run
     // #6 - Firefox - Does not support App-Mode like Chrome (Looks not great)
     // #7 - Yandex - Shows a big welcome window in the first run
-    // #8 - Chromium - Some Anti-Malware shows a false alert when using
-    // ungoogled-chromium-binaries
+    // #8 - Chromium - Some Anti-Malware shows a false alert
 
     if (browser != AnyBrowser) {
 
@@ -6003,9 +5985,7 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
                         if (!_webinix_browser_start_vivaldi(win, address))
                             if (!_webinix_browser_start_brave(win, address))
                                 if (!_webinix_browser_start_yandex(win, address))
-                                    if (!_webinix_browser_start_chromium(
-                                            win, address
-                                        ))
+                                    if (!_webinix_browser_start_chromium(win, address))
                                         return false;
         } else
             return false;
@@ -6044,9 +6024,7 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
                         if (!_webinix_browser_start_brave(win, address))
                             if (!_webinix_browser_start_firefox(win, address))
                                 if (!_webinix_browser_start_yandex(win, address))
-                                    if (!_webinix_browser_start_chromium(
-                                            win, address
-                                        ))
+                                    if (!_webinix_browser_start_chromium(win, address))
                                         return false;
         #elif __APPLE__
         // macOS
@@ -6057,9 +6035,7 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
                         if (!_webinix_browser_start_brave(win, address))
                             if (!_webinix_browser_start_firefox(win, address))
                                 if (!_webinix_browser_start_yandex(win, address))
-                                    if (!_webinix_browser_start_chromium(
-                                            win, address
-                                        ))
+                                    if (!_webinix_browser_start_chromium(win, address))
                                         return false;
         #else
         // Linux
@@ -6070,9 +6046,7 @@ static bool _webinix_browser_start(_webinix_window_t * win, const char* address,
                         if (!_webinix_browser_start_brave(win, address))
                             if (!_webinix_browser_start_firefox(win, address))
                                 if (!_webinix_browser_start_yandex(win, address))
-                                    if (!_webinix_browser_start_chromium(
-                                            win, address
-                                        ))
+                                    if (!_webinix_browser_start_chromium(win, address))
                                         return false;
         #endif
     }
@@ -6096,7 +6070,7 @@ static bool _webinix_is_process_running(const char* process_name) {
     if (hSnapshot == INVALID_HANDLE_VALUE)
         return false;
     pe32.dwSize = sizeof(PROCESSENTRY32);
-    if (!Process32First(hSnapshot, & pe32)) {
+    if (!Process32First(hSnapshot,&pe32)) {
         CloseHandle(hSnapshot);
         return false;
     }
@@ -6105,7 +6079,7 @@ static bool _webinix_is_process_running(const char* process_name) {
             isRunning = true;
             break;
         }
-    } while(Process32Next(hSnapshot, & pe32));
+    } while(Process32Next(hSnapshot,&pe32));
     CloseHandle(hSnapshot);
     #elif __linux__
     // Linux
@@ -6118,9 +6092,9 @@ static bool _webinix_is_process_running(const char* process_name) {
         return false; // Unable to open /proc
     while((entry = readdir(dir))) {
         if (entry->d_type == DT_DIR && atoi(entry->d_name) > 0) {
-            WEBUI_SPF_STATIC(status_path, sizeof(status_path), "/proc/%s/status", entry->d_name);
+            WEBUI_SN_PRINTF_STATIC(status_path, sizeof(status_path), "/proc/%s/status", entry->d_name);
             FILE * status_file;
-            WEBUI_FOPEN(status_file, status_path, "r");
+            WEBUI_FILE_OPEN(status_file, status_path, "r");
             if (status_file) {
                 while(fgets(line, sizeof(line), status_file)) {
                     if (strncmp(line, "Name:", 5) == 0) {
@@ -6150,12 +6124,12 @@ static bool _webinix_is_process_running(const char* process_name) {
     };
     struct kinfo_proc * procs = NULL;
     size_t size;
-    if (sysctl(mib, 4, NULL, & size, NULL, 0) < 0)
+    if (sysctl(mib, 4, NULL,&size, NULL, 0) < 0)
         return false; // Failed to get process list size
     procs = (struct kinfo_proc * ) malloc(size);
     if (!procs)
         return false; // Failed to allocate memory for process list
-    if (sysctl(mib, 4, procs, & size, NULL, 0) < 0) {
+    if (sysctl(mib, 4, procs,&size, NULL, 0) < 0) {
         free(procs);
         return false; // Failed to get process list
     }
@@ -6172,7 +6146,7 @@ static bool _webinix_is_process_running(const char* process_name) {
     return isRunning;
 }
 
-static size_t _webinix_find_the_best_browser(_webinix_window_t * win) {
+static size_t _webinix_find_the_best_browser(_webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_find_the_best_browser()\n");
@@ -6185,8 +6159,7 @@ static size_t _webinix_find_the_best_browser(_webinix_window_t * win) {
     // #5 - Brave - Shows a policy notification in the first run
     // #6 - Firefox - Does not support App-Mode like Chrome (Looks not great)
     // #7 - Yandex - Shows a big welcome window in the first run
-    // #8 - Chromium - Some Anti-Malware shows a false alert when using
-    // ungoogled-chromium-binaries
+    // #8 - Chromium - Some Anti-Malware shows a false alert
 
     // To save memory, let's search if a web browser is already running
 
@@ -6250,7 +6223,7 @@ static size_t _webinix_find_the_best_browser(_webinix_window_t * win) {
     return AnyBrowser;
 }
 
-static bool _webinix_show(_webinix_window_t * win, const char* content, size_t browser) {
+static bool _webinix_show(_webinix_window_t* win, struct mg_connection* client, const char* content, size_t browser) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_show([%zu])\n", browser);
@@ -6262,7 +6235,7 @@ static bool _webinix_show(_webinix_window_t * win, const char* content, size_t b
     // Some wrappers do not guarantee pointers stay valid,
     // so, let's make our copy.
     size_t content_len = _webinix_strlen(content);
-    const char* content_cpy = (const char* ) _webinix_malloc(content_len);
+    const char* content_cpy = (const char*)_webinix_malloc(content_len);
     memcpy((char*)content_cpy, content, content_len);
 
     // URL
@@ -6270,7 +6243,7 @@ static bool _webinix_show(_webinix_window_t * win, const char* content, size_t b
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_show() -> URL: [%s]\n", content_cpy);
         #endif
-        return _webinix_show_window(win, content_cpy, WEBUI_SHOW_URL, browser);
+        return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_URL, browser);
     }
     // Embedded HTML
     else if (strstr(content_cpy, "<html") || strstr(content_cpy, "<!DOCTYPE") || strstr(content_cpy, "<!doctype") || strstr(content_cpy, "<!Doctype")) {
@@ -6278,7 +6251,7 @@ static bool _webinix_show(_webinix_window_t * win, const char* content, size_t b
         printf("[Core]\t\t_webinix_show() -> Embedded HTML:\n");
         printf("- - -[HTML]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", content_cpy);
         #endif
-        return _webinix_show_window(win, content_cpy, WEBUI_SHOW_HTML, browser);
+        return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_HTML, browser);
     }
     // File
     else {
@@ -6287,7 +6260,7 @@ static bool _webinix_show(_webinix_window_t * win, const char* content, size_t b
         #endif
         if (content_len > WEBUI_MAX_PATH || strstr(content_cpy, "<"))
             return false;
-        return _webinix_show_window(win, content_cpy, WEBUI_SHOW_FILE, browser);
+        return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_FILE, browser);
     }
 }
 
@@ -6308,7 +6281,7 @@ static int _webinix_tls_initialization(void * ssl_ctx, void * ptr) {
     SSL_CTX_set_security_level(ctx, 0);
 
     // Load Certificate
-    BIO * bio_cert = BIO_new_mem_buf((void * ) _webinix_core.ssl_cert, -1);
+    BIO * bio_cert = BIO_new_mem_buf((void*)_webinix.ssl_cert, -1);
     X509 * cert = PEM_read_bio_X509(bio_cert, NULL, 0, NULL);
     if (cert == NULL) {
         #ifdef WEBUI_LOG
@@ -6328,7 +6301,7 @@ static int _webinix_tls_initialization(void * ssl_ctx, void * ptr) {
     BIO_free(bio_cert);
 
     // Load Key
-    BIO * bio_key = BIO_new_mem_buf((void * ) _webinix_core.ssl_key, -1);
+    BIO * bio_key = BIO_new_mem_buf((void*)_webinix.ssl_key, -1);
     EVP_PKEY * private_key = PEM_read_bio_PrivateKey(bio_key, NULL, 0, NULL);
     if (private_key == NULL) {
         #ifdef WEBUI_LOG
@@ -6366,7 +6339,7 @@ static bool _webinix_tls_generate_self_signed_cert(char* root_cert, char* root_k
         return false;
 
     if (EVP_PKEY_keygen_init(root_ctx) <= 0 || EVP_PKEY_CTX_set_rsa_keygen_bits(root_ctx, bits) <= 0 ||
-        EVP_PKEY_keygen(root_ctx, & root_pkey) <= 0) {
+        EVP_PKEY_keygen(root_ctx,&root_pkey) <= 0) {
         EVP_PKEY_CTX_free(root_ctx);
         return false;
     }
@@ -6426,7 +6399,7 @@ static bool _webinix_tls_generate_self_signed_cert(char* root_cert, char* root_k
     }
 
     if (EVP_PKEY_keygen_init(ctx) <= 0 || EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0 ||
-        EVP_PKEY_keygen(ctx, & pkey) <= 0) {
+        EVP_PKEY_keygen(ctx,&pkey) <= 0) {
         X509_free(root_x509);
         EVP_PKEY_free(root_pkey);
         EVP_PKEY_CTX_free(ctx);
@@ -6494,7 +6467,7 @@ static bool _webinix_tls_generate_self_signed_cert(char* root_cert, char* root_k
 }
 #endif
 
-static bool _webinix_show_window(_webinix_window_t * win, const char* content, int type, size_t browser) {
+static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* client, const char* content, int type, size_t browser) {
 
     #ifdef WEBUI_LOG
     if (type == WEBUI_SHOW_HTML)
@@ -6507,7 +6480,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
     #ifdef WEBUI_TLS
     // TLS
-    if (_webinix_is_empty(_webinix_core.ssl_cert) || _webinix_is_empty(_webinix_core.ssl_key)) {
+    if (_webinix_is_empty(_webinix.ssl_cert) || _webinix_is_empty(_webinix.ssl_key)) {
 
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_show_window() -> Generating self-signed TLS "
@@ -6530,35 +6503,35 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
                 err_buf
             );
             #endif
-            _webinix_free_mem((void * ) root_cert);
-            _webinix_free_mem((void * ) root_key);
-            _webinix_free_mem((void * ) ssl_cert);
-            _webinix_free_mem((void * ) ssl_key);
+            _webinix_free_mem((void*)root_cert);
+            _webinix_free_mem((void*)root_key);
+            _webinix_free_mem((void*)ssl_cert);
+            _webinix_free_mem((void*)ssl_key);
             WEBUI_ASSERT("Generating self-signed TLS certificate failed");
             return false;
         }
 
-        _webinix_core.root_cert = root_cert;
-        _webinix_core.root_key = root_key;
-        _webinix_core.ssl_cert = ssl_cert;
-        _webinix_core.ssl_key = ssl_key;
+        _webinix.root_cert = root_cert;
+        _webinix.root_key = root_key;
+        _webinix.ssl_cert = ssl_cert;
+        _webinix.ssl_key = ssl_key;
 
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_show_window() -> Self-signed SSL/TLS "
             "Certificate:\nRoot:\n");
-        printf("%s\n", (const char* ) _webinix_core.root_cert);
-        printf("%s\nServer:\n", (const char* ) _webinix_core.root_key);
-        printf("%s\n", (const char* ) _webinix_core.ssl_cert);
-        printf("%s\n", (const char* ) _webinix_core.ssl_key);
+        printf("%s\n", (const char*)_webinix.root_cert);
+        printf("%s\nServer:\n", (const char*)_webinix.root_key);
+        printf("%s\n", (const char*)_webinix.ssl_cert);
+        printf("%s\n", (const char*)_webinix.ssl_key);
         #endif
     }
     #endif
 
     // Initialization
     if (win->html != NULL)
-        _webinix_free_mem((void * ) win->html);
+        _webinix_free_mem((void*)win->html);
     if (win->url != NULL)
-        _webinix_free_mem((void * ) win->url);
+        _webinix_free_mem((void*)win->url);
 
     // Get network ports
     if (win->custom_server_port > 0) win->server_port = win->custom_server_port;
@@ -6566,7 +6539,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
     // Generate the server URL
     win->url = (char*)_webinix_malloc(32); // [http][domain][port]
-    WEBUI_SPF_DYN(win->url, 32, WEBUI_HTTP_PROTOCOL "localhost:%zu", win->server_port);
+    WEBUI_SN_PRINTF_DYN(win->url, 32, WEBUI_HTTP_PROTOCOL "localhost:%zu", win->server_port);
 
     // Generate the window URL
     char* window_url = NULL;
@@ -6581,7 +6554,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         // Set window URL
         size_t len = _webinix_strlen(win->url);
         window_url = (char*)_webinix_malloc(len);
-        WEBUI_SCOPY_DYN(window_url, len, win->url);
+        WEBUI_STR_COPY_DYN(window_url, len, win->url);
     } else if (type == WEBUI_SHOW_URL) {
 
         const char* user_url = content;
@@ -6590,7 +6563,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         win->is_embedded_html = true;
         size_t bf_len = (64 + _webinix_strlen(user_url));
         char* refresh = (char*)_webinix_malloc(bf_len);
-        WEBUI_SPF_DYN(refresh, bf_len, "<meta http-equiv=\"refresh\" content=\"0;url=%s\">", user_url);
+        WEBUI_SN_PRINTF_DYN(refresh, bf_len, "<meta http-equiv=\"refresh\" content=\"0;url=%s\">", user_url);
         win->html = refresh;
 
         // Set window URL
@@ -6607,10 +6580,10 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         const char* file_url_encoded = _webinix_url_encode(user_file);
         size_t bf_len = (64 + _webinix_strlen(file_url_encoded));
         char* url_encoded = (char*)_webinix_malloc(bf_len); // [http][domain][port] [file_encoded]
-        WEBUI_SPF_DYN(url_encoded, bf_len, WEBUI_HTTP_PROTOCOL "localhost:%zu/%s", 
+        WEBUI_SN_PRINTF_DYN(url_encoded, bf_len, WEBUI_HTTP_PROTOCOL "localhost:%zu/%s", 
             win->server_port, file_url_encoded);
-        _webinix_free_mem((void * ) file_url_encoded);
-        _webinix_free_mem((void * ) user_file);
+        _webinix_free_mem((void*)file_url_encoded);
+        _webinix_free_mem((void*)user_file);
 
         // Set window URL
         window_url = url_encoded;
@@ -6623,20 +6596,20 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
         // Prioritize the server thread if we
         // knows that there is UIs running
-        if (_webinix_core.ui) {
+        if (_webinix.ui) {
             
             // New server thread
             #ifdef _WIN32
-            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void * ) win, 0, NULL);
+            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void*)win, 0, NULL);
             win->server_thread = thread;
             if (thread != NULL)
                 CloseHandle(thread);
             #else
             pthread_t thread;
-            pthread_create( & thread, NULL, & _webinix_server_thread, (void * ) win);
+            pthread_create(&thread, NULL,&_webinix_server_thread, (void*)win);
             pthread_detach(thread);
             win->server_thread = thread;
-            #endif 
+            #endif
         }
 
         // New WebView
@@ -6645,13 +6618,14 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
             // Trying to use WebView
             if (_webinix_wv_show(win, window_url)) {
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_show_window() -> WebView Found.\n");
+                printf("[Core]\t\t_webinix_show_window() -> WebView Found\n");
                 #endif
+                win->current_browser = WebView;
                 runWebView = true;
             }
             else {
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_show_window() -> WebView Not Found.\n");
+                printf("[Core]\t\t_webinix_show_window() -> WebView Not Found\n");
                 #endif
             }
         }
@@ -6662,61 +6636,61 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
             if (browser != NoBrowser) {
                 if (!_webinix_browser_start(win, window_url, browser)) {
                     #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_show_window() -> App-mode browser failed.\n");
+                    printf("[Core]\t\t_webinix_show_window() -> App-mode browser failed\n");
                     #endif
                     // Opening App-mode browser failed
                     // let's try opening UI in native default browser
                     if (browser == AnyBrowser && _webinix_open_url_native(window_url)) {
                         #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_show_window() -> Native browser succeeded.\n");
+                        printf("[Core]\t\t_webinix_show_window() -> Native browser succeeded\n");
                         #endif
                         runBrowser = true;
                     }
                     else {
                         #ifdef WEBUI_LOG
-                        printf("[Core]\t\t_webinix_show_window() -> Native browser failed.\n");
+                        printf("[Core]\t\t_webinix_show_window() -> Native browser failed\n");
                         #endif
                     }
                 }
                 else {
                     #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_show_window() -> App-mode browser succeeded.\n");
+                    printf("[Core]\t\t_webinix_show_window() -> App-mode browser succeeded\n");
                     #endif
                     runBrowser = true;
                 }
             } else {
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_show_window() -> Starting server only mode (NoBrowser).\n");
+                printf("[Core]\t\t_webinix_show_window() -> Starting server only mode (NoBrowser)\n");
                 #endif
                 runBrowser = true;
             }
         }
 
-        _webinix_free_mem((void * ) window_url);
+        _webinix_free_mem((void*)window_url);
         if (!runWebView && !runBrowser) {
             // Browser and WebView are not available
-            _webinix_free_mem((void * ) win->html);
-            _webinix_free_mem((void * ) win->url);
+            _webinix_free_mem((void*)win->html);
+            _webinix_free_mem((void*)win->url);
             _webinix_free_port(win->server_port);
             win->server_port = 0;
             return false;
         }
 
-        if (!_webinix_core.ui) {
+        if (!_webinix.ui) {
 
             // Let the wait() knows that this app
             // has atleast one window to wait for
-            _webinix_core.ui = true;
+            _webinix.ui = true;
 
             // New server thread
             #ifdef _WIN32
-            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void * ) win, 0, NULL);
+            HANDLE thread = CreateThread(NULL, 0, _webinix_server_thread, (void*)win, 0, NULL);
             win->server_thread = thread;
             if (thread != NULL)
                 CloseHandle(thread);
             #else
             pthread_t thread;
-            pthread_create( & thread, NULL, & _webinix_server_thread, (void * ) win);
+            pthread_create(&thread, NULL,&_webinix_server_thread, (void*)win);
             pthread_detach(thread);
             win->server_thread = thread;
             #endif
@@ -6724,11 +6698,7 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 
     } else {
 
-        // Refresh an existing running window
-
-        win->html_handled = false;
-        win->server_handled = false;
-        win->bridge_handled = false;
+        // Refresh an existing running window (All connected clients)
 
         // Packet Protocol Format:
         // [...]
@@ -6736,43 +6706,55 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
         // [URL]
 
         // Send the packet
-        _webinix_send(
-            win, win->token, 0, WEBUI_CMD_NAVIGATION, (const char* ) window_url, _webinix_strlen(window_url)
-        );
+        if (client) {
+            // Update single packet
+            _webinix_send_client(
+                win, client, 0, WEBUI_CMD_NAVIGATION, 
+                (const char*)window_url, _webinix_strlen(window_url)
+            );
+        }
+        else {
+            // Update all windows
+            _webinix_send_all(
+                win, 0, WEBUI_CMD_NAVIGATION, 
+                (const char*)window_url, _webinix_strlen(window_url)
+            );
+        }
 
         // Free
-        _webinix_free_mem((void * ) window_url);
+        _webinix_free_mem((void*)window_url);
     }
 
     // Wait for window connection
-    if (_webinix_core.config.show_wait_connection) {
+    if (_webinix.config.show_wait_connection) {
 
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_show_window() -> Waiting for window connection\n");
         #endif
 
-        if ((_webinix_core.is_webview) || (browser != NoBrowser)) {
+        if ((_webinix.is_webview) || (browser != NoBrowser)) {
 
-            size_t timeout = (_webinix_core.startup_timeout > 0 ? _webinix_core.startup_timeout : WEBUI_DEF_TIMEOUT);
+            size_t timeout = (_webinix.startup_timeout > 0 ? 
+                _webinix.startup_timeout : WEBUI_DEF_TIMEOUT);
             _webinix_timer_t timer;
-            _webinix_timer_start( & timer);
+            _webinix_timer_start(&timer);
             for (;;) {
 
-                _webinix_sleep(10);            
+                _webinix_sleep(10);
 
                 // Process WebView if any
-                if (_webinix_core.is_webview) {
+                if (_webinix.is_webview) {
                     #ifdef _WIN32
                     // ...
                     #elif __linux__
-                    if (_webinix_core.is_webview) {
+                    if (_webinix.is_webview) {
                         while (gtk_events_pending()) {
                             gtk_main_iteration_do(0);
                         }
                     }
                     #else
-                    if (!_webinix_core.is_wkwebview_main_run) {
-                        if (_webinix_core.is_webview) {
+                    if (!_webinix.is_wkwebview_main_run) {
+                        if (_webinix.is_webview) {
                             _webinix_macos_wv_process();
                         }
                     }
@@ -6812,11 +6794,12 @@ static bool _webinix_show_window(_webinix_window_t * win, const char* content, i
 }
 
 static void _webinix_window_event(
-    _webinix_window_t * win, int event_type, char* element, size_t event_number, char* webinix_internal_id
-) {
+    _webinix_window_t* win, size_t client_id, int event_type,
+    char* element, size_t event_number) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_window_event([%s], [%s])\n", webinix_internal_id, element);
+    printf("[Core]\t\t_webinix_window_event([%zu], [%zu], [%s])\n", 
+        win->window_number, client_id, element);
     #endif
 
     // New Event
@@ -6825,81 +6808,77 @@ static void _webinix_window_event(
     e.event_type = event_type;
     e.element = element;
     e.event_number = event_number;
+    e.client_id = client_id;
 
     // Check for all events-bind functions
-    if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) && win->has_events) {
-
-        char* events_id = _webinix_generate_internal_id(win, "");
-        size_t events_cb_index = _webinix_get_cb_index(events_id);
-        _webinix_free_mem((void * ) events_id);
-
-        if (events_cb_index > 0 && _webinix_core.cb[events_cb_index] != NULL) {
-
+    if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) && win->has_all_events) {
+        size_t events_cb_index = 0;
+        bool exist = _webinix_get_cb_index(win, "", &events_cb_index);
+        if (exist && win->cb[events_cb_index] != NULL) {
             // Call user all-events cb
             #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_window_event() -> Calling all-events user "
-                "callback\n[Call]\n");
+            printf("[Core]\t\t_webinix_window_event() -> Calling all-events user callback\n");
+            printf("[Call]\n");
             #endif
             e.bind_id = events_cb_index;
-            _webinix_core.cb[events_cb_index](&e);
+            win->cb[events_cb_index](&e);
         }
     }
 
     if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE)) {
-
         // Check for the regular bind functions
         if (!_webinix_is_empty(element)) {
-
-            size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
-            if (cb_index > 0 && _webinix_core.cb[cb_index] != NULL) {
-
+            size_t cb_index = 0;
+            bool exist = _webinix_get_cb_index(win, element, &cb_index);
+            if (exist && win->cb[cb_index] != NULL) {
                 // Call user cb
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t_webinix_window_event() -> Calling user callback\n[Call]\n");
+                printf("[Core]\t\t_webinix_window_event() -> Calling user callback\n");
+                printf("[Call]\n");
                 #endif
                 e.bind_id = cb_index;
-                _webinix_core.cb[cb_index](&e);
+                win->cb[cb_index](&e);
             }
         }
     }
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_window_event() -> Finished.\n");
+    printf("[Core]\t\t_webinix_window_event() -> Finished\n");
     #endif
 }
 
-static void _webinix_ws_send(_webinix_window_t * win, char* packet, size_t packets_size) {
+static void _webinix_send_client_ws(_webinix_window_t* win, struct mg_connection* client,
+    size_t client_id, char* packet, size_t packets_size) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_ws_send()\n");
-    printf("[Core]\t\t_webinix_ws_send() -> Packet size: %zu bytes \n", packets_size);
-    printf("[Core]\t\t_webinix_ws_send() -> Packet hex : [ ");
-    _webinix_print_hex(packet, packets_size);
+    printf("[Core]\t\t_webinix_send_client_ws()\n");
+    printf("[Core]\t\t_webinix_send_client_ws() -> Client #%zu\n", client_id);
+    printf("[Core]\t\t_webinix_send_client_ws() -> Packet size: %zu bytes \n", packets_size);
+    printf("[Core]\t\t_webinix_send_client_ws() -> Packet hex : [ ");
+        _webinix_print_hex(packet, packets_size);
     printf("]\n");
     #endif
 
-    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE) || packet == NULL || packets_size < WEBUI_PROTOCOL_SIZE)
+    if (win == NULL || client == NULL) {
+        WEBUI_ASSERT("_webinix_send_client_ws() null ptr");
+    }
+
+    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE) || packet == NULL ||
+        packets_size < WEBUI_PROTOCOL_SIZE)
         return;
 
     int ret = 0;
-
     if (win->window_number > 0 && win->window_number < WEBUI_MAX_IDS) {
-
-        struct mg_connection * conn = win->mg_connection;
-
-        if (conn != NULL) {
-
+        if (client != NULL) {
             // Mutex
-            _webinix_mutex_lock( & _webinix_core.mutex_send);
-
-            ret = mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_BINARY, packet, packets_size);
-
-            _webinix_mutex_unlock( & _webinix_core.mutex_send);
+            _webinix_mutex_lock(&_webinix.mutex_send);
+            ret = mg_websocket_write(client, MG_WEBSOCKET_OPCODE_BINARY, packet, packets_size);
+            _webinix_mutex_unlock(&_webinix.mutex_send);
         }
     }
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_ws_send() -> %d bytes sent.\n", ret);
+    printf("[Core]\t\t_webinix_send_client_ws() -> %d bytes sent.\n", ret);
     #endif
 }
 
@@ -6923,8 +6902,8 @@ static void _webinix_free_port(size_t port) {
     #endif
 
     for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.used_ports[i] == port) {
-            _webinix_core.used_ports[i] = 0;
+        if (_webinix.used_ports[i] == port) {
+            _webinix.used_ports[i] = 0;
             break;
         }
     }
@@ -6940,10 +6919,10 @@ static size_t _webinix_get_free_port(void) {
 
     for (size_t i = WEBUI_MIN_PORT; i <= WEBUI_MAX_PORT; i++) {
 
-        // Search [port] in [_webinix_core.used_ports]
+        // Search [port] in [_webinix.used_ports]
         bool found = false;
         for (size_t j = 0; j < WEBUI_MAX_IDS; j++) {
-            if (_webinix_core.used_ports[j] == port) {
+            if (_webinix.used_ports[j] == port) {
                 found = true;
                 break;
             }
@@ -6964,8 +6943,8 @@ static size_t _webinix_get_free_port(void) {
 
     // Add
     for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
-        if (_webinix_core.used_ports[i] == 0) {
-            _webinix_core.used_ports[i] = port;
+        if (_webinix.used_ports[i] == 0) {
+            _webinix.used_ports[i] = port;
             break;
         }
     }
@@ -6975,10 +6954,10 @@ static size_t _webinix_get_free_port(void) {
 
 static void _webinix_init(void) {
 
-    if (_webinix_core.initialized)
+    if (_webinix.initialized)
         return;
-    memset( & _webinix_core, 0, sizeof(_webinix_core_t));
-    _webinix_core.initialized = true;
+    memset(&_webinix, 0, sizeof(_webinix_core_t));
+    _webinix.initialized = true;
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\tWebinix v"
@@ -6997,12 +6976,12 @@ static void _webinix_init(void) {
     #endif
 
     // Initializing core
-    _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
-    _webinix_core.executable_path = _webinix_get_current_path();
-    _webinix_core.default_server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
+    _webinix.startup_timeout = WEBUI_DEF_TIMEOUT;
+    _webinix.executable_path = _webinix_get_current_path();
+    _webinix.default_server_root_path = (char*)_webinix_malloc(WEBUI_MAX_PATH);
 
     // Initializing configs
-    _webinix_core.config.show_wait_connection = true;
+    _webinix.config.show_wait_connection = true;
 
     // Initializing server services
     #ifdef WEBUI_TLS
@@ -7013,28 +6992,23 @@ static void _webinix_init(void) {
     #endif
 
     // Initializing mutex
-    _webinix_mutex_init( & _webinix_core.mutex_server_start);
-    _webinix_mutex_init( & _webinix_core.mutex_send);
-    _webinix_mutex_init( & _webinix_core.mutex_receive);
-    _webinix_mutex_init( & _webinix_core.mutex_wait);
-    _webinix_mutex_init( & _webinix_core.mutex_bridge);
-    _webinix_mutex_init( & _webinix_core.mutex_js_run);
-    _webinix_mutex_init( & _webinix_core.mutex_win_connect);
-    _webinix_mutex_init( & _webinix_core.mutex_exit_now);
-    _webinix_mutex_init( & _webinix_core.mutex_webview_stop);
-    _webinix_condition_init( & _webinix_core.condition_wait);
-
-    // // Determine whether the current device
-    // // uses little-endian or big-endian representation
-    // uint32_t i = 1;
-    // unsigned char* c = (unsigned char*)&i;
-    // if (*c)
-    //     _webinix_core.little_endian = true;
+    _webinix_mutex_init(&_webinix.mutex_server_start);
+    _webinix_mutex_init(&_webinix.mutex_send);
+    _webinix_mutex_init(&_webinix.mutex_receive);
+    _webinix_mutex_init(&_webinix.mutex_wait);
+    _webinix_mutex_init(&_webinix.mutex_bridge);
+    _webinix_mutex_init(&_webinix.mutex_js_run);
+    _webinix_mutex_init(&_webinix.mutex_win_connect);
+    _webinix_mutex_init(&_webinix.mutex_exit_now);
+    _webinix_mutex_init(&_webinix.mutex_webview_stop);
+    _webinix_mutex_init(&_webinix.mutex_http_handler);
+    _webinix_mutex_init(&_webinix.mutex_client);
+    _webinix_condition_init(&_webinix.condition_wait);
 }
 
 static const char* _webinix_url_encode(const char* str) {
 
-    #ifdef WEBUI_LOG
+    #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_url_encode()\n");
     #endif
 
@@ -7045,82 +7019,67 @@ static const char* _webinix_url_encode(const char* str) {
         return NULL;
 
     char* pOutput = encoded;
-    while( * str) {
-        unsigned char byte = (unsigned char)( * str);
+    while(*str) {
+        unsigned char byte = (unsigned char)(*str);
         if (isalnum(byte) || byte == '-' || byte == '_' || byte == '.' || byte == '~') {
             * pOutput++ = byte;
         } else {
             * pOutput++ = '%';
             * pOutput++ = hex[byte >> 4];
-            * pOutput++ = hex[byte & 15];
+            * pOutput++ = hex[byte&15];
         }
         str++;
     }
 
-    return (const char* ) encoded;
+    return (const char*)encoded;
 }
 
-static size_t _webinix_get_cb_index(char* webinix_internal_id) {
+static bool _webinix_get_cb_index(_webinix_window_t* win, char* element, size_t* id) {
 
-    _webinix_mutex_lock( & _webinix_core.mutex_bridge);
+    _webinix_mutex_lock(&_webinix.mutex_bridge);
 
-    #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_get_cb_index([%s])\n", webinix_internal_id);
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_get_cb_index([%zu])\n", win->window_number);
+    printf("[Core]\t\t_webinix_get_cb_index() -> Element: [%s]\n", element);
     #endif
 
-    if (webinix_internal_id != NULL) {
-
-        for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-
-            if (_webinix_core.html_elements[i] != NULL && !_webinix_is_empty(_webinix_core.html_elements[i])) {
-                if (strcmp(_webinix_core.html_elements[i], webinix_internal_id) == 0) {
-                    _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
-                    return i;
+    // Search
+    if (element != NULL) {
+        for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+            if (win->html_elements[i] != NULL) {
+                if (strcmp(win->html_elements[i], element) == 0) {
+                    #ifdef WEBUI_LOG_VERBOSE
+                    printf("[Core]\t\t_webinix_get_cb_index() -> Found at %d\n", i);
+                    #endif
+                    _webinix_mutex_unlock(&_webinix.mutex_bridge);
+                    *id = i;
+                    return true;
                 }
             }
         }
     }
 
-    _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
-    return 0;
-}
-
-static size_t _webinix_set_cb_index(char* webinix_internal_id) {
-
-    _webinix_mutex_lock( & _webinix_core.mutex_bridge);
-
-    #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_set_cb_index([%s])\n", webinix_internal_id);
+    #ifdef WEBUI_LOG_VERBOSE
+    printf("[Core]\t\t_webinix_get_cb_index() -> Not found\n");
     #endif
 
-    // Add
-    for (size_t i = 1; i < WEBUI_MAX_IDS; i++) {
-
-        if (_webinix_is_empty(_webinix_core.html_elements[i])) {
-
-            _webinix_core.html_elements[i] = webinix_internal_id;
-            _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
-            return i;
-        }
-    }
-
-    _webinix_mutex_unlock( & _webinix_core.mutex_bridge);
-    return 0;
+    _webinix_mutex_unlock(&_webinix.mutex_bridge);
+    return false;
 }
 
 #ifdef WEBUI_LOG
 static void _webinix_print_hex(const char* data, size_t len) {
     for (size_t i = 0; i < len; i++) {
-        printf("0x%02X ", (unsigned char) * data);
+        printf("0x%02X ", (unsigned char)* data);
         data++;
     }
 }
 static void _webinix_print_ascii(const char* data, size_t len) {
     for (size_t i = 0; i < len; i++) {
-        if ((unsigned char) * data == 0x00)
+        if ((unsigned char)* data == 0x00)
             putchar(0xCF); // ¤
         else
-            printf("%c", (unsigned char) * data);
+            printf("%c", (unsigned char)* data);
         data++;
     }
 }
@@ -7128,83 +7087,224 @@ static void _webinix_print_ascii(const char* data, size_t len) {
 
 // HTTP Server
 
-static void _webinix_http_send(struct mg_connection * conn, const char* mime_type, const char* body) {
+static void _webinix_http_send_header(
+    _webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, size_t body_len, bool cache) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_http_send()\n");
+    printf("[Core]\t\t_webinix_http_send_header([%zu])\n", win->window_number);
     #endif
 
-    size_t len = _webinix_strlen(body);
+    const char* no_cache = "no-cache, no-store, must-revalidate, private, max-age=0";
+    const char* with_cache = "public, max-age=31536000";
+    const char* cache_header = (cache? with_cache : no_cache);
 
-    if (len < 1)
-        return;
+    // Authentification Cookies
+    bool set_cookie = false;
+    if (!_webinix.config.multi_client) {
+        // Separated cookie for each browser
+        if (!_webinix.auth_cookie_set[win->current_browser]) {
+            // This is the first UI access.
+            // Let's set the auth cookie and process the request.
+            set_cookie = true;
+            _webinix.auth_cookie_set[win->current_browser] = true;
+            _webinix_generate_cookie(_webinix.auth_cookie[win->current_browser], WEBUI_AUTH_COOKIE);
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_http_send() -> New auth cookie [%s]\n",
+                _webinix.auth_cookie[win->current_browser]);
+            #endif
+        }
+    }
 
-    // Send header
-    mg_send_http_ok(
-        conn, // 200
-        mime_type, len
-    );
+    // [header][body]
+    size_t buffer_len = (128 + body_len);
+    char* buffer = (char*)_webinix_malloc(buffer_len);
+    int to_send = 0;
+    if (set_cookie) {
+        // Header with auth cookie
+        to_send = WEBUI_SN_PRINTF_DYN(buffer, buffer_len,
+            "HTTP/1.1 200 OK\r\n"
+            "Set-Cookie: webinix_auth=%s; Path=/; HttpOnly\r\n"
+            "Cache-Control: %s\r\n"
+            "Content-Type: %s\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n",
+            _webinix.auth_cookie[win->current_browser],
+            cache_header, mime_type, body_len
+        );
+    }
+    else {
+        // Header without auth cookie
+        to_send = WEBUI_SN_PRINTF_DYN(buffer, buffer_len,
+            "HTTP/1.1 200 OK\r\n"
+            "Cache-Control: %s\r\n"
+            "Content-Type: %s\r\n"
+            "Content-Length: %zu\r\n"
+            "Connection: close\r\n\r\n",
+            cache_header, mime_type, body_len
+        );
+    }
 
-    // Send body
-    mg_write(conn, body, len);
+    // Send
+    mg_write(client, buffer, to_send);
+    _webinix_free_mem((void*)buffer);
 }
 
-static void _webinix_http_send_error_page(struct mg_connection * conn, const char* body, int status) {
+static void _webinix_http_send_file(
+    _webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, const char* path, bool cache) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_http_send_error_page()\n");
+    printf("[Core]\t\t_webinix_http_send_file([%zu])\n", win->window_number);
+    #endif
+
+    // Open the file
+    FILE* file = NULL;
+    if (WEBUI_FILE_OPEN(file, path, "rb") != 0 || !file) {
+        #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_http_send_file() -> Can't open file [%s]\n", path);
+        #endif
+        return;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    size_t file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Send header
+    _webinix_http_send_header(win, client, mime_type, file_size, cache);
+
+    // Send body
+    mg_send_file_body(client, path);
+}
+
+static void _webinix_http_send(
+    _webinix_window_t* win, struct mg_connection* client,
+    const char* mime_type, const char* body, size_t body_len, bool cache) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_http_send([%zu])\n", win->window_number);
     #endif
 
     // Send header
-    mg_response_header_start(conn, status);
-    mg_response_header_add(conn, "Content-Type", "text/html; charset=utf-8", -1);
-    mg_response_header_add(conn, "Cache-Control", "no-cache, no-store, must-revalidate, private, max-age=0", -1);
-    mg_response_header_add(conn, "Pragma", "no-cache", -1);
-    mg_response_header_add(conn, "Expires", "0", -1);
-    mg_response_header_send(conn);
+    _webinix_http_send_header(win, client, mime_type, body_len, cache);
 
     // Send body
-    mg_write(conn, body, _webinix_strlen(body));
+    mg_write(client, body, body_len);
+}
+
+static void _webinix_http_send_error(struct mg_connection* client, const char* body, int status) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_http_send_error()\n");
+    #endif
+
+    // [header][body]
+    int to_send = 0;
+    size_t body_len = _webinix_strlen(body);
+    size_t buffer_len = (512 + body_len);
+    char* buffer = (char*)_webinix_malloc(buffer_len);
+    to_send = WEBUI_SN_PRINTF_DYN(buffer, buffer_len,
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        "Cache-Control: no-cache, no-store, must-revalidate, private, max-age=0\r\n"
+        "Pragma: no-cache\r\n"
+        "Expires: 0\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n\r\n%s",
+        body_len, body
+    );
+
+    // Send
+    mg_write(client, buffer, to_send);
+    _webinix_free_mem((void*)buffer);
 }
 
 #ifdef WEBUI_LOG
-static int _webinix_http_log(const struct mg_connection * conn, const char* message) {
-    (void)conn;
+static int _webinix_http_log(const struct mg_connection* client, const char* message) {
+    (void)client;
     printf("[Core]\t\t_webinix_http_log()\n");
     printf("[Core]\t\t_webinix_http_log() -> Log: %s.\n", message);
     return 1;
 }
 #endif
 
-static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
+static void _webinix_generate_cookie(char* cookie, size_t length) {
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    size_t charset_size = sizeof(charset) - 1;
+    for (size_t i = 0; i < length - 1; i++) {
+        uint32_t random_value = _webinix_generate_random_uint32();
+        int key = random_value % charset_size;
+        cookie[i] = charset[key];
+    }
+    cookie[length - 1] = '\0';
+}
+
+static bool _webinix_check_auth_cookie(_webinix_window_t *win, char* full_cookies) {
+    if (_webinix_is_empty(full_cookies))
+        return false;
+    char auth_cookie[WEBUI_AUTH_COOKIE * 2];
+    WEBUI_SN_PRINTF_STATIC(auth_cookie, sizeof(auth_cookie), "webinix_auth=%s", _webinix.auth_cookie[win->current_browser]);
+    return (strstr(full_cookies, auth_cookie) != NULL);
+}
+
+static int _webinix_http_handler(struct mg_connection* client, void * _win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_http_handler()\n");
     #endif
 
+    // Mutex
+    _webinix_mutex_lock(&_webinix.mutex_http_handler);
+
     // Get the window object
-    _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
+    _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL) {
+        _webinix_mutex_unlock(&_webinix.mutex_http_handler);
         return 500; // Internal Server Error
+    }
 
     // Initializing
-    _webinix_core.server_handled = true; // Main app wait
-    win->server_handled = true; // Window server wait
     int http_status_code = 200;
-
-    const struct mg_request_info * ri = mg_get_request_info(conn);
+    const struct mg_request_info * ri = mg_get_request_info(client);
     const char* url = ri->local_uri;
 
     if (strcmp(ri->request_method, "GET") == 0) {
 
         // GET
 
-        // Let the server thread wait
-        // more time for WS connection
-        // as it may the UI have many
-        // files to handel before first
-        // WS connection get established
-        win->file_handled = true;
+        // Authorization
+        if (!_webinix.config.multi_client) {
+            if (_webinix.auth_cookie_set[win->current_browser]) {
+                // This is not the first UI access. And multi-client is disabled.
+                // Let's check the cookies to get authorization. This is to prevent
+                // non-authorized requests.
+                const char* Cookie = mg_get_header(client, "Cookie");
+                #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_http_handler() -> Browser ID [%d]\n", win->current_browser);
+                printf("[Core]\t\t_webinix_http_handler() -> Auth cookie [%s]\n", _webinix.auth_cookie[win->current_browser]);
+                printf("[Core]\t\t_webinix_http_handler() -> Client cookie [%s]\n", Cookie);
+                #endif
+                if (!_webinix_check_auth_cookie(win, Cookie)) {
+                    // Invalid auth cookie
+                    #ifdef WEBUI_LOG
+                    printf("[Core]\t\t_webinix_http_handler() -> 403 Forbidden\n");
+                    #endif
+                    _webinix_http_send_error(client, webinix_html_served, 403);
+                    _webinix_mutex_unlock(&_webinix.mutex_http_handler);
+                    return 403;
+                }
+                else {
+                    #ifdef WEBUI_LOG
+                    printf("[Core]\t\t_webinix_http_handler() -> Authentication OK\n");
+                    #endif
+                }
+            }
+        }
+
+        // Let the server thread waits more time for `webinix.js`
+        win->wait = true;
 
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_http_handler() -> GET [%s]\n", url);
@@ -7219,23 +7319,22 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
             #endif
 
             // Generate JavaScript bridge
-            const char* js = _webinix_generate_js_bridge(win);
+            const char* js = _webinix_generate_js_bridge(win, client);
 
             if (js != NULL) {
-
-                // Send
-                _webinix_http_send(
-                    conn, // 200
-                    "application/javascript", js
-                );
-
-                _webinix_free_mem((void * ) js);
+                // Send 200
+                _webinix_http_send(win, client, "application/javascript", js, _webinix_strlen(js), false);
+                _webinix_free_mem((void*)js);
             } else {
-
-                // non-authorized request to `webinix.js`
-                _webinix_http_send_error_page(conn, webinix_html_res_not_available, 404);
+                // Non-authorized request to `webinix.js`, like requesting twice
+                // Send 200 (Empty)
+                #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_http_handler() -> Non-authorized request to webinix.js\n");
+                #endif
+                _webinix_http_send(win, client, "application/javascript", "", 0, false);
             }
-        } else if (strcmp(url, "/") == 0) {
+        }
+        else if (strcmp(url, "/") == 0) {
 
             // [/]
 
@@ -7243,35 +7342,14 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
 
                 // Main HTML
 
-                if (win->html_handled) {
+                #ifdef WEBUI_LOG
+                printf("[Core]\t\t_webinix_http_handler() -> Embedded Index HTML\n");
+                #endif
 
-                    // Main HTML already handled.
-                    // Forbidden 403
-
-                    #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_http_handler() -> Embedded Index HTML Already Handled (403)\n");
-                    #endif
-
-                    _webinix_http_send_error_page(conn, webinix_html_served, 403);
-
-                    http_status_code = 403;
-                } else {
-
-                    // Send main HTML
-
-                    win->html_handled = true;
-
-                    #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_http_handler() -> Embedded Index HTML\n");
-                    #endif
-
-                    // Send
-                    _webinix_http_send(
-                        conn, // 200
-                        "text/html", win->html
-                    );
-                }
-            } else {
+                // Send 200
+                _webinix_http_send(win, client, "text/html", win->html, _webinix_strlen(win->html), false);
+            }
+            else {
 
                 // Looking for index file and redirect
 
@@ -7281,23 +7359,25 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
                 size_t bf_len = (_webinix_strlen(win->server_root_path) + 1 + 24);
                 char* index_path = (char*)_webinix_malloc(bf_len);
                 for (int i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
-                    WEBUI_SPF_DYN(index_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, index_files[i]);
+                    WEBUI_SN_PRINTF_DYN(index_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, index_files[i]);
                     if (_webinix_file_exist(index_path)) {
                         #ifdef WEBUI_LOG
                         printf("[Core]\t\t_webinix_http_handler() -> 302 Redirecting to [%s]\n", index_files[i]);
                         #endif
-                        mg_send_http_redirect(conn, index_files[i], 302);
+                        mg_send_http_redirect(client, index_files[i], 302);
                         _webinix_free_mem((void*)index_path);
+                        _webinix_mutex_unlock(&_webinix.mutex_http_handler);
                         return 302;
                     }
                 }
 
                 // No index file is found in this folder
                 _webinix_free_mem((void*)index_path);
-                _webinix_http_send_error_page(conn, webinix_html_res_not_available, 404);
+                _webinix_http_send_error(client, webinix_html_res_not_available, 404);
                 http_status_code = 404;
             }
-        } else if (strcmp(url, "/favicon.ico") == 0 || strcmp(url, "/favicon.svg") == 0) {
+        }
+        else if (strcmp(url, "/favicon.ico") == 0 || strcmp(url, "/favicon.svg") == 0) {
 
             // Favicon
 
@@ -7305,30 +7385,27 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
 
                 // Custom user icon
 
-                // User icon
-                _webinix_http_send(
-                    conn, // 200
-                    win->icon_type, win->icon
-                );
-            } else if (_webinix_file_exist_mg(win, conn)) {
+                // User icon 200
+                _webinix_http_send(win, client, win->icon_type, win->icon, _webinix_strlen(win->icon), false);
+            }
+            else if (_webinix_file_exist_mg(win, client)) {
 
                 // Local icon file
-                http_status_code = _webinix_serve_file(win, conn);
-            } else {
+                http_status_code = _webinix_serve_file(win, client);
+            }
+            else {
 
                 // Default embedded icon
 
                 if (strcmp(url, "/favicon.ico") == 0) {
 
-                    mg_send_http_redirect(conn, "favicon.svg", 302);
+                    mg_send_http_redirect(client, "favicon.svg", 302);
                     http_status_code = 302;
-                } else {
+                }
+                else {
 
-                    // Default icon
-                    _webinix_http_send(
-                        conn, // 200
-                        webinix_def_icon_type, webinix_def_icon
-                    );
+                    // Default icon 200
+                    _webinix_http_send(win, client, webinix_def_icon_type, webinix_def_icon, _webinix_strlen(webinix_def_icon), false);
                 }
             }
         } else {
@@ -7350,19 +7427,20 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
                 size_t bf_len = (_webinix_strlen(folder_path) + 1 + 24);
                 char* index_path = (char*)_webinix_malloc(bf_len);
                 for (int i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
-                    WEBUI_SPF_DYN(index_path, bf_len, "%s%s%s", folder_path, webinix_sep, index_files[i]);
+                    WEBUI_SN_PRINTF_DYN(index_path, bf_len, "%s%s%s", folder_path, webinix_sep, index_files[i]);
                     if (_webinix_file_exist(index_path)) {
                         // [URL][/][Index Name]
                         size_t redirect_len = (_webinix_strlen(url) + 1 + 24);
                         char* redirect_url = (char*)_webinix_malloc(bf_len);
-                        WEBUI_SPF_DYN(redirect_url, redirect_len, "%s%s%s", url, "/", index_files[i]);
+                        WEBUI_SN_PRINTF_DYN(redirect_url, redirect_len, "%s%s%s", url, "/", index_files[i]);
                         #ifdef WEBUI_LOG
                         printf("[Core]\t\t_webinix_http_handler() -> 302 Redirecting to [%s]\n", redirect_url);
                         #endif
-                        mg_send_http_redirect(conn, redirect_url, 302);
+                        mg_send_http_redirect(client, redirect_url, 302);
                         _webinix_free_mem((void*)redirect_url);
                         _webinix_free_mem((void*)folder_path);
                         _webinix_free_mem((void*)index_path);
+                        _webinix_mutex_unlock(&_webinix.mutex_http_handler);
                         return 302;
                     }
                 }
@@ -7370,41 +7448,50 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
                 // No index file is found in this folder
                 _webinix_free_mem((void*)folder_path);
                 _webinix_free_mem((void*)index_path);
-                _webinix_http_send_error_page(conn, webinix_html_res_not_available, 404);
+                _webinix_http_send_error(client, webinix_html_res_not_available, 404);
                 http_status_code = 404;
             }
             else {
 
                 // [/file]
 
-                bool html = false;
-                const char* extension = _webinix_get_extension(url);
-                if (strcmp(extension, "html") == 0 || strcmp(extension, "htm") == 0)
-                    html = true;
-
-                if (html)
-                    win->html_handled = true;
-
+                bool script = false;
                 if (win->runtime != None) {
+                    const char* extension = _webinix_get_extension(url);
+                    const char* index_extensions[] = {
+                        "js", "ts"
+                    };
+                    for (int i = 0; i < (sizeof(index_extensions) / sizeof(index_extensions[0])); i++) {
+                        if (strcmp(extension, index_extensions[i]) == 0) {
+                            script = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (script) {
 
                     #ifdef WEBUI_LOG
-                    printf(
-                        "[Core]\t\t_webinix_http_handler() -> Trying to interpret locaLfile (Runtime = %zu)\n",
-                        win->runtime
-                    );
+                    printf("[Core]\t\t_webinix_http_handler() -> Interpret local script file\n");
                     #endif
 
-                    http_status_code = _webinix_interpret_file(win, conn, NULL);
-                } else {
+                    // Serve as a script file to be interpreted by
+                    // an external interpreter (Deno, Nodejs)
+                    http_status_code = _webinix_interpret_file(win, client, NULL);
+                }
+                else {
 
                     #ifdef WEBUI_LOG
-                    printf("[Core]\t\t_webinix_http_handler() -> Text based local file\n");
+                    printf("[Core]\t\t_webinix_http_handler() -> Local file\n");
                     #endif
 
                     // Serve as a normal text-based file
-                    http_status_code = _webinix_serve_file(win, conn);
+                    http_status_code = _webinix_serve_file(win, client);
                 }
             }
+
+            // Clear
+            _webinix_free_mem((void*)folder_path);
         }
     } else {
 
@@ -7416,52 +7503,68 @@ static int _webinix_http_handler(struct mg_connection * conn, void * _win) {
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_http_handler() -> HTTP Status Code: %d\n", http_status_code);
     #endif
+
+    _webinix_mutex_unlock(&_webinix.mutex_http_handler);
     return http_status_code;
 }
 
-static int _webinix_ws_connect_handler(const struct mg_connection * conn, void * _win) {
-    (void)conn;
+static int _webinix_ws_connect_handler(const struct mg_connection* client, void * _win) {
+    (void)client;
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_ws_connect_handler()\n");
     #endif
 
     // Dereference
-    _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
+    _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
         return 1;
 
-    if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
-
-        // Non-authorized connection
+    // Authorization
+    if (_webinix.auth_cookie_set[win->current_browser]) {
+        const char* Cookie = mg_get_header(client, "Cookie");
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_ws_connect_handler() -> Non-authorized "
-            "connection.\n");
+        printf("[Core]\t\t_webinix_ws_connect_handler() -> Browser ID [%d]\n",
+            win->current_browser);
+        printf("[Core]\t\t_webinix_ws_connect_handler() -> Auth cookie [%s]\n",
+            _webinix.auth_cookie[win->current_browser]);
+        printf("[Core]\t\t_webinix_ws_connect_handler() -> Client cookie [%s]\n",
+            Cookie);
         #endif
-
-        // Block handshake
-        return 1;
+        if (!_webinix_check_auth_cookie(win, Cookie)) {
+            // Invalid auth cookie
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_ws_connect_handler() -> Non-authorized connection\n");
+            #endif
+            // Block handshake
+            return 1;
+        }
+        #ifdef WEBUI_LOG
+        else {
+            printf("[Core]\t\t_webinix_ws_connect_handler() -> Connection authentication OK\n");
+        }
+        #endif
     }
 
     // OK
     return 0;
 }
 
-static void _webinix_ws_ready_handler(struct mg_connection * conn, void * _win) {
+static void _webinix_ws_ready_handler(struct mg_connection* client, void * _win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_ws_ready_handler()\n");
     #endif
 
     // Dereference
-    _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
+    _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL)
         return;
 
-    _webinix_receive(win, WEBUI_WS_OPEN, (void * ) conn, 0);
+    _webinix_receive(win, client, WEBUI_WS_OPEN, NULL, 0);
 }
 
-static int _webinix_ws_data_handler(struct mg_connection * conn, int opcode, char* data, size_t datasize, void * _win) {
-    (void)conn;
+static int _webinix_ws_data_handler(struct mg_connection* client, int opcode, char* data, size_t datasize, void * _win) {
+    (void)client;
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_ws_data_handler()\n");
     #endif
@@ -7469,12 +7572,12 @@ static int _webinix_ws_data_handler(struct mg_connection * conn, int opcode, cha
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || datasize < WEBUI_PROTOCOL_SIZE)
         return 1; // OK
 
-    switch(opcode & 0xf) {
+    switch(opcode&0xf) {
 
         case MG_WEBSOCKET_OPCODE_BINARY: {
-            _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
+            _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
             if (win != NULL)
-                _webinix_receive(win, WEBUI_WS_DATA, data, datasize);
+                _webinix_receive(win, client, WEBUI_WS_DATA, data, datasize);
             break;
         }
         case MG_WEBSOCKET_OPCODE_TEXT: {
@@ -7489,25 +7592,25 @@ static int _webinix_ws_data_handler(struct mg_connection * conn, int opcode, cha
     }
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_ws_data_handler() -> Finished.\n");
+    printf("[Core]\t\t_webinix_ws_data_handler() -> Finished\n");
     #endif
 
     // OK
     return 1;
 }
 
-static void _webinix_ws_close_handler(const struct mg_connection * conn, void * _win) {
+static void _webinix_ws_close_handler(const struct mg_connection* client, void * _win) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_ws_close_handler()\n");
     #endif
 
     // Dereference
-    _webinix_window_t * win = _webinix_dereference_win_ptr(_win);
+    _webinix_window_t* win = _webinix_dereference_win_ptr(_win);
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL || !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
         return;
 
-    _webinix_receive(win, WEBUI_WS_CLOSE, (void * ) conn, 0);
+    _webinix_receive(win, client, WEBUI_WS_CLOSE, NULL, 0);
 }
 
 static WEBUI_THREAD_SERVER_START {
@@ -7516,10 +7619,11 @@ static WEBUI_THREAD_SERVER_START {
     #endif
 
     // Mutex
-    _webinix_mutex_lock( & _webinix_core.mutex_server_start);
+    _webinix_mutex_lock(&_webinix.mutex_server_start);
 
-    _webinix_window_t * win = _webinix_dereference_win_ptr(arg);
-    if (win == NULL) {
+    _webinix_window_t* win = _webinix_dereference_win_ptr(arg);
+    if (win == NULL || win->server_running) {
+        _webinix_mutex_unlock(&_webinix.mutex_server_start);
         WEBUI_THREAD_RETURN
     }
 
@@ -7536,30 +7640,27 @@ static WEBUI_THREAD_SERVER_START {
     #endif
 
     // Initialization
-    _webinix_core.servers++;
+    _webinix.servers++;
     win->server_running = true;
-    win->html_handled = false;
-    win->server_handled = false;
-    win->bridge_handled = false;
-    if (_webinix_core.startup_timeout < 1)
-        _webinix_core.startup_timeout = 0;
-    if (_webinix_core.startup_timeout > WEBUI_DEF_TIMEOUT)
-        _webinix_core.startup_timeout = WEBUI_DEF_TIMEOUT;
+    if (_webinix.startup_timeout < 1)
+        _webinix.startup_timeout = 0;
+    if (_webinix.startup_timeout > WEBUI_MAX_TIMEOUT)
+        _webinix.startup_timeout = WEBUI_MAX_TIMEOUT;
 
     // Public host access
     char host[16] = {0};
     if (!win->is_public)
         // Private localhost access
-        WEBUI_SCOPY_STATIC(host, sizeof(host), "127.0.0.1:");
+        WEBUI_STR_COPY_STATIC(host, sizeof(host), "127.0.0.1:");
 
     #ifdef WEBUI_TLS
     // HTTP Secure Port
     char* server_port = (char*)_webinix_malloc(64);
-    WEBUI_SPF_DYN(server_port, 64, "%s%zus", host, win->server_port);
+    WEBUI_SN_PRINTF_DYN(server_port, 64, "%s%zus", host, win->server_port);
     #else
     // HTTP Port
     char* server_port = (char*)_webinix_malloc(64);
-    WEBUI_SPF_DYN(server_port, 64, "%s%zu", host, win->server_port);
+    WEBUI_SN_PRINTF_DYN(server_port, 64, "%s%zu", host, win->server_port);
     #endif
 
     // Server Options
@@ -7586,7 +7687,7 @@ static WEBUI_THREAD_SERVER_START {
     // Server Settings
     struct mg_callbacks http_callbacks;
     struct mg_context * http_ctx = NULL;
-    memset( & http_callbacks, 0, sizeof(http_callbacks));
+    memset(&http_callbacks, 0, sizeof(http_callbacks));
     #ifdef WEBUI_TLS
     http_callbacks.init_ssl = _webinix_tls_initialization;
     #endif
@@ -7595,93 +7696,102 @@ static WEBUI_THREAD_SERVER_START {
     #endif
 
     // Start Server
-    http_ctx = mg_start( & http_callbacks, 0, http_options);
-    mg_set_request_handler(http_ctx, "/", _webinix_http_handler, (void * ) win);    
+    http_ctx = mg_start(&http_callbacks, 0, http_options);
+    mg_set_request_handler(http_ctx, "/", _webinix_http_handler, (void*)win);
 
     if (http_ctx) {
 
         mg_set_websocket_handler(
             http_ctx, "/_webinix_ws_connect", _webinix_ws_connect_handler, _webinix_ws_ready_handler,
-            _webinix_ws_data_handler, _webinix_ws_close_handler, (void * ) win
+            _webinix_ws_data_handler, _webinix_ws_close_handler, (void*)win
         );
 
         // Mutex
-        _webinix_mutex_unlock( & _webinix_core.mutex_server_start);
+        _webinix_mutex_unlock(&_webinix.mutex_server_start);
 
-        if (_webinix_core.startup_timeout > 0) {
+        if (_webinix.startup_timeout > 0) {
 
             #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening Success\n", win->window_number);
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> HTTP/WS Port: %s\n", win->window_number, server_port);
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Timeout is %zu seconds\n", win->window_number,_webinix_core.startup_timeout);
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Root path: %s\n", win->window_number,win->server_root_path);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening Success\n", 
+                win->window_number);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> HTTP/WS Port: %s\n", 
+                win->window_number, server_port);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Root path: %s\n", 
+                win->window_number, win->server_root_path);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Timeout is %zu seconds\n", 
+                win->window_number, _webinix.startup_timeout);
             #endif
 
             bool stop = false;
+            win->wait = false;
 
             while(!stop) {
 
                 if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
 
+                    // UI is not connected
+
                     #ifdef WEBUI_LOG
                     printf(
-                        "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting for first HTTP "
-                        "request\n",
+                        "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting for connection\n",
                         win->window_number
                     );
                     #endif
 
                     // Wait for first connection
                     _webinix_timer_t timer_1;
-                    _webinix_timer_start( & timer_1);
+                    _webinix_timer_start(&timer_1);
                     for (;;) {
 
-                        // Stop if window is connected
                         _webinix_sleep(1);
-                        if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE) || win->server_handled)
+
+                        // Stop if window is connected
+                        if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
                             break;
 
-                        // Stop if timer is finished
-                        // default is WEBUI_DEF_TIMEOUT (30 seconds)
-                        if (_webinix_timer_is_end( & timer_1, (_webinix_core.startup_timeout * 1000)))
+                        // Stop if timer is finished (Default WEBUI_DEF_TIMEOUT)
+                        if (_webinix_timer_is_end(&timer_1, (_webinix.startup_timeout * 1000)))
                             break;
                     }
 
-                    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE) && win->server_handled) {
+                    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE) && win->wait) {
 
                         // At this moment the browser is already started and HTML
-                        // is already handled, so, let's wait more time to give
-                        // the WebSocket an extra seconds to connect.
+                        // files are already handled, let's wait more time to give
+                        // the WebSocket an extra seconds to connect. This is helpful
+                        // when a web app have too many files to handel before `webinix.js`
+                        // get requested.
 
                         do {
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting for first connection\n",
+                                "[Core]\t\t_webinix_server_thread([%zu]) -> Waiting more for connection\n",
                                 win->window_number
                             );
                             #endif
 
-                            win->file_handled = false;
+                            win->wait = false;
 
                             _webinix_timer_t timer_2;
-                            _webinix_timer_start( & timer_2);
+                            _webinix_timer_start(&timer_2);
                             for (;;) {
 
                                 // Stop if window is connected
-                                _webinix_sleep(10);
+                                _webinix_sleep(1);
                                 if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
                                     break;
 
                                 // Stop if timer is finished
-                                if (_webinix_timer_is_end( & timer_2, 3000))
+                                if (_webinix_timer_is_end(&timer_2, 5000))
                                     break;
                             }
-                        } while(win->file_handled && !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE));
+                        } while(win->wait && !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE));
                     }
 
                     if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
                         stop = true; // First run failed
-                } else {
+                }
+                else {
 
                     // UI is connected
                     win->is_closed = false;
@@ -7694,9 +7804,9 @@ static WEBUI_THREAD_SERVER_START {
                     #endif
 
                     // Folder monitor thread
-                    if (_webinix_core.config.folder_monitor && !monitor_created) {
+                    if (_webinix.config.folder_monitor && !monitor_created) {
                         monitor_created = true;
-                        _webinix_monitor_arg_t* arg = (_webinix_monitor_arg_t * ) _webinix_malloc(sizeof(_webinix_monitor_arg_t));
+                        _webinix_monitor_arg_t* arg = (_webinix_monitor_arg_t* ) _webinix_malloc(sizeof(_webinix_monitor_arg_t));
                         arg->win_num = win->window_number;
                         arg->path = win->server_root_path;
                         #ifdef _WIN32
@@ -7745,22 +7855,22 @@ static WEBUI_THREAD_SERVER_START {
                                     );
                                     #endif
 
-                                    win->file_handled = false;
+                                    win->wait = false;
 
                                     _webinix_timer_t timer_3;
-                                    _webinix_timer_start( & timer_3);
+                                    _webinix_timer_start(&timer_3);
                                     for (;;) {
 
                                         // Stop if window is re-connected
-                                        _webinix_sleep(10);
+                                        _webinix_sleep(1);
                                         if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
                                             break;
 
                                         // Stop if timer is finished
-                                        if (_webinix_timer_is_end( & timer_3, 3000))
+                                        if (_webinix_timer_is_end(&timer_3, 3000))
                                             break;
                                     }
-                                } while(win->file_handled && !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE));
+                                } while(win->wait && !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE));
 
                                 if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
                                     stop = true;
@@ -7781,17 +7891,22 @@ static WEBUI_THREAD_SERVER_START {
 
         // Let's check the flag again, there is a change that
         // the flag has ben changed during the first loop for
-        // example when set_timeout() get called later
-        if (_webinix_core.startup_timeout == 0) {
+        // example when set_timeout() get called after show()
+        if (_webinix.startup_timeout == 0) {
 
             #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening success\n", win->window_number);
-            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Infinite loop\n", win->window_number);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Listening Success\n", 
+                win->window_number);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> HTTP/WS Port: %s\n", 
+                win->window_number, server_port);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Root path: %s\n", 
+                win->window_number, win->server_root_path);
+            printf("[Core]\t\t_webinix_server_thread([%zu]) -> Infinite loop\n", 
+                win->window_number);
             #endif
 
             // Wait forever
             for (;;) {
-
                 _webinix_sleep(1);
                 if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE))
                     break;
@@ -7804,18 +7919,14 @@ static WEBUI_THREAD_SERVER_START {
         #endif
 
         // Mutex
-        _webinix_mutex_unlock( & _webinix_core.mutex_server_start);
+        _webinix_mutex_unlock(&_webinix.mutex_server_start);
     }
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_server_thread([%zu]) -> Cleaning\n", win->window_number);
     #endif
 
-    // Clean WebView
-    if (win->webView) {
-        win->webView->stop = true;
-        _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);    
-    }
+    _webinix_mutex_is_connected(win, WEBUI_MUTEX_FALSE);
 
     // Clean monitor thread
     #ifdef _WIN32
@@ -7826,15 +7937,17 @@ static WEBUI_THREAD_SERVER_START {
     pthread_join(monitor_thread, NULL);
     #endif
 
+    // Clean WebView
+    if (win->webView) {
+        win->webView->stop = true;
+        _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
+    }
+
     // Clean
     win->server_running = false;
-    win->html_handled = false;
-    win->server_handled = false;
-    win->bridge_handled = false;
     _webinix_free_port(win->server_port);
     win->server_port = 0;
     _webinix_free_mem((void*)server_port);
-    _webinix_mutex_is_connected(win, WEBUI_MUTEX_FALSE);
 
     // Kill Process
     // _webinix_kill_pid(win->process_id);
@@ -7846,7 +7959,8 @@ static WEBUI_THREAD_SERVER_START {
 
     // Let the main wait() know that
     // this server thread is finished
-    _webinix_core.servers--;
+    if (_webinix.servers > 0)
+        _webinix.servers--;
 
     // Stop server services
     // This should be at the
@@ -7854,13 +7968,13 @@ static WEBUI_THREAD_SERVER_START {
     mg_stop(http_ctx);
 
     // Fire the mutex condition for wait()
-    if (_webinix_core.startup_timeout > 0 && _webinix_core.servers < 1) {
+    if (_webinix.startup_timeout > 0 && _webinix.servers < 1) {
 
         // Stop all threads
-        _webinix_core.ui = false;
+        _webinix.ui = false;
         _webinix_mutex_is_exit_now(WEBUI_MUTEX_TRUE);
         // Break main loop
-        _webinix_condition_signal( & _webinix_core.condition_wait);
+        _webinix_condition_signal(&_webinix.condition_wait);
         #ifdef __APPLE__
         _webinix_macos_wv_stop();
         #endif
@@ -7869,7 +7983,8 @@ static WEBUI_THREAD_SERVER_START {
     WEBUI_THREAD_RETURN
 }
 
-static void _webinix_receive(_webinix_window_t * win, int event_type, void * data, size_t len) {
+static void _webinix_receive(_webinix_window_t* win, struct mg_connection* client,
+    int event_type, void * data, size_t len) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_receive([%zu], [%d], [%zu])\n", win->window_number, event_type, len);
@@ -7881,14 +7996,75 @@ static void _webinix_receive(_webinix_window_t * win, int event_type, void * dat
     static size_t multi_receive = 0;
     static void * multi_buf = NULL;
 
-    // Multi Packet
+    // Get client id
+    size_t client_id = 0;
+    if (event_type != WEBUI_WS_OPEN) {
+        if (!_webinix_client_get_id(win, client, &client_id)) {
+            // Failed to find client ID
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_receive() -> Failed to find client ID\n");
+            #endif
+            _webinix_client_remove(win, client);
+            return;
+        }
+    }
+
+    // Websocket Open/Close Events
+    if (event_type == WEBUI_WS_OPEN) {
+        // New connection
+        // Autorisation to register
+        bool authorization = false;
+        if (!_webinix.config.multi_client) {
+            if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
+                authorization = true;
+            }
+        } else authorization = true;
+        if (!authorization) {
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_receive(%zu) -> Client not authorized to register\n",
+                recvNum);
+            #endif
+            _webinix_client_remove(win, client);
+            return;
+        }
+        else {
+            // Register
+            size_t new_client_id = 0;
+            if (_webinix_client_save(win, client, &new_client_id)) {
+                // Status
+                _webinix_mutex_is_connected(win, WEBUI_MUTEX_TRUE); // server thread
+                #ifdef WEBUI_LOG
+                printf(
+                    "[Core]\t\t_webinix_receive(%zu) -> Client #%zu connected\n",
+                    recvNum, new_client_id
+                );
+                #endif
+            }
+            else {
+                // Failed to register this client
+                _webinix_client_remove(win, client);
+                return;
+            }
+        }
+    } else if (event_type == WEBUI_WS_CLOSE) {
+        // Connection close
+        // Remove client
+        _webinix_client_remove(win, client);
+        #ifdef WEBUI_LOG
+        printf(
+            "[Core]\t\t_webinix_receive(%zu) -> Client #%zu Closed\n",
+            recvNum, client_id
+        );
+        #endif
+    }
+
+    // Multi Packet (big data)
     if (multi_packet) {
         if ((multi_receive + len) > multi_expect) {
             // Received more data than expected
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_receive() -> Multi packet received more data than expected "
-                "(%zu + %zu > %zu).\n",
+                "[Core]\t\t_webinix_receive() -> Multi packet received more data than expected (%zu + %zu > %zu).\n",
                 multi_receive, len, multi_expect
             );
             #endif
@@ -7903,29 +8079,32 @@ static void _webinix_receive(_webinix_window_t * win, int event_type, void * dat
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_receive() -> Multi packet accumulate %zu bytes\n", len);
         #endif
-        memcpy(((unsigned char* ) multi_buf + multi_receive), data, len);
+        memcpy(((unsigned char*)multi_buf + multi_receive), data, len);
         multi_receive += len;
         // Check if theire is more packets comming
         if (multi_receive < multi_expect)
             return;
-    } else if (((unsigned char* ) data)[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_MULTI) {
-        if (len >= WEBUI_PROTOCOL_SIZE && ((unsigned char* ) data)[WEBUI_PROTOCOL_SIGN] == WEBUI_SIGNATURE) {
-            size_t expect_len = (size_t) strtoul( & ((const char* ) data)[WEBUI_PROTOCOL_DATA], NULL, 10);
-            if (expect_len > 0 && expect_len <= WEBUI_MAX_BUF) {
-                #ifdef WEBUI_LOG
-                printf(
-                    "[Core]\t\t_webinix_receive() -> Multi packet started, Expecting %zu bytes\n",
-                    expect_len
-                );
-                #endif
-                multi_buf = _webinix_malloc(expect_len);
-                memcpy(multi_buf, data, len);
-                multi_receive = 0;
-                multi_expect = expect_len;
-                multi_packet = true;
+    }
+    else if (event_type == WEBUI_WS_DATA) {
+        if (((unsigned char*)data)[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_MULTI) {
+            if (len >= WEBUI_PROTOCOL_SIZE && ((unsigned char*)data)[WEBUI_PROTOCOL_SIGN] == WEBUI_SIGNATURE) {
+                size_t expect_len = (size_t) strtoul(&((const char*)data)[WEBUI_PROTOCOL_DATA], NULL, 10);
+                if (expect_len > 0 && expect_len <= WEBUI_MAX_BUF) {
+                    #ifdef WEBUI_LOG
+                    printf(
+                        "[Core]\t\t_webinix_receive() -> Multi packet started, Expecting %zu bytes\n",
+                        expect_len
+                    );
+                    #endif
+                    multi_buf = _webinix_malloc(expect_len);
+                    memcpy(multi_buf, data, len);
+                    multi_receive = 0;
+                    multi_expect = expect_len;
+                    multi_packet = true;
+                }
             }
+            return;
         }
-        return;
     }
 
     // Generate args
@@ -7954,219 +8133,296 @@ static void _webinix_receive(_webinix_window_t * win, int event_type, void * dat
             else {
                 // This event has data. And it will be processed
                 // in a new thread, we should copy data once
-                void * data_cpy = (void * ) _webinix_malloc(len);
+                void * data_cpy = (void*)_webinix_malloc(len);
                 memcpy((char*)data_cpy, data, len);
                 arg_ptr = data_cpy;
             }
         } else {
             // This is a WS connect/disconnect event
-            // `ptr` is `mg_connection`
-            arg_ptr = data;
+            arg_ptr = NULL;
         }
     }
 
     // Process
     if (win->ws_block) {
         // Process the packet in this current thread
-        _webinix_process(win, arg_ptr, arg_len, ++recvNum, event_type);
+        _webinix_ws_process(win, client, client_id, arg_ptr, arg_len, ++recvNum, event_type);
+        _webinix_free_mem((void*)arg_ptr);
     }
     else {
         // Process the packet in a new thread
-        _webinix_recv_arg_t * arg = (_webinix_recv_arg_t * ) _webinix_malloc(sizeof(_webinix_recv_arg_t));
+        _webinix_recv_arg_t* arg = (_webinix_recv_arg_t* ) _webinix_malloc(sizeof(_webinix_recv_arg_t));
         arg->win = win;
         arg->ptr = arg_ptr;
         arg->len = arg_len;
         arg->recvNum = ++recvNum;
         arg->event_type = event_type;
+        arg->client = client;
+        arg->client_id = client_id;
         #ifdef _WIN32
-        HANDLE thread = CreateThread(NULL, 0, _webinix_process_thread, (void * ) arg, 0, NULL);
+        HANDLE thread = CreateThread(NULL, 0, _webinix_ws_process_thread, (void*)arg, 0, NULL);
         if (thread != NULL)
             CloseHandle(thread);
         #else
         pthread_t thread;
-        pthread_create( & thread, NULL, & _webinix_process_thread, (void * ) arg);
+        pthread_create(&thread, NULL,&_webinix_ws_process_thread, (void*)arg);
         pthread_detach(thread);
         #endif
     }
 }
 
-static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, size_t recvNum, int event_type) {
+static bool _webinix_client_save(_webinix_window_t* win, struct mg_connection* client, size_t* client_id) {
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_process(%zu)\n", recvNum);
+    printf("[Core]\t\t_webinix_client_save([%zu])\n", win->window_number);
+    #endif
+
+    // Save new ws client
+    _webinix_mutex_lock(&_webinix.mutex_client);
+    for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+        if (win->clients[i] == NULL) {
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_client_save() -> Registering client #%zu \n", i);
+            #endif
+            // Save
+            win->clients[i] = client;
+            win->clients_token_check[i] = false;
+            win->clients_count++;
+            _webinix_mutex_unlock(&_webinix.mutex_client);
+            *client_id = i;
+            return true;
+        }
+    }
+    
+    // List is full
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_client_save() -> Clients list is full\n");
+    #endif
+    _webinix_mutex_unlock(&_webinix.mutex_client);
+    return false;
+}
+
+static void _webinix_client_remove(_webinix_window_t* win, struct mg_connection* client) {
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_client_remove([%zu])\n", win->window_number);
+    #endif
+
+    _webinix_mutex_lock(&_webinix.mutex_client);
+
+    // Remove a ws client
+    for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+        if (win->clients[i] == client) {
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_client_remove() -> Removing client #%zu \n", i);
+            #endif
+            // Reset Token
+            if (!_webinix.config.multi_client) {
+                if (win->clients_token_check[i]) {
+                    win->token = 0;
+                }
+            }
+            // Clear
+            win->clients[i] = NULL;
+            win->clients_token_check[i] = false;
+            if (win->clients_count > 0)
+                win->clients_count--;
+            // Close
+            mg_close_connection(client);            
+            _webinix_mutex_unlock(&_webinix.mutex_client);
+            return;
+        }
+    }
+
+    // Client not found
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_client_remove() -> Client not found\n");
+    #endif    
+    mg_close_connection(client);
+    _webinix_mutex_unlock(&_webinix.mutex_client);
+}
+
+static bool _webinix_client_get_id(_webinix_window_t* win, struct mg_connection* client, size_t* client_id) {
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_client_get_id([%zu], [%p])\n", win->window_number, client);
+    #endif
+
+    // Find a ws client
+    _webinix_mutex_lock(&_webinix.mutex_client);
+    for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
+        if (win->clients[i] == client) {
+            *client_id = i;
+            _webinix_mutex_unlock(&_webinix.mutex_client);
+            return true;
+        }
+    }
+
+    // Client not found
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_client_get_id() -> Client not found\n");
+    #endif
+    _webinix_mutex_unlock(&_webinix.mutex_client);
+    return false;
+}
+
+static void _webinix_ws_process(
+    _webinix_window_t* win, struct mg_connection* client, size_t client_id, 
+    void* ptr, size_t len, size_t recvNum, int event_type) {
+    
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_ws_process(%zu)\n", recvNum);
     #endif
 
     if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE)) {
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_process(%zu) -> Start\n", recvNum);
+        printf("[Core]\t\t_webinix_ws_process(%zu) -> Start\n", recvNum);
         #endif
 
         if (event_type == WEBUI_WS_DATA) {
 
-            const char* packet = (const char* ) ptr;
+            const char* packet = (const char*)ptr;
             uint32_t packet_token = _webinix_get_token(packet);
             uint16_t packet_id = _webinix_get_id(packet);
 
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> Data "
-                "received\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> Data received\n",
                 recvNum
             );
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> Packet Size : "
-                "%zu bytes\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> Packet Size : %zu bytes\n",
                 recvNum, len
             );
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> Packet Header "
-                ": [ ",
+                "[Core]\t\t_webinix_ws_process(%zu) -> Packet Header : [ ",
                 recvNum
             );
             _webinix_print_hex(packet, WEBUI_PROTOCOL_SIZE);
             printf("]\n");
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> Packet Token: "
-                "0x%08X (%"
-                PRIu32 ")\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> Packet Token: 0x%08X (%" PRIu32 ")\n",
                 recvNum, packet_token, packet_token
             );
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> Packet ID: "
-                "0x%04X (%u)\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> Packet ID: 0x%04X (%u)\n",
                 recvNum, packet_id, packet_id
             );
-            printf("[Core]\t\t_webinix_process(%zu) -> Packet Data: [", recvNum);
-            //_webinix_print_ascii(&packet[WEBUI_PROTOCOL_DATA], (len -
-            // WEBUI_PROTOCOL_SIZE));
+            printf("[Core]\t\t_webinix_ws_process(%zu) -> Packet Data: [", recvNum);
+                // _webinix_print_ascii(&packet[WEBUI_PROTOCOL_DATA], (len -
+                // WEBUI_PROTOCOL_SIZE));
             printf("]\n");
             #endif
 
-            if (len >= WEBUI_PROTOCOL_SIZE &&
-                (unsigned char) packet[WEBUI_PROTOCOL_SIGN] == WEBUI_SIGNATURE &&
-                packet_token == win->token) {
+            if ((len >= WEBUI_PROTOCOL_SIZE) &&
+                ((unsigned char)packet[WEBUI_PROTOCOL_SIGN] == WEBUI_SIGNATURE) &&
+                (packet_token == win->token)) {
 
                 // Mutex
-                // wait for previous event to finish
-                if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] != WEBUI_CMD_JS)
-                    _webinix_mutex_lock( & _webinix_core.mutex_receive);
+                if (_webinix.config.ws_block) {
+                    // wait for previous event to finish
+                    if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] != WEBUI_CMD_JS) {
+                        _webinix_mutex_lock(&_webinix.mutex_receive);
+                    }
+                }
 
                 if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE)) { // Check if previous event called exit()
 
-                    if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CLICK) {
+                    if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CLICK) {
 
                         // Click Event
 
-                        // 0: [Signature]
-                        // 1: [CMD]
-                        // 2: [Element]
+                        // Protocol
+                        // [Header]
+                        // [Element]
 
                         // Get html element id
-                        char* element = (char*)& packet[WEBUI_PROTOCOL_DATA];
+                        char* element = (char*)&packet[WEBUI_PROTOCOL_DATA];
                         size_t element_len = _webinix_strlen(element);
 
                         #ifdef WEBUI_LOG
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> "
-                            "WEBUI_CMD_CLICK "
-                            "\n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_CMD_CLICK \n",
                             recvNum
                         );
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> Element "
-                            "size: "
-                            "%zu bytes \n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> Element size: %zu bytes \n",
                             recvNum, element_len
                         );
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> Element "
-                            ": [%s] "
-                            "\n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> Element : [%s] \n",
                             recvNum, element
                         );
                         #endif
 
-                        // Generate Webinix internal id
-                        char* webinix_internal_id = _webinix_generate_internal_id(win, element);
-
                         // New event inf
-                        webinix_event_inf_t* event_inf =
-                            (webinix_event_inf_t * ) _webinix_malloc(sizeof(webinix_event_inf_t));
+                        webinix_event_inf_t* event_inf = (webinix_event_inf_t*)_webinix_malloc(sizeof(webinix_event_inf_t));
+                        event_inf->client = client;
+                        event_inf->client_id = client_id;
                         if (win->events_count > WEBUI_MAX_ARG)
                             win->events_count = 0;
                         size_t event_num = win->events_count++;
                         win->events[event_num] = event_inf;
 
-                        // Set arguments
-                        // ...
-
                         _webinix_window_event(
                             win, // Event -> Window
+                            client_id, // Event -> Client Unique ID
                             WEBUI_EVENT_MOUSE_CLICK, // Event -> Type of this event
                             element, // Event -> HTML Element
-                            event_num, // Event -> Event Number
-                            webinix_internal_id // Extras -> Webinix Internal ID
+                            event_num // Event -> Event Number
                         );
 
                         // Free event
-                        _webinix_free_mem((void * ) webinix_internal_id);
-                        _webinix_free_mem((void * ) event_inf);
-                    } else if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_JS) {
+                        _webinix_free_mem((void*)event_inf);
+                    } else if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_JS) {
 
                         // JS Result
 
                         // Protocol
-                        // 0: [Header]
-                        // 1: [Error, ScriptResponse]
+                        // [Header]
+                        // [Error, ScriptResponse]
 
                         // Get pipe id
                         if (packet_id < WEBUI_MAX_IDS) {
 
-                            if (_webinix_core.run_userBuffer[packet_id] != NULL) {
+                            if (_webinix.run_userBuffer[packet_id] != NULL) {
 
-                                _webinix_mutex_lock( & _webinix_core.mutex_js_run);
-                                _webinix_core.run_done[packet_id] = false;
-                                _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+                                _webinix_mutex_lock(&_webinix.mutex_js_run);
+                                _webinix.run_done[packet_id] = false;
+                                _webinix_mutex_unlock(&_webinix.mutex_js_run);
 
                                 // Get js-error
                                 bool error = true;
-                                if ((unsigned char) packet[WEBUI_PROTOCOL_DATA] == 0x00)
+                                if ((unsigned char)packet[WEBUI_PROTOCOL_DATA] == 0x00)
                                     error = false;
 
                                 // Get data part
-                                char* data = (char*)& packet[WEBUI_PROTOCOL_DATA + 1];
+                                char* data = (char*)&packet[WEBUI_PROTOCOL_DATA + 1];
                                 size_t data_len = _webinix_strlen(data);
 
                                 #ifdef WEBUI_LOG
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> "
-                                    "WEBUI_CMD_JS \n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_CMD_JS \n",
                                     recvNum
                                 );
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> "
-                                    "run_id = 0x%02x (%u) \n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> run_id = 0x%02x (%u) \n",
                                     recvNum, packet_id, packet_id
                                 );
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> "
-                                    "error = %s \n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> error = %s \n",
                                     recvNum, error ? "true" : "false"
                                 );
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> "
-                                    "%zu bytes of data\n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> %zu bytes of data\n",
                                     recvNum, data_len
                                 );
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> "
-                                    "data = [%s] @ 0x%p\n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> data = [%s] @ 0x%p\n",
                                     recvNum, data, data
                                 );
                                 #endif
 
                                 // Set pipe
-                                _webinix_core.run_error[packet_id] = error;
+                                _webinix.run_error[packet_id] = error;
                                 if (data_len > 0) {
 
                                     // Copy response to the user's response buffer
@@ -8174,63 +8430,61 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
                                     size_t response_len = data_len + 1;
                                     size_t bytes_to_cpy =
                                         (response_len <=
-                                            _webinix_core
+                                            _webinix
                                             .run_userBufferLen[packet_id] ?
                                             response_len :
-                                            _webinix_core
+                                            _webinix
                                             .run_userBufferLen[packet_id]);
                                     memcpy(
-                                        _webinix_core.run_userBuffer[packet_id], data,
+                                        _webinix.run_userBuffer[packet_id], data,
                                         bytes_to_cpy
                                     );
                                 } else {
 
                                     // Empty Result
-                                    _webinix_core.run_userBuffer[packet_id] = 0x00;
+                                    _webinix.run_userBuffer[packet_id] = 0x00;
                                 }
 
                                 // Send ready signal to webinix_script()
-                                _webinix_mutex_lock( & _webinix_core.mutex_js_run);
-                                _webinix_core.run_done[packet_id] = true;
-                                _webinix_mutex_unlock( & _webinix_core.mutex_js_run);
+                                _webinix_mutex_lock(&_webinix.mutex_js_run);
+                                _webinix.run_done[packet_id] = true;
+                                _webinix_mutex_unlock(&_webinix.mutex_js_run);
                             }
                         }
-                    } else if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_NAVIGATION) {
+                    } else if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_NAVIGATION) {
 
                         // Navigation Event
 
-                        // 0: [Signature]
-                        // 1: [CMD]
-                        // 2: [URL]
+                        // Protocol
+                        // [Header]
+                        // [URL]
 
                         // Events
-                        if (win->has_events) {
+                        if (win->has_all_events) {
 
                             // Get URL
-                            char* url = (char*)& packet[WEBUI_PROTOCOL_DATA];
+                            char* url = (char*)&packet[WEBUI_PROTOCOL_DATA];
                             size_t url_len = _webinix_strlen(url);
 
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> WEBUI_CMD_NAVIGATION \n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_CMD_NAVIGATION \n",
                                 recvNum
                             );
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> URL size: %zu bytes \n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> URL size: %zu bytes \n",
                                 recvNum, url_len
                             );
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> URL: [%s] \n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> URL: [%s] \n",
                                 recvNum, url
                             );
                             #endif
 
-                            // Generate Webinix internal id
-                            char* webinix_internal_id = _webinix_generate_internal_id(win, "");
-
                             // New event inf
-                            webinix_event_inf_t* event_inf =
-                                (webinix_event_inf_t * ) _webinix_malloc(sizeof(webinix_event_inf_t));
+                            webinix_event_inf_t* event_inf = (webinix_event_inf_t*)_webinix_malloc(sizeof(webinix_event_inf_t));
+                            event_inf->client = client;
+                            event_inf->client_id = client_id;
                             if (win->events_count > WEBUI_MAX_ARG)
                                 win->events_count = 0;
                             size_t event_num = win->events_count++;
@@ -8242,48 +8496,46 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
 
                             _webinix_window_event(
                                 win, // Event -> Window
+                                client_id, // Event -> Client Unique ID
                                 WEBUI_EVENT_NAVIGATION, // Event -> Type of this event
                                 "", // Event -> HTML Element
-                                event_num, // Event -> Event Number
-                                webinix_internal_id // Extras -> Webinix Internal ID
+                                event_num // Event -> Event Number
                             );
 
                             // Free event
-                            _webinix_free_mem((void * ) webinix_internal_id);
-                            _webinix_free_mem((void * ) event_inf);
+                            _webinix_free_mem((void*)event_inf);
                         }
-                    } else if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CALL_FUNC) {
+                    } else if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CALL_FUNC) {
 
                         // Function Call
 
-                        // 0: [Header]
-                        // 1: [Fn, Null, {Len;Len;...}, Null, {Data,Null,Data,Null...}]
+                        // Protocol
+                        // [Header]
+                        // [Fn, Null, {Len;Len;...}, Null, {Data,Null,Data,Null...}]
 
                         // Get html element id
-                        char* element = (char*)& packet[WEBUI_PROTOCOL_DATA];
+                        char* element = (char*)&packet[WEBUI_PROTOCOL_DATA];
                         size_t element_len = _webinix_strlen(element);
 
                         #ifdef WEBUI_LOG
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> WEBUI_CMD_CALL_FUNC \n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_CMD_CALL_FUNC \n",
                             recvNum
                         );
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> Call ID: [%u] \n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> Call ID: [%u] \n",
                             recvNum, packet_id
                         );
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> Element: [%s] \n",
+                            "[Core]\t\t_webinix_ws_process(%zu) -> Element: [%s] \n",
                             recvNum, element
                         );
                         #endif
 
-                        // Generate Webinix internal id
-                        char* webinix_internal_id = _webinix_generate_internal_id(win, element);
-
                         // New event inf
-                        webinix_event_inf_t* event_inf =
-                            (webinix_event_inf_t * ) _webinix_malloc(sizeof(webinix_event_inf_t));
+                        webinix_event_inf_t* event_inf = (webinix_event_inf_t*)_webinix_malloc(sizeof(webinix_event_inf_t));
+                        event_inf->client = client;
+                        event_inf->client_id = client_id;
                         if (win->events_count > WEBUI_MAX_ARG)
                             win->events_count = 0;
                         size_t event_num = win->events_count++;
@@ -8291,36 +8543,36 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
 
                         // Loop trough args
                         size_t data_size_expected = 0;
-                        char* args_lens = (char*)& packet[WEBUI_PROTOCOL_DATA + element_len + 1];
+                        char* args_lens = (char*)&packet[WEBUI_PROTOCOL_DATA + element_len + 1];
                         size_t args_len = _webinix_strlen(args_lens);
-                        char* args_ptr = (char*)& packet[WEBUI_PROTOCOL_DATA + element_len + 1 + args_len + 1];
+                        char* args_ptr = (char*)&packet[WEBUI_PROTOCOL_DATA + element_len + 1 + args_len + 1];
                         char* context;
-                        char* token = WEBUI_TOK(args_lens, ";", &context);
-                        size_t token_num = 0;
-                        while(token != NULL && token_num < WEBUI_MAX_ARG + 1) {
+                        char* tk = WEBUI_STR_TOK(args_lens, ";", &context);
+                        size_t tk_num = 0;
+                        while(tk != NULL && tk_num < WEBUI_MAX_ARG + 1) {
 
-                            size_t arg_len = (size_t) strtoul(token, NULL, 10);
+                            size_t arg_len = (size_t) strtoul(tk, NULL, 10);
                             data_size_expected = data_size_expected + arg_len + 1;
 
                             if (arg_len > 0) {
 
                                 // Set argument
-                                event_inf->event_size[token_num] = arg_len;
-                                event_inf->event_data[token_num] = args_ptr;
+                                event_inf->event_size[tk_num] = arg_len;
+                                event_inf->event_data[tk_num] = args_ptr;
                             }
 
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> Argument %zu: %zu bytes\n",
-                                recvNum, token_num, arg_len
+                                "[Core]\t\t_webinix_ws_process(%zu) -> Argument %zu: %zu bytes\n",
+                                recvNum, tk_num, arg_len
                             );
                             #endif
 
                             args_ptr = args_ptr + (arg_len + 1);
-                            token = WEBUI_TOK(NULL, ";", &context);
+                            tk = WEBUI_STR_TOK(NULL, ";", &context);
 
                             // Save total found arguments
-                            event_inf->count = ++token_num;
+                            event_inf->count = ++tk_num;
                         }
 
                         // Check data validity
@@ -8334,7 +8586,7 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
 
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> Expected and received %zu bytes of data.\n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> Expected and received %zu bytes of data.\n",
                                 recvNum, data_size_expected
                             );
                             #endif
@@ -8345,30 +8597,31 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
                             e.event_type = WEBUI_EVENT_CALLBACK;
                             e.element = element;
                             e.event_number = event_num;
+                            e.client_id = client_id;
 
                             // Call user function
-                            size_t cb_index = _webinix_get_cb_index(webinix_internal_id);
-                            if (cb_index > 0 && _webinix_core.cb[cb_index] != NULL) {
+                            size_t cb_index = 0;
+                            bool exist = _webinix_get_cb_index(win, element, &cb_index);
+                            if (exist && win->cb[cb_index] != NULL) {
 
                                 // Call user cb
                                 #ifdef WEBUI_LOG
                                 printf(
-                                    "[Core]\t\t_webinix_process(%zu) -> Calling user callback\n[Call]\n",
+                                    "[Core]\t\t_webinix_ws_process(%zu) -> Calling user callback\n[Call]\n",
                                     recvNum
                                 );
                                 #endif
                                 e.bind_id = cb_index;
-                                _webinix_core.cb[cb_index](&e);
+                                win->cb[cb_index](&e);
                             }
 
                             // Check the response
                             if (_webinix_is_empty(event_inf->response))
-                                event_inf->response = (char*)
-                            "";
+                                event_inf->response = (char*)"";
 
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> user-callback response [%s]\n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> user-callback response [%s]\n",
                                 recvNum, event_inf->response
                             );
                             #endif
@@ -8379,21 +8632,20 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
                             // [CallResponse]
 
                             // Send the packet
-                            _webinix_send(
-                                win, win->token, packet_id, WEBUI_CMD_CALL_FUNC,
+                            _webinix_send_client(
+                                win, client, packet_id, WEBUI_CMD_CALL_FUNC,
                                 event_inf->response, _webinix_strlen(event_inf->response)
                             );
 
                             // Free event
-                            _webinix_free_mem((void * ) event_inf->response);
+                            _webinix_free_mem((void*)event_inf->response);
                         } else {
 
                             // WebSocket/Civetweb did not send all the data as expected.
                             #ifdef WEBUI_LOG
                             printf(
-                                "[Core]\t\t_webinix_process(%zu) -> No "
-                                "enough data received. Expected %zu bytes, received %zu "
-                                "bytes.\n",
+                                "[Core]\t\t_webinix_ws_process(%zu) -> No enough data received. "
+                                "Expected %zu bytes, received %zu bytes.\n",
                                 recvNum, data_size_expected, data_size_recv
                             );
                             #endif
@@ -8406,22 +8658,65 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
                             // [CallResponse]
 
                             // Send the packet
-                            _webinix_send(
-                                win, win->token, packet_id, WEBUI_CMD_CALL_FUNC, NULL, 0
+                            _webinix_send_client(
+                                win, client, packet_id, WEBUI_CMD_CALL_FUNC, NULL, 0
                             );
                         }
 
                         // Free event
-                        _webinix_free_mem((void * ) webinix_internal_id);
-                        _webinix_free_mem((void * ) event_inf);
+                        _webinix_free_mem((void*)event_inf);
+                    } else if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_CHECK_TK) {
+
+                        // Check Token Event
+
+                        // Protocol
+                        // [Header]
+
+                        #ifdef WEBUI_LOG
+                        printf(
+                            "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_CMD_CHECK_TK \n",
+                            recvNum
+                        );
+                        #endif
+
+                        unsigned char status = 0x00;
+
+                        size_t client_id = 0;
+                        if (_webinix_client_get_id(win, client, &client_id)) {
+                            win->clients_token_check[client_id] = true;
+                            status = 0x01;
+                            #ifdef WEBUI_LOG
+                            printf(
+                                "[Core]\t\t_webinix_ws_process(%zu) -> Check token accepted.\n",
+                                recvNum
+                            );
+                            #endif
+                        }
+                        else {
+                            #ifdef WEBUI_LOG
+                            printf(
+                                "[Core]\t\t_webinix_ws_process(%zu) -> Check token not accepted.\n",
+                                recvNum
+                            );
+                            #endif
+                        }
+
+                        // Packet Protocol Format:
+                        // [...]
+                        // [CMD]
+                        // [Check Token Status]
+
+                        // Send the packet
+                        _webinix_send_client(
+                            win, client, packet_id, WEBUI_CMD_CHECK_TK, &status, 1
+                        );
                     }
                     #ifdef WEBUI_LOG
                     else {
                         printf(
-                            "[Core]\t\t_webinix_process(%zu) -> Unknown "
-                            "command "
+                            "[Core]\t\t_webinix_ws_process(%zu) -> Unknown command "
                             "[0x%02x]\n",
-                            recvNum, (unsigned char) packet[WEBUI_PROTOCOL_CMD]
+                            recvNum, (unsigned char)packet[WEBUI_PROTOCOL_CMD]
                         );
                     }
                     #endif
@@ -8429,55 +8724,48 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
                 #ifdef WEBUI_LOG
                 else {
                     printf(
-                        "[Core]\t\t_webinix_process(%zu) -> Window "
-                        "disconnected.\n",
+                        "[Core]\t\t_webinix_ws_process(%zu) -> Window is not connected.\n",
                         recvNum
                     );
                 }
                 #endif
 
                 // Unlock Mutex
-                if ((unsigned char) packet[WEBUI_PROTOCOL_CMD] != WEBUI_CMD_JS)
-                    _webinix_mutex_unlock( & _webinix_core.mutex_receive);
+                if (_webinix.config.ws_block) {
+                    if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] != WEBUI_CMD_JS) {
+                        _webinix_mutex_unlock(&_webinix.mutex_receive);
+                    }
+                }
             } else {
 
                 #ifdef WEBUI_LOG
                 printf(
-                    "[Core]\t\t_webinix_process(%zu) -> Invalid Packet.\n",
+                    "[Core]\t\t_webinix_ws_process(%zu) -> Invalid Packet.\n",
                     recvNum
                 );
                 #endif
 
                 // Forced close
-                _webinix_mutex_is_connected(win, WEBUI_MUTEX_FALSE);
+                _webinix_client_remove(win, client);
             }
         } else if (event_type == WEBUI_WS_OPEN) {
 
-            // Ini
-            int event_user = 0;
-            struct mg_connection * conn = (struct mg_connection * ) ptr;
-
-            // First connection
-            _webinix_mutex_is_connected(win, WEBUI_MUTEX_TRUE); // server thread
-            event_user = WEBUI_EVENT_CONNECTED; // User event
-            win->mg_connection = conn; // send
+            // New connection
 
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> WebSocket connected\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_WS_OPEN \n",
                 recvNum
             );
             #endif
 
             // New Event
-            if (win->has_events) {
-
-                // Generate Webinix internal id
-                char* webinix_internal_id = _webinix_generate_internal_id(win, "");
+            if (win->has_all_events) {
 
                 // New event inf
-                webinix_event_inf_t* event_inf =
-                    (webinix_event_inf_t * ) _webinix_malloc(sizeof(webinix_event_inf_t));
+                webinix_event_inf_t* event_inf = (webinix_event_inf_t*)_webinix_malloc(sizeof(webinix_event_inf_t));
+                event_inf->client = client;
+                event_inf->client_id = client_id;
                 if (win->events_count > WEBUI_MAX_ARG)
                     win->events_count = 0;
                 size_t event_num = win->events_count++;
@@ -8488,41 +8776,33 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
 
                 _webinix_window_event(
                     win, // Event -> Window
-                    event_user, // Event -> Type of this event
+                    client_id, // Event -> Client Unique ID
+                    WEBUI_EVENT_CONNECTED, // Event -> Type of this event
                     "", // Event -> HTML Element
-                    0, // Event -> Event Number
-                    webinix_internal_id // Extras -> Webinix Internal ID
+                    0 // Event -> Event Number
                 );
 
                 // Free event
-                _webinix_free_mem((void * ) webinix_internal_id);
-                _webinix_free_mem((void * ) event_inf);
+                _webinix_free_mem((void*)event_inf);
             }
         } else if (event_type == WEBUI_WS_CLOSE) {
 
-            // Main connection close
-            _webinix_mutex_is_connected(win, WEBUI_MUTEX_FALSE);
-            win->html_handled = false;
-            win->server_handled = false;
-            win->bridge_handled = false;
+            // Connection close
 
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> WebSocket "
-                "Closed\n",
+                "[Core]\t\t_webinix_ws_process(%zu) -> WEBUI_WS_CLOSE \n",
                 recvNum
             );
             #endif
 
             // Events
-            if (win->has_events) {
-
-                // Generate Webinix internal id
-                char* webinix_internal_id = _webinix_generate_internal_id(win, "");
+            if (win->has_all_events) {
 
                 // New event inf
-                webinix_event_inf_t* event_inf =
-                    (webinix_event_inf_t * ) _webinix_malloc(sizeof(webinix_event_inf_t));
+                webinix_event_inf_t* event_inf = (webinix_event_inf_t*)_webinix_malloc(sizeof(webinix_event_inf_t));
+                event_inf->client = client;
+                event_inf->client_id = client_id;
                 if (win->events_count > WEBUI_MAX_ARG)
                     win->events_count = 0;
                 size_t event_num = win->events_count++;
@@ -8533,21 +8813,20 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
 
                 _webinix_window_event(
                     win, // Event -> Window
+                    client_id, // Event -> Client Unique ID
                     WEBUI_EVENT_DISCONNECTED, // Event -> Type of this event
                     "", // Event -> HTML Element
-                    0, // Event -> Event Number
-                    webinix_internal_id // Extras -> Webinix Internal ID
+                    0 // Event -> Event Number
                 );
 
                 // Free event
-                _webinix_free_mem((void * ) webinix_internal_id);
-                _webinix_free_mem((void * ) event_inf);
+                _webinix_free_mem((void*)event_inf);
             }
         }
         #ifdef WEBUI_LOG
         else {
             printf(
-                "[Core]\t\t_webinix_process(%zu) -> UNKNOWN EVENT "
+                "[Core]\t\t_webinix_ws_process(%zu) -> UNKNOWN EVENT "
                 "TYPE (%zu)\n",
                 recvNum, event_type
             );
@@ -8555,25 +8834,25 @@ static void _webinix_process(_webinix_window_t * win, void * ptr, size_t len, si
         #endif
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_process(%zu) -> Finished.\n", recvNum);
+        printf("[Core]\t\t_webinix_ws_process(%zu) -> Finished.\n", recvNum);
         #endif
     }
 }
 
 static WEBUI_THREAD_RECEIVE {
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t[Thread .] _webinix_process_thread()\n");
+    printf("[Core]\t\t[Thread .] _webinix_ws_process_thread()\n");
     #endif
 
     // Get arguments
-    _webinix_recv_arg_t * arg = (_webinix_recv_arg_t * ) _arg;
+    _webinix_recv_arg_t* arg = (_webinix_recv_arg_t* ) _arg;
 
     // Process
-    _webinix_process(arg->win, arg->ptr, arg->len, arg->recvNum, arg->event_type);
+    _webinix_ws_process(arg->win, arg->client, arg->client_id, arg->ptr, arg->len, arg->recvNum, arg->event_type);
 
     // Free
-    _webinix_free_mem((void * ) arg->ptr);
-    _webinix_free_mem((void * ) arg);
+    _webinix_free_mem((void*)arg->ptr);
+    _webinix_free_mem((void*)arg);
 
     WEBUI_THREAD_RETURN
 }
@@ -8633,12 +8912,12 @@ static bool _webinix_socket_test_listen_win32(size_t port_num) {
     struct addrinfo hints;
 
     // Initialize Winsock
-    iResult = WSAStartup(MAKEWORD(2, 2), & wsaData);
+    iResult = WSAStartup(MAKEWORD(2, 2),&wsaData);
     if (iResult != 0) {
         // WSAStartup failed
         return false;
     }
-    ZeroMemory( & hints, sizeof(hints));
+    ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -8646,8 +8925,8 @@ static bool _webinix_socket_test_listen_win32(size_t port_num) {
 
     // Resolve the server address and port
     char the_port[16] = {0};
-    WEBUI_SPF_STATIC(&the_port[0], sizeof(the_port), "%zu", port_num);
-    iResult = getaddrinfo("127.0.0.1", & the_port[0], & hints, & result);
+    WEBUI_SN_PRINTF_STATIC(&the_port[0], sizeof(the_port), "%zu", port_num);
+    iResult = getaddrinfo("127.0.0.1",&the_port[0],&hints,&result);
     if (iResult != 0) {
         // WSACleanup();
         return false;
@@ -8706,7 +8985,7 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
     sa.bInheritHandle = TRUE;
     sa.lpSecurityDescriptor = NULL;
     HANDLE stdout_read, stdout_write;
-    if (!CreatePipe( & stdout_read, & stdout_write, & sa, 0)) {
+    if (!CreatePipe(&stdout_read,&stdout_write,&sa, 0)) {
         return -1;
     }
     if (!SetHandleInformation(stdout_read, HANDLE_FLAG_INHERIT, 0)) {
@@ -8716,7 +8995,7 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
     }
 
     STARTUPINFOA si;
-    ZeroMemory( & si, sizeof(STARTUPINFOA));
+    ZeroMemory(&si, sizeof(STARTUPINFOA));
     si.cb = sizeof(STARTUPINFOA);
     si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
     si.wShowWindow = SW_HIDE;
@@ -8724,7 +9003,7 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
     si.hStdError = stdout_write;
 
     PROCESS_INFORMATION pi;
-    ZeroMemory( & pi, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
 
     if (!CreateProcessA(
             NULL, // No module name (use cmd line)
@@ -8749,17 +9028,17 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
 
     SetFocus(pi.hProcess);
     WaitForSingleObject(pi.hProcess, INFINITE);
-    GetExitCodeProcess(pi.hProcess, & Return);
+    GetExitCodeProcess(pi.hProcess,&Return);
 
     DWORD bytes_read;
     char buffer[WEBUI_STDOUT_BUF];
     size_t output_size = 0;
 
-    while(ReadFile(stdout_read, buffer, WEBUI_STDOUT_BUF, & bytes_read, NULL) && bytes_read > 0) {
+    while(ReadFile(stdout_read, buffer, WEBUI_STDOUT_BUF,&bytes_read, NULL) && bytes_read > 0) {
 
-        char* new_output = realloc( * output, output_size + bytes_read + 1);
+        char* new_output = realloc(*output, output_size + bytes_read + 1);
         if (new_output == NULL) {
-            free( * output);
+            free(*output);
             CloseHandle(stdout_read);
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
@@ -8767,12 +9046,12 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
         }
 
         * output = new_output;
-        memcpy( * output + output_size, buffer, bytes_read);
+        memcpy(*output + output_size, buffer, bytes_read);
         output_size += bytes_read;
     }
 
-    if ( * output != NULL)
-        ( * output)[output_size] = '\0';
+    if (*output != NULL)
+        (*output)[output_size] = '\0';
 
     CloseHandle(stdout_read);
     CloseHandle(pi.hProcess);
@@ -8811,7 +9090,7 @@ static int _webinix_system_win32_out(const char* cmd, char ** output, bool show)
     }
 */
 
-static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show) {
+static int _webinix_system_win32(_webinix_window_t* win, char* cmd, bool show) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_system_win32()\n");
@@ -8835,7 +9114,7 @@ static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show) 
     JOB_OBJECT_EXTENDED_LIMIT_INFORMATION ExtendedInfo = { 0 };
     ExtendedInfo.BasicLimitInformation.LimitFlags =
     JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION |
-    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE; SetInformationJobObject(JobObject,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;SetInformationJobObject(JobObject,
     JobObjectExtendedLimitInformation, &ExtendedInfo, sizeof(ExtendedInfo));
     */
 
@@ -8847,9 +9126,9 @@ static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show) 
 
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
-    ZeroMemory( & si, sizeof(si));
+    ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    ZeroMemory( & pi, sizeof(pi));
+    ZeroMemory(&pi, sizeof(pi));
     if (!CreateProcessW(
             NULL, // No module name (use command line)
             wcmd, // Command line
@@ -8866,7 +9145,7 @@ static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show) 
         )) // Pointer to PROCESS_INFORMATION structure
     {
         // CreateProcess failed
-        _webinix_free_mem((void * ) wcmd);
+        _webinix_free_mem((void*)wcmd);
         return -1;
     }
 
@@ -8878,10 +9157,10 @@ static int _webinix_system_win32(_webinix_window_t * win, char* cmd, bool show) 
     // EnumWindows(_webinix_enum_windows_proc_win32, (LPARAM)(pi.dwProcessId));
     // AssignProcessToJobObject(JobObject, pi.hProcess);
     WaitForSingleObject(pi.hProcess, INFINITE);
-    GetExitCodeProcess(pi.hProcess, & Return);
+    GetExitCodeProcess(pi.hProcess,&Return);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-    _webinix_free_mem((void * ) wcmd);
+    _webinix_free_mem((void*)wcmd);
 
     if (Return == 0)
         return 0;
@@ -8897,19 +9176,19 @@ static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_
 
     HKEY hKey;
 
-    if (RegOpenKeyExW(key, reg, 0, KEY_READ, & hKey) == ERROR_SUCCESS) {
+    if (RegOpenKeyExW(key, reg, 0, KEY_READ,&hKey) == ERROR_SUCCESS) {
 
         DWORD VALUE_TYPE;
         BYTE VALUE_DATA[WEBUI_MAX_PATH];
         DWORD VALUE_SIZE = sizeof(VALUE_DATA);
 
         // If `value_name` is empty then it will read the "(default)" reg-key
-        if (RegQueryValueExW(hKey, value_name, NULL, & VALUE_TYPE, VALUE_DATA, & VALUE_SIZE) == ERROR_SUCCESS) {
+        if (RegQueryValueExW(hKey, value_name, NULL,&VALUE_TYPE, VALUE_DATA,&VALUE_SIZE) == ERROR_SUCCESS) {
 
             if (VALUE_TYPE == REG_SZ)
-                WEBUI_SPF_STATIC(value, WEBUI_MAX_PATH, "%S", (LPCWSTR) VALUE_DATA);
+                WEBUI_SN_PRINTF_STATIC(value, WEBUI_MAX_PATH, "%S", (LPCWSTR) VALUE_DATA);
             else if (VALUE_TYPE == REG_DWORD)
-                WEBUI_SPF_STATIC(value, WEBUI_MAX_PATH, "%lu", *((DWORD * ) VALUE_DATA));
+                WEBUI_SN_PRINTF_STATIC(value, WEBUI_MAX_PATH, "%lu", *((DWORD * ) VALUE_DATA));
 
             RegCloseKey(hKey);
             return true;
@@ -9106,25 +9385,25 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             RECT bounds = {0, 0, webView->width, webView->height};
             webView->webviewController->lpVtbl->put_Bounds(webView->webviewController, bounds);
             TitleChangedHandler* titleChangedHandler = CreateTitleChangedHandler(webView);
-            EventRegistrationToken token;
+            EventRegistrationToken tk;
             webView->webviewWindow->lpVtbl->add_DocumentTitleChanged(webView->webviewWindow, 
-            (ICoreWebView2DocumentTitleChangedEventHandler*)titleChangedHandler, &token);
+            (ICoreWebView2DocumentTitleChangedEventHandler*)titleChangedHandler, &tk);
             webView->webviewWindow->lpVtbl->Navigate(webView->webviewWindow, webView->url);
             // Microsoft WebView2 Auto JS Inject
-            if (_webinix_core.config.show_auto_js_inject) {
+            if (_webinix.config.show_auto_js_inject) {
                 // HRESULT AutoInject = webView->webviewWindow->lpVtbl->AddScriptToExecuteOnDocumentCreated(
-                //     webView->webviewWindow, L"var script = document.createElement('script'); "
-                //     "script.src = 'webinix.js'; document.head.appendChild(script);", 
+                //     webView->webviewWindow, L"var script = document.createElement('script');"
+                //     "script.src = 'webinix.js';document.head.appendChild(script);", 
                 //     NULL
                 // );
                 // if (FAILED(AutoInject)) {
                 //     #ifdef WEBUI_LOG
-                //     printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> Auto Inject creation failed.\n");
+                //     printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> Auto Inject creation failed\n");
                 //     #endif
                 // }
                 // else {
                 //     #ifdef WEBUI_LOG
-                //     printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> Auto Inject creation succeeds.\n");
+                //     printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> Auto Inject creation succeeds\n");
                 //     #endif
                 // }
             }
@@ -9256,7 +9535,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         // Initializing
         // Expecting `_webinix_webview_thread` to change `mutex_is_webview_update` 
-        // to `false` when initialization is done, and `_webinix_core.is_webview`
+        // to `false` when initialization is done, and `_webinix.is_webview`
         // to `true` if loading the WebView is succeeded.
         _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
 
@@ -9288,10 +9567,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", (_webinix_core.is_webview == true));
+        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", (_webinix.is_webview == true));
         #endif
 
-        return (_webinix_core.is_webview);
+        return (_webinix.is_webview);
     };
 
     static bool _webinix_wv_set_size(_webinix_wv_win32_t* webView, int windowWidth, int windowHeight) {
@@ -9382,9 +9661,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
 
         // WebView Dynamic Library
-        if (!_webinix_core.webviewLib) {
-            _webinix_core.webviewLib = LoadLibraryA("WebView2Loader.dll");
-            if (!_webinix_core.webviewLib) {
+        if (!_webinix.webviewLib) {
+            _webinix.webviewLib = LoadLibraryA("WebView2Loader.dll");
+            if (!_webinix.webviewLib) {
                 _webinix_wv_free(win->webView);
                 win->webView = NULL;
                 _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
@@ -9430,7 +9709,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         ShowWindow(win->webView->hwnd, SW_SHOW);
         static CreateCoreWebView2EnvironmentWithOptionsFunc createEnv = NULL;
         createEnv = (CreateCoreWebView2EnvironmentWithOptionsFunc)(void*)GetProcAddress(
-            _webinix_core.webviewLib,
+            _webinix.webviewLib,
             "CreateCoreWebView2EnvironmentWithOptions"
         );
 
@@ -9450,17 +9729,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
 
         // Get temp chache folder path
-        if (!_webinix_core.webview_cacheFolder) {
+        if (!_webinix.webview_cacheFolder) {
             const char* temp = _webinix_get_temp_path();
-            _webinix_core.webview_cacheFolder = (char*)_webinix_malloc(WEBUI_MAX_PATH);
-            WEBUI_SPF_DYN(_webinix_core.webview_cacheFolder, WEBUI_MAX_PATH, 
+            _webinix.webview_cacheFolder = (char*)_webinix_malloc(WEBUI_MAX_PATH);
+            WEBUI_SN_PRINTF_DYN(_webinix.webview_cacheFolder, WEBUI_MAX_PATH, 
                 "%s%s.Webinix%sWebinixWebViewCache_%"PRIu32, temp, webinix_sep, webinix_sep,
                 _webinix_generate_random_uint32());
         }
 
         // Convert chache folder path to wide
         wchar_t* cacheFolderW = NULL;
-        _webinix_str_to_wide(_webinix_core.webview_cacheFolder, &cacheFolderW);
+        _webinix_str_to_wide(_webinix.webview_cacheFolder, &cacheFolderW);
 
         HRESULT hr = createEnv(NULL, cacheFolderW, NULL, 
             (ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler*)environmentHandler
@@ -9470,7 +9749,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
             // Success
             // Let `wait()` use safe main-thread WebView2 loop
-            _webinix_core.is_webview = true;
+            _webinix.is_webview = true;
             _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
 
             MSG msg;
@@ -9535,7 +9814,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         win->webView = NULL;
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End.\n");
+        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End\n");
         #endif
 
         WEBUI_THREAD_RETURN
@@ -9664,7 +9943,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             dlclose(libgtk);
         }
 
-        _webinix_core.is_webview = false;
+        _webinix.is_webview = false;
         libgtk = NULL;
         libwebkit = NULL;
     };
@@ -9701,7 +9980,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             _webinix_wv_event_closed), (void *)win, NULL, 0);
         
         // Linux GTK WebView Auto JS Inject
-        if (_webinix_core.config.show_auto_js_inject) {
+        if (_webinix.config.show_auto_js_inject) {
             // ...
         }
 
@@ -9750,17 +10029,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         // Linux GTK WebView
 
-        if (_webinix_core.is_browser_main_run)
+        if (_webinix.is_browser_main_run)
             return false;
 
         // Dynamic Load
         if (!libgtk || !libwebkit) {
 
-            _webinix_core.is_webview = false;
+            _webinix.is_webview = false;
 
             // GTK Dynamic Load
             const char *gtk_libs[] = GTK_RUNTIME_ARR;
-            for (size_t i = 0; i < (sizeof(gtk_libs) / sizeof(gtk_libs[0])); ++i) {
+            for (size_t i = 0; i < (sizeof(gtk_libs) / sizeof(gtk_libs[0]));++i) {
                 libgtk = dlopen(gtk_libs[i], RTLD_LAZY);
                 if (libgtk) {
                     #ifdef WEBUI_LOG
@@ -9778,7 +10057,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
     
             // WebView Dynamic Load
             const char *webkit_libs[] = WEBKIT_RUNTIME_ARR;
-            for (size_t i = 0; i < (sizeof(webkit_libs) / sizeof(webkit_libs[0])); ++i) {
+            for (size_t i = 0; i < (sizeof(webkit_libs) / sizeof(webkit_libs[0]));++i) {
                 libwebkit = dlopen(webkit_libs[i], RTLD_LAZY);
                 if (libwebkit) {
                     #ifdef WEBUI_LOG
@@ -9846,7 +10125,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
                 )
             {
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> GTK symbol addresses failed.\n");
+                printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> GTK symbol addresses failed\n");
                 #endif
                 _webinix_wv_free();
                 return false;
@@ -9855,7 +10134,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             // Check WebView
             if (!webkit_web_view_new || !webkit_web_view_load_uri || !webkit_web_view_get_title) {
                 #ifdef WEBUI_LOG
-                printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> WebKit symbol addresses failed.\n");
+                printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> WebKit symbol addresses failed\n");
                 #endif
                 _webinix_wv_free();
                 return false;
@@ -9884,7 +10163,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         win->webView = webView;
 
         // New WebView window
-        if (_webinix_core.is_gtk_main_run) {
+        if (_webinix.is_gtk_main_run) {
 
             // Schedule the creation of the new WebView
             // window in the main thread `webinix_wait()`
@@ -9911,7 +10190,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         // Initializing
         // Expecting `_webinix_webview_thread` to change `mutex_is_webview_update` 
-        // to `false` when initialization is done, and `_webinix_core.is_webview`
+        // to `false` when initialization is done, and `_webinix.is_webview`
         // to `true` if loading the WebView is succeeded.
         _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_TRUE);
 
@@ -9934,10 +10213,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", (_webinix_core.is_webview == true));
+        printf("[Core]\t\t_webinix_wv_show() -> Return [%d]\n", (_webinix.is_webview == true));
         #endif
 
-        return (_webinix_core.is_webview);
+        return (_webinix.is_webview);
     };
 
     static WEBUI_THREAD_WEBVIEW {
@@ -9969,7 +10248,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
             // Success
             // Let `wait()` use safe main-thread GTK WebView loop
-            _webinix_core.is_webview = true;
+            _webinix.is_webview = true;
             _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_FALSE);
 
             while (true) {
@@ -10016,7 +10295,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         win->webView = NULL;
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End.\n");
+        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End\n");
         #endif
 
         WEBUI_THREAD_RETURN
@@ -10069,20 +10348,19 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_wv_event_closed([%d])\n", index);
         #endif
-        if (_webinix_core.wins[index] != NULL) {
-            _webinix_core.wins[index]->is_closed = true;
-            if (_webinix_core.wins[index]->webView) {
+        if (_webinix.wins[index] != NULL) {
+            _webinix.wins[index]->is_closed = true;
+            if (_webinix.wins[index]->webView) {
                 // Close window
-                if (_webinix_core.wins[index]->connected) {
-                    _webinix_send(
-                        _webinix_core.wins[index], _webinix_core.wins[index]->token, 0, 
-                        WEBUI_CMD_CLOSE, NULL, 0
+                if (_webinix_mutex_is_connected(_webinix.wins[index], WEBUI_MUTEX_NONE)) {
+                    _webinix_send_all(
+                        _webinix.wins[index], 0, WEBUI_CMD_CLOSE, NULL, 0
                     );
                 }
                 // Stop WebView thread if any
-                if (_webinix_core.wins[index]->webView) {
-                    _webinix_core.wins[index]->webView->stop = true;
-                    _webinix_mutex_is_webview_update(_webinix_core.wins[index], WEBUI_MUTEX_TRUE);    
+                if (_webinix.wins[index]->webView) {
+                    _webinix.wins[index]->webView->stop = true;
+                    _webinix_mutex_is_webview_update(_webinix.wins[index], WEBUI_MUTEX_TRUE);
                 }
             }
         }
@@ -10096,14 +10374,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         // Apple macOS WKWebView
 
-        if (_webinix_core.is_browser_main_run)
+        if (_webinix.is_browser_main_run)
             return false;
 
-        if (!_webinix_core.is_wkwebview_main_run) {
+        if (!_webinix.is_wkwebview_main_run) {
             if (_webinix_macos_wv_new(win->window_number)) {
-                if (!_webinix_core.is_webview) {
+                if (!_webinix.is_webview) {
                     // Let `wait()` use safe main-thread WKWebView loop
-                    _webinix_core.is_webview = true;
+                    _webinix.is_webview = true;
                     // Set close callback once
                     _webinix_macos_wv_set_close_cb(_webinix_wv_event_closed);
                 }
@@ -10234,10 +10512,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
         // Close window in case WKWebView did
         // not fire the close event.
-        if (win->connected) {
-            _webinix_send(
-                win, win->token, 0, 
-                WEBUI_CMD_CLOSE, NULL, 0
+        if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
+            _webinix_send_all(
+                win, 0, WEBUI_CMD_CLOSE, NULL, 0
             );
         }
 
@@ -10246,7 +10523,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         win->webView = NULL;
 
         #ifdef WEBUI_LOG
-        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End.\n");
+        printf("[Core]\t\t[Thread .] _webinix_webview_thread() -> End\n");
         #endif
 
         WEBUI_THREAD_RETURN
@@ -10325,7 +10602,7 @@ static WEBUI_THREAD_MONITOR {
             while (i < length) {
                 struct inotify_event *event = (struct inotify_event *)&buffer[i];
                 if (event->len) {
-                    if (event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY)) {
+                    if (event->mask&(IN_CREATE | IN_DELETE | IN_MODIFY)) {
                         #ifdef WEBUI_LOG
                         printf("[Core]\t\t[Thread .] _webinix_folder_monitor_thread() -> Folder updated\n");
                         #endif
@@ -10365,7 +10642,7 @@ static WEBUI_THREAD_MONITOR {
                 #endif
                 break;
             } else if (nev > 0) {
-                if (event.fflags & NOTE_WRITE) {
+                if (event.fflags&NOTE_WRITE) {
                     #ifdef WEBUI_LOG
                     printf("[Core]\t\t[Thread .] _webinix_folder_monitor_thread() -> Folder updated\n");
                     #endif
