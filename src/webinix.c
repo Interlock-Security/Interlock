@@ -8029,14 +8029,13 @@ static void _webinix_receive(_webinix_window_t* win, struct mg_connection* clien
         }
         else {
             // Register
-            size_t new_client_id = 0;
-            if (_webinix_client_save(win, client, &new_client_id)) {
+            if (_webinix_client_save(win, client, &client_id)) {
                 // Status
                 _webinix_mutex_is_connected(win, WEBUI_MUTEX_TRUE); // server thread
                 #ifdef WEBUI_LOG
                 printf(
                     "[Core]\t\t_webinix_receive(%zu) -> Client #%zu connected\n",
-                    recvNum, new_client_id
+                    recvNum, client_id
                 );
                 #endif
             }
