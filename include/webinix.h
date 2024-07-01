@@ -129,6 +129,7 @@ enum webinix_browser {
     Epic,           // 10. The Epic Browser
     Yandex,         // 11. The Yandex Browser
     ChromiumBased,  // 12. Any Chromium based browser
+    WebView,        // 13. WebView (Non-web-browser)
 };
 
 enum webinix_runtime {
@@ -165,15 +166,22 @@ typedef enum {
     //
     // Default: False
     folder_monitor,
+    // Allow multiple clients to connect to the same window,
+    // This is helpful for web apps (non-desktop software),
+    // Please see the documentation for more details.
+    //
+    // Default: False
+    multi_client,
 } webinix_config;
 
 // -- Structs -------------------------
 typedef struct webinix_event_t {
-    size_t window;       // The window object number
-    size_t event_type;   // Event type
-    char* element;       // HTML element ID
-    size_t event_number; // Internal Webinix
-    size_t bind_id;      // Bind ID
+    size_t window;          // The window object number
+    size_t event_type;      // Event type
+    char* element;          // HTML element ID
+    size_t event_number;    // Internal Webinix
+    size_t bind_id;         // Bind ID
+    size_t client_id;       // Client unique ID
 } webinix_event_t;
 
 // -- Definitions ---------------------
@@ -209,16 +217,16 @@ WEBUI_EXPORT size_t webinix_new_window_id(size_t window_number);
 WEBUI_EXPORT size_t webinix_get_new_window_id(void);
 
 /**
- * @brief Bind a specific html element click event with a function. Empty
- * element means all events.
+ * @brief Bind an HTML element and a JavaScript object with a backend function. Empty
+ * element name means all events.
  *
  * @param window The window number
- * @param element The HTML ID
+ * @param element The HTML element / JavaScript object
  * @param func The callback function
  *
  * @return Returns a unique bind ID.
  *
- * @example webinix_bind(myWindow, "myID", myFunction);
+ * @example webinix_bind(myWindow, "myFunction", myFunction);
  */
 WEBUI_EXPORT size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_event_t* e));
 
@@ -236,17 +244,31 @@ WEBUI_EXPORT size_t webinix_get_best_browser(size_t window);
 
 /**
  * @brief Show a window using embedded HTML, or a file. If the window is already
- * open, it will be refreshed.
+ * open, it will be refreshed. This will refresh all windows in multi-client mode.
  *
  * @param window The window number
  * @param content The HTML, URL, Or a local file
  *
  * @return Returns True if showing the window is successed.
  *
- * @example webinix_show(myWindow, "<html>...</html>"); | webinix_show(myWindow,
- * "index.html"); | webinix_show(myWindow, "http://...");
+ * @example webinix_show(myWindow, "<html>...</html>"); | 
+ * webinix_show(myWindow, "index.html"); | webinix_show(myWindow, "http://...");
  */
 WEBUI_EXPORT bool webinix_show(size_t window, const char* content);
+
+/**
+ * @brief Show a window using embedded HTML, or a file. If the window is already
+ * open, it will be refreshed. Single client.
+ *
+ * @param e The event struct
+ * @param content The HTML, URL, Or a local file
+ *
+ * @return Returns True if showing the window is successed.
+ *
+ * @example webinix_show_client(e, "<html>...</html>"); | 
+ * webinix_show_client(e, "index.html"); | webinix_show_client(e, "http://...");
+ */
+WEBUI_EXPORT bool webinix_show_client(webinix_event_t* e, const char* content);
 
 /**
  * @brief Same as `webinix_show()`. But using a specific web browser.
@@ -324,12 +346,22 @@ WEBUI_EXPORT void webinix_wait(void);
 
 /**
  * @brief Close a specific window only. The window object will still exist.
+ * All clients.
  *
  * @param window The window number
  *
  * @example webinix_close(myWindow);
  */
 WEBUI_EXPORT void webinix_close(size_t window);
+
+/**
+ * @brief Close a specific client.
+ *
+ * @param e The event struct
+ *
+ * @example webinix_close_client(e);
+ */
+WEBUI_EXPORT void webinix_close_client(webinix_event_t* e);
 
 /**
  * @brief Close a specific window and free all memory resources.
@@ -449,7 +481,7 @@ WEBUI_EXPORT void webinix_free(void* ptr);
 WEBUI_EXPORT void* webinix_malloc(size_t size);
 
 /**
- * @brief Safely send raw data to the UI.
+ * @brief Safely send raw data to the UI. All clients.
  *
  * @param window The window number
  * @param function The JavaScript function to receive raw data: `function
@@ -457,9 +489,23 @@ WEBUI_EXPORT void* webinix_malloc(size_t size);
  * @param raw The raw data buffer
  * @param size The raw data size in bytes
  *
- * @example webinix_send_raw(myWindow, "myJavascriptFunction", myBuffer, 64);
+ * @example webinix_send_raw(myWindow, "myJavaScriptFunc", myBuffer, 64);
  */
 WEBUI_EXPORT void webinix_send_raw(size_t window, const char* function, const void* raw, size_t size);
+
+/**
+ * @brief Safely send raw data to the UI. Single client.
+ *
+ * @param e The event struct
+ * @param function The JavaScript function to receive raw data: `function
+ * myFunc(myData){}`
+ * @param raw The raw data buffer
+ * @param size The raw data size in bytes
+ *
+ * @example webinix_send_raw_client(e, "myJavaScriptFunc", myBuffer, 64);
+ */
+WEBUI_EXPORT void webinix_send_raw_client(webinix_event_t* e, const char* function, 
+    const void* raw, size_t size);
 
 /**
  * @brief Set a window in hidden mode. Should be called before `webinix_show()`.
@@ -538,7 +584,7 @@ WEBUI_EXPORT const char* webinix_get_url(size_t window);
 WEBUI_EXPORT void webinix_set_public(size_t window, bool status);
 
 /**
- * @brief Navigate to a specific URL.
+ * @brief Navigate to a specific URL. All clients.
  *
  * @param window The window number
  * @param url Full HTTP URL
@@ -546,6 +592,16 @@ WEBUI_EXPORT void webinix_set_public(size_t window, bool status);
  * @example webinix_navigate(myWindow, "http://domain.com");
  */
 WEBUI_EXPORT void webinix_navigate(size_t window, const char* url);
+
+/**
+ * @brief Navigate to a specific URL. Single client.
+ *
+ * @param e The event struct
+ * @param url Full HTTP URL
+ *
+ * @example webinix_navigate_client(e, "http://domain.com");
+ */
+WEBUI_EXPORT void webinix_navigate_client(webinix_event_t* e, const char* url);
 
 /**
  * @brief Free all memory resources. Should be called only at the end.
@@ -620,7 +676,7 @@ WEBUI_EXPORT size_t webinix_get_child_process_id(size_t window);
 WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
 
 /**
- * @brief Control the Webinix behaviour. It's better to call at the beginning.
+ * @brief Control the Webinix behaviour. It's recommended to be called at the beginning.
  *
  * @param option The desired option from `webinix_config` enum
  * @param status The status of the option, `true` or `false`
@@ -662,7 +718,7 @@ WEBUI_EXPORT bool webinix_set_tls_certificate(const char* certificate_pem, const
 // -- JavaScript ----------------------
 
 /**
- * @brief Run JavaScript without waiting for the response.
+ * @brief Run JavaScript without waiting for the response. All clients.
  *
  * @param window The window number
  * @param script The JavaScript to be run
@@ -672,12 +728,22 @@ WEBUI_EXPORT bool webinix_set_tls_certificate(const char* certificate_pem, const
 WEBUI_EXPORT void webinix_run(size_t window, const char* script);
 
 /**
- * @brief Run JavaScript and get the response back.
+ * @brief Run JavaScript without waiting for the response. Single client.
+ *
+ * @param e The event struct
+ * @param script The JavaScript to be run
+ *
+ * @example webinix_run_client(e, "alert('Hello');");
+ */
+WEBUI_EXPORT void webinix_run_client(webinix_event_t* e, const char* script);
+
+/**
+ * @brief Run JavaScript and get the response back. Work only in single client mode.
  * Make sure your local buffer can hold the response.
  *
  * @param window The window number
  * @param script The JavaScript to be run
- * @param timeout The execution timeout
+ * @param timeout The execution timeout in seconds
  * @param buffer The local buffer to hold the response
  * @param buffer_length The local buffer size
  *
@@ -686,6 +752,23 @@ WEBUI_EXPORT void webinix_run(size_t window, const char* script);
  * @example bool err = webinix_script(myWindow, "return 4 + 6;", 0, myBuffer, myBufferSize);
  */
 WEBUI_EXPORT bool webinix_script(size_t window, const char* script, size_t timeout,
+    char* buffer, size_t buffer_length);
+
+/**
+ * @brief Run JavaScript and get the response back. Single client.
+ * Make sure your local buffer can hold the response.
+ *
+ * @param e The event struct
+ * @param script The JavaScript to be run
+ * @param timeout The execution timeout in seconds
+ * @param buffer The local buffer to hold the response
+ * @param buffer_length The local buffer size
+ *
+ * @return Returns True if there is no execution error
+ *
+ * @example bool err = webinix_script_client(e, "return 4 + 6;", 0, myBuffer, myBufferSize);
+ */
+WEBUI_EXPORT bool webinix_script_client(webinix_event_t* e, const char* script, size_t timeout,
     char* buffer, size_t buffer_length);
 
 /**
