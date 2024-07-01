@@ -668,6 +668,37 @@ static const char* webinix_def_icon = "<svg xmlns=\"http://www.w3.org/2000/svg\"
 "evenodd\"/></svg>"; static const char* webinix_def_icon_type = "image/svg+xml";
 
 // -- Functions -----------------------
+void webinix_run_client(webinix_event_t* e, const char* script) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_run_client([%zu])\n", e->window);
+    printf("[User] webinix_run_client([%zu]) -> Script: [%s]\n", e->window, script);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    size_t js_len = _webinix_strlen(script);
+    if (js_len < 1)
+        return;
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[e->window];
+
+    if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
+        return;
+
+    // Packet Protocol Format:
+    // [...]
+    // [CMD]
+    // [Script]
+
+    // Send the packet to single client
+    _webinix_send_client(win, win->clients[e->client_id], 0, WEBUI_CMD_JS_QUICK, script, js_len);
+}
+
 void webinix_run(size_t window, const char* script) {
 
     #ifdef WEBUI_LOG
@@ -695,7 +726,7 @@ void webinix_run(size_t window, const char* script) {
     // [CMD]
     // [Script]
 
-    // Send the packet
+    // Send the packet to all clients
     _webinix_send_all(win, 0, WEBUI_CMD_JS_QUICK, script, js_len);
 }
 
@@ -715,31 +746,28 @@ void webinix_set_file_handler(size_t window, const void*(*handler)(const char* f
     win->files_handler = handler;
 }
 
-bool webinix_script(size_t window, const char* script, size_t timeout_second, char* buffer, size_t buffer_length) {
+bool webinix_script_client(webinix_event_t* e, const char* script, size_t timeout,
+    char* buffer, size_t buffer_length) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_script([%zu])\n", window);
-    printf("[User] webinix_script([%zu]) -> Script [%s] \n", window, script);
-    printf("[User] webinix_script([%zu]) -> Response Buffer @ 0x%p \n", window, buffer);
-    printf("[User] webinix_script([%zu]) -> Response Buffer Size %zu bytes \n", window, buffer_length);
+    printf("[User] webinix_script_client([%zu])\n", e->window);
+    printf("[User] webinix_script_client([%zu]) -> Script [%s] \n", e->window, script);
+    printf("[User] webinix_script_client([%zu]) -> Response Buffer @ 0x%p \n", e->window, buffer);
+    printf("[User] webinix_script_client([%zu]) -> Response Buffer Size %zu bytes \n", e->window, buffer_length);
     #endif
+
+    // Initializing response buffer
+    if (buffer_length > 0) {
+        memset(buffer, 0, buffer_length); 
+    }
 
     // Initialization
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return false;
-    _webinix_window_t* win = _webinix.wins[window];
-
-    // Initializing response buffer
-    if (buffer_length > 0)
-        memset(buffer, 0, buffer_length);
-    
-    // Stop if multi clients mode as we can't
-    // send and receive from all clients
-    if (_webinix.config.multi_client)
-        return false;
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
         return false;
@@ -764,12 +792,12 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     // [Script]
 
     // Send the packet
-    _webinix_send_client(win, win->clients[0], run_id, WEBUI_CMD_JS, script, js_len);
+    _webinix_send_client(win, win->clients[e->client_id], run_id, WEBUI_CMD_JS, script, js_len);
 
     bool js_status = false;
 
     // Wait for UI response
-    if (timeout_second < 1 || timeout_second > 86400) {
+    if (timeout < 1 || timeout > 86400) {
 
         // Wait forever
         for (;;) {
@@ -792,7 +820,7 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
             _webinix_mutex_unlock(&_webinix.mutex_js_run);
             if (js_status)
                 break;
-            if (_webinix_timer_is_end(&timer, (timeout_second * 1000)))
+            if (_webinix_timer_is_end(&timer, (timeout * 1000)))
                 break;
         }
     }
@@ -819,6 +847,34 @@ bool webinix_script(size_t window, const char* script, size_t timeout_second, ch
     }
 
     return false;
+}
+
+bool webinix_script(size_t window, const char* script, size_t timeout,
+    char* buffer, size_t buffer_length) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_script([%zu])\n", window);
+    #endif
+
+    // Stop if multi-client mode is enabled.
+    // we can't send and receive from all clients
+    if (_webinix.config.multi_client) {
+        #ifdef WEBUI_LOG
+        printf("[User] webinix_script() -> Multi-client mode is enabled, stop.\n");
+        #endif
+        // Initializing response buffer
+        if (buffer_length > 0) {
+            memset(buffer, 0, buffer_length); 
+        }
+        return false;
+    }
+
+    // Event
+    webinix_event_t e;
+    e.window = window;
+    e.client_id = 0; // Single client
+
+    return webinix_script_client(&e, script, timeout, buffer, buffer_length);
 }
 
 WEBUI_DISABLE_OPTIMIZATION_START
@@ -1011,6 +1067,30 @@ bool webinix_is_high_contrast() {
     return is_enabled;
 }
 
+void webinix_close_client(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_close_client([%zu])\n", e->window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[e->window];
+
+    // Packet Protocol Format:
+    // [...]
+    // [CMD]
+    // Send the packet
+    _webinix_send_client(win, win->clients[e->client_id], 0, WEBUI_CMD_CLOSE, NULL, 0);
+
+    // Forced close
+    mg_close_connection(win->clients[e->client_id]);
+}
+
 void webinix_close(size_t window) {
 
     #ifdef WEBUI_LOG
@@ -1025,20 +1105,17 @@ void webinix_close(size_t window) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
+    // Close
     if (!win->webView) {
-
         if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE)) {
-
             // Packet Protocol Format:
             // [...]
             // [CMD]
-
             // Send the packet
             _webinix_send_all(win, 0, WEBUI_CMD_CLOSE, NULL, 0);
         }
     }
     else {
-
         // Stop WebView thread if any
         if (win->webView) {
             win->webView->stop = true;
@@ -1173,6 +1250,37 @@ void webinix_set_icon(size_t window, const char* icon, const char* icon_type) {
 
     win->icon = icon_cpy;
     win->icon_type = icon_type_cpy;
+}
+
+void webinix_navigate_client(webinix_event_t* e, const char* url) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_navigate_client([%zu], [%s])\n", e->window, url);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[e->window];
+
+    // Web-Browser Window
+    if (!win->webView) {
+
+        if (!_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
+            return;
+
+        // Packet Protocol Format:
+        // [...]
+        // [CMD]
+        // [URL]
+
+        // Send the packet
+        _webinix_send_client(win, win->clients[e->client_id], 0, WEBUI_CMD_NAVIGATION, 
+            url, _webinix_strlen(url));
+    }
 }
 
 void webinix_navigate(size_t window, const char* url) {
@@ -1443,6 +1551,26 @@ void webinix_delete_profile(size_t window) {
     }
 }
 
+bool webinix_show_client(webinix_event_t* e, const char* content) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_show_client([%zu])\n", e->window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return false;
+    _webinix_window_t* win = _webinix.wins[e->window];
+
+    // Show the window using WebView or using any browser
+    win->allow_webview = true;
+    // Single client
+    return _webinix_show(win, win->clients[e->client_id], content, AnyBrowser);
+}
+
 bool webinix_show(size_t window, const char* content) {
 
     #ifdef WEBUI_LOG
@@ -1457,8 +1585,9 @@ bool webinix_show(size_t window, const char* content) {
         return false;
     _webinix_window_t* win = _webinix.wins[window];
 
-    // Show the window WebView, or using any browser
+    // Show the window using WebView or using any browser
     win->allow_webview = true;
+    // All clients
     return _webinix_show(win, NULL, content, AnyBrowser);
 }
 
@@ -2484,22 +2613,22 @@ void webinix_set_public(size_t window, bool status) {
     win->is_public = status;
 }
 
-void webinix_send_raw(size_t window, const char* function, const void * raw, size_t size) {
+void webinix_send_raw_client(webinix_event_t* e, const char* function, const void* raw, size_t size) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_send_raw(%zu bytes)\n", size);
+    printf("[User] webinix_send_raw_client(%zu bytes)\n", size);
     #endif
 
-    if (size < 1 || _webinix_strlen(function) < 1 || raw == NULL)
+    if ((size < 1) || (_webinix_strlen(function) < 1) || (raw == NULL))
         return;
 
     // Initialization
     _webinix_init();
 
     // Dereference
-    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
         return;
-    _webinix_window_t* win = _webinix.wins[window];
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Generate data
     size_t data_len = _webinix_strlen(function) + 1 + size;
@@ -2527,7 +2656,56 @@ void webinix_send_raw(size_t window, const char* function, const void * raw, siz
     // [Function, Null, RawData]
 
     // Send the packet
+    _webinix_send_client(win, win->clients[e->client_id], 0, 
+        WEBUI_CMD_SEND_RAW, (const char*)buf, data_len);
+    _webinix_free_mem((void*)buf);
+}
+
+void webinix_send_raw(size_t window, const char* function, const void * raw, size_t size) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_send_raw(%zu bytes)\n", size);
+    #endif
+
+    if ((size < 1) || (_webinix_strlen(function) < 1) || (raw == NULL))
+        return;
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Generate data
+    size_t data_len = _webinix_strlen(function) + 1 + size;
+    char* buf = (char*)_webinix_malloc(data_len);
+
+    // Add Function
+    size_t p = 0;
+    for (size_t i = 0; i < _webinix_strlen(function); i++)
+        buf[p++] = function [i];
+
+    // Add Null
+    buf[p] = 0x00;
+    p++;
+
+    // Add Data
+    char* ptr = (char*)raw;
+    for (size_t i = 0; i < size; i++) {
+        buf[p++] = *ptr;
+        ptr++;
+    }
+
+    // Packet Protocol Format:
+    // [...]
+    // [CMD]
+    // [Function, Null, RawData]
+
+    // Send the packet
     _webinix_send_all(win, 0, WEBUI_CMD_SEND_RAW, (const char*)buf, data_len);
+    _webinix_free_mem((void*)buf);
 }
 
 char* webinix_encode(const char* str) {
@@ -3186,7 +3364,7 @@ size_t webinix_interface_bind(size_t window, const char* element, void(*func)(si
 
     // Dereference
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
-        return;
+        return 0;
     _webinix_window_t* win = _webinix.wins[window];
 
     // Bind
@@ -3571,7 +3749,7 @@ static bool _webinix_is_empty(const char* s) {
 static size_t _webinix_strlen(const char* s) {
 
     #ifdef WEBUI_LOG_VERBOSE
-    printf("[Core]\t\t_webinix_strlen()\n");
+    //printf("[Core]\t\t_webinix_strlen()\n");
     #endif
 
     if (_webinix_is_empty(s))
@@ -8225,8 +8403,8 @@ static void _webinix_client_remove(_webinix_window_t* win, struct mg_connection*
             if (win->clients_count > 0)
                 win->clients_count--;
             // Close
-            mg_close_connection(client);            
             _webinix_mutex_unlock(&_webinix.mutex_client);
+            mg_close_connection(client);
             return;
         }
     }
@@ -8234,9 +8412,9 @@ static void _webinix_client_remove(_webinix_window_t* win, struct mg_connection*
     // Client not found
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_client_remove() -> Client not found\n");
-    #endif    
-    mg_close_connection(client);
+    #endif
     _webinix_mutex_unlock(&_webinix.mutex_client);
+    mg_close_connection(client);
 }
 
 static bool _webinix_client_get_id(_webinix_window_t* win, struct mg_connection* client, size_t* client_id) {
