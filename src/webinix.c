@@ -83,6 +83,7 @@
 #define WEBUI_SHOW_HTML      (1)     // Show window using HTML
 #define WEBUI_SHOW_FILE      (2)     // Show window using a local file
 #define WEBUI_SHOW_URL       (3)     // Show window using a URL
+#define WEBUI_SHOW_FOLDER    (4)     // Show window using a Folder
 #define WEBUI_MIN_PORT       (10000) // Minimum socket port
 #define WEBUI_MAX_PORT       (65500) // Should be less than 65535
 #define WEBUI_STDOUT_BUF     (10240) // Command STDOUT output buffer size
@@ -1549,6 +1550,38 @@ void webinix_delete_profile(size_t window) {
             _webinix_delete_folder(win->profile_path);
         }
     }
+}
+
+const char* webinix_start_server(size_t window, const char* path) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_start_server([%zu])\n", window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return "";
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Check
+    if (win->server_running || _webinix_is_empty(path) ||
+        (_webinix_strlen(path) > WEBUI_MAX_PATH) ||
+        !_webinix_folder_exist((char*)path)) {
+        return "";
+    }
+
+    // Make `wait()` waits forever
+    webinix_set_timeout(0);
+
+    // Start the window without any GUI
+    if (webinix_show_browser(window, path, NoBrowser)) {
+        return webinix_get_url(window);
+    }
+
+    return "";
 }
 
 bool webinix_show_client(webinix_event_t* e, const char* content) {
@@ -3803,7 +3836,7 @@ static bool _webinix_is_valid_url(const char* url) {
     printf("[Core]\t\t_webinix_is_valid_url([%.8s...])\n", url);
     #endif
 
-    if (_webinix_is_empty(url))
+    if ((_webinix_is_empty(url)) || (url[0] != 'h'))
         return false;
     if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0)
         return true;
@@ -6424,12 +6457,30 @@ static bool _webinix_show(_webinix_window_t* win, struct mg_connection* client, 
         return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_URL, browser);
     }
     // Embedded HTML
-    else if (strstr(content_cpy, "<html") || strstr(content_cpy, "<!DOCTYPE") || strstr(content_cpy, "<!doctype") || strstr(content_cpy, "<!Doctype")) {
+    else if (strstr(content_cpy, "<html") || 
+            strstr(content_cpy, "<!DOCTYPE") || 
+            strstr(content_cpy, "<!doctype") || 
+            strstr(content_cpy, "<!Doctype")) {
         #ifdef WEBUI_LOG
         printf("[Core]\t\t_webinix_show() -> Embedded HTML:\n");
         printf("- - -[HTML]- - - - - - - - - -\n%s\n- - - - - - - - - - - - - - - -\n", content_cpy);
         #endif
         return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_HTML, browser);
+    }
+    // Folder
+    else if (_webinix_folder_exist(content_cpy)) {
+        #ifdef WEBUI_LOG
+        printf("[Core]\t\t_webinix_show() -> Folder: [%s]\n", content_cpy);
+        #endif
+        // Set root folder
+        if (!webinix_set_root_folder(win->window_number, content_cpy)) {
+            #ifdef WEBUI_LOG
+            printf("[Core]\t\t_webinix_show() -> Failed to set folder root path\n");
+            #endif
+            _webinix_free_mem((void*)content_cpy);
+            return false;
+        }
+        return _webinix_show_window(win, client, content_cpy, WEBUI_SHOW_FOLDER, browser);
     }
     // File
     else {
@@ -6652,6 +6703,8 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
         printf("[Core]\t\t_webinix_show_window(HTML, [%zu])\n", browser);
     else if (type == WEBUI_SHOW_URL)
         printf("[Core]\t\t_webinix_show_window(URL, [%zu])\n", browser);
+    else if (type == WEBUI_SHOW_FOLDER)
+        printf("[Core]\t\t_webinix_show_window(FOLDER, [%zu])\n", browser);
     else
         printf("[Core]\t\t_webinix_show_window(FILE, [%zu])\n", browser);
     #endif
@@ -6733,7 +6786,8 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
         size_t len = _webinix_strlen(win->url);
         window_url = (char*)_webinix_malloc(len);
         WEBUI_STR_COPY_DYN(window_url, len, win->url);
-    } else if (type == WEBUI_SHOW_URL) {
+    }
+    else if (type == WEBUI_SHOW_URL) {
 
         const char* user_url = content;
 
@@ -6746,8 +6800,19 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
 
         // Set window URL
         window_url = (char*)user_url;
-    } else {
+    }
+    else if (type == WEBUI_SHOW_FOLDER) {
 
+        const char* folder_path = content;
+
+        // Show a window using a local folder
+        win->is_embedded_html = false;
+        win->html = NULL;
+
+        // Set window URL
+        window_url = win->url;
+    }
+    else {
         const char* user_file = content;
 
         // Show a window using a local file
@@ -6845,13 +6910,15 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
         }
 
         _webinix_free_mem((void*)window_url);
-        if (!runWebView && !runBrowser) {
-            // Browser and WebView are not available
-            _webinix_free_mem((void*)win->html);
-            _webinix_free_mem((void*)win->url);
-            _webinix_free_port(win->server_port);
-            win->server_port = 0;
-            return false;
+        if (browser != NoBrowser) {
+            if (!runWebView && !runBrowser) {
+                // Browser and WebView are not available
+                _webinix_free_mem((void*)win->html);
+                _webinix_free_mem((void*)win->url);
+                _webinix_free_port(win->server_port);
+                win->server_port = 0;
+                return false;
+            }            
         }
 
         if (!_webinix.ui) {
