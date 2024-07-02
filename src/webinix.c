@@ -308,7 +308,7 @@ typedef struct _webinix_window_t {
     // Window
     uint32_t token;
     size_t window_number;
-    char* html_elements[WEBUI_MAX_IDS];
+    const char* html_elements[WEBUI_MAX_IDS];
     bool has_all_events;
     void(*cb[WEBUI_MAX_IDS])(webinix_event_t* e);
     void(*cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char* , size_t, size_t);
@@ -476,7 +476,7 @@ static void * _webinix_run_browser_task(void * _arg);
 #endif
 static void _webinix_init(void);
 static bool _webinix_show(_webinix_window_t* win, struct mg_connection* client, const char* content, size_t browser);
-static bool _webinix_get_cb_index(_webinix_window_t* win, char* element, size_t* id);
+static bool _webinix_get_cb_index(_webinix_window_t* win, const char* element, size_t* id);
 static size_t _webinix_get_free_port(void);
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
@@ -491,7 +491,7 @@ static int _webinix_run_browser(_webinix_window_t* win, char* cmd);
 static void _webinix_clean(void);
 static bool _webinix_browser_exist(_webinix_window_t* win, size_t browser);
 static const char* _webinix_get_temp_path();
-static bool _webinix_folder_exist(char* folder);
+static bool _webinix_folder_exist(const char* folder);
 static void _webinix_delete_folder(char* folder);
 static bool _webinix_browser_create_new_profile(_webinix_window_t* win, size_t browser);
 static bool _webinix_browser_start_chrome(_webinix_window_t* win, const char* address);
@@ -512,7 +512,7 @@ static const char* _webinix_generate_js_bridge(_webinix_window_t* win, struct mg
 static void _webinix_free_mem(void * ptr);
 static size_t _webinix_mb(size_t size);
 static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection* client);
-static bool _webinix_file_exist(char* path);
+static bool _webinix_file_exist(const char* path);
 static void _webinix_free_all_mem(void);
 static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* client,
     const char* content, int type, size_t browser);
@@ -571,7 +571,7 @@ static bool _webinix_port_is_used(size_t port_num);
 static char* _webinix_str_dup(const char* src);
 static void _webinix_bridge_api_handler(webinix_event_t* e);
 static void _webinix_generate_cookie(char* cookie, size_t length);
-static bool _webinix_check_auth_cookie(_webinix_window_t *win, char* full_cookies);
+static bool _webinix_check_auth_cookie(_webinix_window_t *win, const char* full_cookies);
 // WebView
 #ifdef _WIN32
 // Microsoft Windows
@@ -1684,7 +1684,7 @@ size_t webinix_bind(size_t window, const char* element, void(*func)(webinix_even
     if (_webinix_is_empty(element)) {
         win->has_all_events = true;
         size_t index = (exist ? cb_index : _webinix.cb_count++);
-        win->html_elements[index] = (const char*)"";
+        win->html_elements[index] = "";
         win->cb[index] = func;
         #ifdef WEBUI_LOG
         printf("[User] webinix_bind() -> Save bind (all events) at %zu\n", index);
@@ -1693,7 +1693,7 @@ size_t webinix_bind(size_t window, const char* element, void(*func)(webinix_even
     }
 
     // New bind
-    char* element_cpy = _webinix_str_dup(element);
+    const char* element_cpy = (const char*)_webinix_str_dup(element);
     size_t index = (exist ? cb_index : _webinix.cb_count++);
     win->html_elements[index] = element_cpy;
     win->cb[index] = func;
@@ -3328,7 +3328,7 @@ long long int webinix_interface_get_int_at(size_t window, size_t event_number, s
 
     // Dereference
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
-        return NULL;
+        return 0;
     _webinix_window_t* win = _webinix.wins[window];
 
     // New Event
@@ -3351,7 +3351,7 @@ bool webinix_interface_get_bool_at(size_t window, size_t event_number, size_t in
 
     // Dereference
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
-        return NULL;
+        return false;
     _webinix_window_t* win = _webinix.wins[window];
 
     // New Event
@@ -3374,7 +3374,7 @@ size_t webinix_interface_get_size_at(size_t window, size_t event_number, size_t 
 
     // Dereference
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
-        return NULL;
+        return 0;
     _webinix_window_t* win = _webinix.wins[window];
 
     // New Event
@@ -3864,7 +3864,7 @@ static bool _webinix_open_url_native(const char* url) {
     #endif
 }
 
-static bool _webinix_file_exist(char* path) {
+static bool _webinix_file_exist(const char* path) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_file_exist([%s])\n", path);
@@ -4757,7 +4757,7 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t* win, size_t b
     return false;
 }
 
-static bool _webinix_folder_exist(char* folder) {
+static bool _webinix_folder_exist(const char* folder) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_folder_exist([%s])\n", folder);
@@ -7279,7 +7279,7 @@ static const char* _webinix_url_encode(const char* str) {
     return (const char*)encoded;
 }
 
-static bool _webinix_get_cb_index(_webinix_window_t* win, char* element, size_t* id) {
+static bool _webinix_get_cb_index(_webinix_window_t* win, const char* element, size_t* id) {
 
     _webinix_mutex_lock(&_webinix.mutex_bridge);
 
@@ -7486,7 +7486,7 @@ static void _webinix_generate_cookie(char* cookie, size_t length) {
     cookie[length - 1] = '\0';
 }
 
-static bool _webinix_check_auth_cookie(_webinix_window_t *win, char* full_cookies) {
+static bool _webinix_check_auth_cookie(_webinix_window_t *win, const char* full_cookies) {
     if (_webinix_is_empty(full_cookies))
         return false;
     char auth_cookie[WEBUI_AUTH_COOKIE * 2];
@@ -7603,7 +7603,7 @@ static int _webinix_http_handler(struct mg_connection* client, void * _win) {
                 // [Path][Sep][File Name]
                 size_t bf_len = (_webinix_strlen(win->server_root_path) + 1 + 24);
                 char* index_path = (char*)_webinix_malloc(bf_len);
-                for (int i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
+                for (size_t i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
                     WEBUI_SN_PRINTF_DYN(index_path, bf_len, "%s%s%s", win->server_root_path, webinix_sep, index_files[i]);
                     if (_webinix_file_exist(index_path)) {
                         #ifdef WEBUI_LOG
@@ -7671,7 +7671,7 @@ static int _webinix_http_handler(struct mg_connection* client, void * _win) {
                 // [Path][Sep][File Name]
                 size_t bf_len = (_webinix_strlen(folder_path) + 1 + 24);
                 char* index_path = (char*)_webinix_malloc(bf_len);
-                for (int i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
+                for (size_t i = 0; i < (sizeof(index_files) / sizeof(index_files[0])); i++) {
                     WEBUI_SN_PRINTF_DYN(index_path, bf_len, "%s%s%s", folder_path, webinix_sep, index_files[i]);
                     if (_webinix_file_exist(index_path)) {
                         // [URL][/][Index Name]
@@ -7706,7 +7706,7 @@ static int _webinix_http_handler(struct mg_connection* client, void * _win) {
                     const char* index_extensions[] = {
                         "js", "ts"
                     };
-                    for (int i = 0; i < (sizeof(index_extensions) / sizeof(index_extensions[0])); i++) {
+                    for (size_t i = 0; i < (sizeof(index_extensions) / sizeof(index_extensions[0])); i++) {
                         if (strcmp(extension, index_extensions[i]) == 0) {
                             script = true;
                             break;
@@ -7855,7 +7855,7 @@ static void _webinix_ws_close_handler(const struct mg_connection* client, void *
     if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || win == NULL || !_webinix_mutex_is_connected(win, WEBUI_MUTEX_NONE))
         return;
 
-    _webinix_receive(win, client, WEBUI_WS_CLOSE, NULL, 0);
+    _webinix_receive(win, (struct mg_connection*)client, WEBUI_WS_CLOSE, NULL, 0);
 }
 
 static WEBUI_THREAD_SERVER_START {
