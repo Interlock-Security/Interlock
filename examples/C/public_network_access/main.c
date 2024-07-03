@@ -21,6 +21,16 @@ void public_window_events(webinix_event_t* e) {
 	}
 }
 
+void private_window_events(webinix_event_t* e) {
+	if (e->event_type == WEBUI_EVENT_CONNECTED) {
+		// Get URL of public window
+		const char* public_win_url = webinix_get_url(public_window);
+		char javascript[1024];
+		sprintf(javascript, "document.getElementById('urlSpan').innerHTML = '%s';", public_win_url);
+		webinix_run(private_window, javascript);
+	}
+}
+
 int main() {
 
 	// Main Private Window HTML
@@ -96,16 +106,11 @@ int main() {
 	webinix_set_public(public_window, true); // Make URL accessible from public networks
 	webinix_bind(public_window, "", public_window_events); // Bind all events
 	webinix_show_browser(public_window, public_html, NoBrowser); // Set public window HTML
-	const char* public_win_url = webinix_get_url(public_window); // Get URL of public window
 
-	// Main Private Window
+	// Private Window
+	webinix_bind(private_window, "", private_window_events); // Run JS
 	webinix_bind(private_window, "Exit", app_exit); // Bind exit button
 	webinix_show(private_window, private_html); // Show the window
-
-	// Set URL in the UI
-	char javascript[1024];
-	sprintf(javascript, "document.getElementById('urlSpan').innerHTML = '%s';", public_win_url);
-	webinix_run(private_window, javascript);
 
 	// Wait until all windows get closed
 	webinix_wait();
