@@ -107,7 +107,7 @@ int main() {
 	// Bind HTML with a C functions
 	webinix_bind(win, "save", save);
 	webinix_bind(win, "saveAll", saveAll);
-	webinix_bind(win, "exit", exit);
+	webinix_bind(win, "exit_app", exit_app);
 
 	// Bind all events
 	webinix_bind(win, "", events);
