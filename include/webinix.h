@@ -596,6 +596,15 @@ WEBUI_EXPORT void webinix_set_proxy(size_t window, const char* proxy_server);
 WEBUI_EXPORT const char* webinix_get_url(size_t window);
 
 /**
+ * @brief Open an URL in the native default web browser.
+ *
+ * @param url The URL to open
+ *
+ * @example webinix_open_url("https://webinix.me");
+ */
+WEBUI_EXPORT void webinix_open_url(const char* url);
+
+/**
  * @brief Allow a specific window address to be accessible from a public network.
  *
  * @param window The window number
