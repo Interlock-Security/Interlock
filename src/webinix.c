@@ -480,7 +480,7 @@ static void _webinix_send_client_ws(_webinix_window_t* win, struct mg_connection
     size_t connection_id, char* packet, size_t packets_size);
 static void _webinix_window_event(
     _webinix_window_t* win, size_t connection_id, int event_type, char* element, size_t event_number,
-    size_t client_id, char* cookies
+    size_t client_id, const char* cookies
 );
 static int _webinix_cmd_sync(_webinix_window_t* win, char* cmd, bool show);
 static int _webinix_cmd_async(_webinix_window_t* win, char* cmd, bool show);
@@ -7124,7 +7124,7 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
 
 static void _webinix_window_event(
     _webinix_window_t* win, size_t connection_id, int event_type, char* element,
-    size_t event_number, size_t client_id, char* cookies) {
+    size_t event_number, size_t client_id, const char* cookies) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_window_event([%zu], [%zu], [%s])\n", 
@@ -7139,7 +7139,7 @@ static void _webinix_window_event(
     e.event_number = event_number;
     e.connection_id = connection_id;
     e.client_id = client_id;
-    e.cookies = cookies;
+    e.cookies = (char*)cookies;
 
     // Check for all events-bind functions
     if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) && win->has_all_events) {
@@ -7381,7 +7381,7 @@ static bool _webinix_get_cb_index(_webinix_window_t* win, const char* element, s
             if (win->html_elements[i] != NULL) {
                 if (strcmp(win->html_elements[i], element) == 0) {
                     #ifdef WEBUI_LOG_VERBOSE
-                    printf("[Core]\t\t_webinix_get_cb_index() -> Found at %d\n", i);
+                    printf("[Core]\t\t_webinix_get_cb_index() -> Found at %zu\n", i);
                     #endif
                     _webinix_mutex_unlock(&_webinix.mutex_bridge);
                     *id = i;
@@ -9119,7 +9119,7 @@ static void _webinix_ws_process(
                             e.event_number = event_num;
                             e.connection_id = connection_id;
                             e.client_id = _webinix_client_get_id(win, client);
-                            e.cookies = _webinix_get_cookies_full(client); // Full cookies
+                            e.cookies = (char*)_webinix_get_cookies_full(client); // Full cookies
 
                             // Call user function
                             size_t cb_index = 0;
@@ -9233,7 +9233,7 @@ static void _webinix_ws_process(
 
                         // Send the packet
                         _webinix_send_client(
-                            win, client, packet_id, WEBUI_CMD_CHECK_TK, &status, 1
+                            win, client, packet_id, WEBUI_CMD_CHECK_TK, (const char*)&status, 1
                         );
 
                         if (status == 0x01) {
@@ -9374,7 +9374,7 @@ static void _webinix_ws_process(
         else {
             printf(
                 "[Core]\t\t_webinix_ws_process(%zu) -> UNKNOWN EVENT "
-                "TYPE (%zu)\n",
+                "TYPE (%d)\n",
                 recvNum, event_type
             );
         }
@@ -9718,7 +9718,7 @@ static int _webinix_system_win32(_webinix_window_t* win, char* cmd, bool show) {
 static bool _webinix_get_windows_reg_value(HKEY key, LPCWSTR reg, LPCWSTR value_name, char value[WEBUI_MAX_PATH]) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_get_windows_reg_value([%Ls])\n", reg);
+    printf("[Core]\t\t_webinix_get_windows_reg_value([%ls])\n", reg);
     #endif
 
     HKEY hKey;
