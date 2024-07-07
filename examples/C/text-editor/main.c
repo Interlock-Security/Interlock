@@ -21,7 +21,7 @@ int main() {
 	webinix_bind(MainWindow, "close_app", close_app);
 
 	// Show the window, preferably in a chromium based browser
-	if (!webinix_show_browser(MainWindow, "index.html", ChromiumBased))
+	if (!webinix_show_browser(MainWindow, "index.html", AnyBrowser))
 		webinix_show(MainWindow, "index.html");
 
 	// Wait until all windows get closed
