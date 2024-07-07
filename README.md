@@ -1,8 +1,8 @@
 <div align="center">
 
-![Logo](https://raw.githubusercontent.com/webinix-dev/webinix-logo/main/webinix_240.png)
+![Logo](https://raw.githubusercontent.com/webinix-dev/webinix-logo/14fd595844f57ce751dfc751297b1468b10de77a/webinix_120.svg)
 
-# Webinix v2.5.0-beta
+# Webinix v2.5.0-beta.2
 
 [build-status]: https://img.shields.io/github/actions/workflow/status/webinix-dev/webinix/ci.yml?branch=main&style=for-the-badge&logo=githubactions&labelColor=414868&logoColor=C0CAF5
 [last-commit]: https://img.shields.io/github/last-commit/webinix-dev/webinix?style=for-the-badge&logo=github&logoColor=C0CAF5&labelColor=414868
@@ -14,9 +14,9 @@
 [![][release-version]](https://github.com/webinix-dev/webinix/releases/latest)
 [![][license]](https://github.com/webinix-dev/webinix/blob/main/LICENSE)
 
-> Use any web browser or WebView as GUI, with your preferred language in the backend and modern web technologies in the frontend, all in a lightweight portable lib.
+> Use any web browser or WebView as GUI, with your preferred language in the backend and modern web technologies in the frontend, all in a lightweight portable library.
 
-![Screenshot](https://github.com/webinix-dev/webinix/assets/16948659/39c5b000-83eb-4779-a7ce-9769d3acf204)
+![Screenshot](https://raw.githubusercontent.com/webinix-dev/webinix-logo/main/screenshot.png)
 
 </div>
 
@@ -47,23 +47,9 @@
 - Using private profile for safety
 - Cross-platform WebView
 
-## Showcase
-
-This [text editor](https://github.com/webinix-dev/webinix/tree/main/examples/C/text-editor) is a lightweight and portable example written in C using Webinix as the GUI library.
-
-<div align="center">
-
-![Example](https://github.com/webinix-dev/webinix/assets/34311583/c1ccf29c-806a-4742-bfd7-a3dc30cab70b)
-
-</div>
-
 ## UI & The Web Technologies
 
 [Borislav Stanimirov](https://ibob.bg/) discusses using HTML5 in the web browser as GUI at the [C++ Conference 2019 (_YouTube_)](https://www.youtube.com/watch?v=bbbcZd4cuxg).
-
-<!-- <div align="center">
-  <a href="https://www.youtube.com/watch?v=bbbcZd4cuxg"><img src="https://img.youtube.com/vi/bbbcZd4cuxg/0.jpg" alt="Embrace Modern Technology: Using HTML 5 for GUI in C++ - Borislav Stanimirov - CppCon 2019"></a>
-</div> -->
 
 <div align="center">
 
@@ -89,7 +75,7 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ### Runtime Dependencies Comparison
 
-|                                 | WebView           | Qt                         | Webinix               |
+|                                 | Tauri / WebView   | Qt                         | Webinix               |
 | ------------------------------- | ----------------- | -------------------------- | ------------------- |
 | Runtime Dependencies on Windows | _WebView2_        | _QtCore, QtGui, QtWidgets_ | **_A Web Browser_** |
 | Runtime Dependencies on Linux   | _GTK3, WebKitGTK_ | _QtCore, QtGui, QtWidgets_ | **_A Web Browser_** |
@@ -173,20 +159,26 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 
 ## Wrappers
 
-| Language                | Status         | Link                                                      |
-| ----------------------- | -------------- | --------------------------------------------------------- |
-| Go                      | ✔️             | [Go-Webinix](https://github.com/webinix-dev/go-webinix)         |
-| Nim                     | ✔️             | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix)       |
-| Pascal                  | ✔️             | [Pascal-Webinix](https://github.com/webinix-dev/pascal-webinix) |
-| Python                  | ✔️             | [Python-Webinix](https://github.com/webinix-dev/python-webinix) |
-| Rust                    | _not complete_ | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix)     |
-| TypeScript / JavaScript | ✔️             | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix)     |
-| V                       | ✔️             | [V-Webinix](https://github.com/webinix-dev/v-webinix)           |
-| Zig                     | ✔️             | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)       |
-| Odin                    | _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)     |
-| Common Lisp             | ✔️             | [cl-webinix](https://github.com/garlic0x1/cl-webinix)|
-| Delphi                  | ✔️             | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi)|
-| QuickJS                 | ✔️             | [QuickUI](https://github.com/xland/QuickUI)               |
+| Language        | v2.4.0 API | v2.5.0 API | Link                                                    |
+| --------------- | --- | -------------- | ---------------------------------------------------------  |
+| Python          | ✔️ | _not complete_ | [Python-Webinix](https://github.com/webinix-dev/python-webinix)  |
+| Go              | ✔️ | _not complete_ | [Go-Webinix](https://github.com/webinix-dev/go-webinix)          |
+| Zig             | ✔️ |  _not complete_ | [Zig-Webinix](https://github.com/webinix-dev/zig-webinix)        |
+| Nim             | ✔️ |  _not complete_ | [Nim-Webinix](https://github.com/webinix-dev/nim-webinix)        |
+| V               | ✔️ |  _not complete_ | [V-Webinix](https://github.com/webinix-dev/v-webinix)            |
+| Rust            | _not complete_ |  _not complete_ | [Rust-Webinix](https://github.com/webinix-dev/rust-webinix)      |
+| TS / JS (Deno)  | ✔️ |  _not complete_ | [Deno-Webinix](https://github.com/webinix-dev/deno-webinix)      |
+| TS / JS (Bun)   | _not complete_ |  _not complete_ | [Bun-Webinix](https://github.com/webinix-dev/bun-webinix)        |
+| Swift           | _not complete_ |  _not complete_ | [Swift-Webinix](https://github.com/webinix-dev/swift-webinix)    |
+| Odin            | _not complete_ |  _not complete_ | [Odin-Webinix](https://github.com/webinix-dev/odin-webinix)      |
+| Pascal          | _not complete_ |  _not complete_ | [Pascal-Webinix](https://github.com/webinix-dev/pascal-webinix)  |
+| Purebasic       | _not complete_ |  _not complete_ | [Purebasic-Webinix](https://github.com/webinix-dev/purebasic-webinix)|
+| - |  |  |
+| Common Lisp     | _not complete_ |  _not complete_ | [cl-webinix](https://github.com/garlic0x1/cl-webinix)          |
+| Delphi          | _not complete_ |  _not complete_ | [Webinix4Delphi](https://github.com/salvadordf/Webinix4Delphi) |
+| C#              | _not complete_ |  _not complete_ | [Webinix4CSharp](https://github.com/salvadordf/Webinix4CSharp) |
+| Webinix.NET       | _not complete_ |  _not complete_ | [Webinix.NET](https://github.com/Juff-Ma/Webinix.NET)          |
+| QuickJS         | _not complete_ |  _not complete_ | [QuickUI](https://github.com/xland/QuickUI)                |
 
 ## Supported Web Browsers
 
