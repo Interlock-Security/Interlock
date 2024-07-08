@@ -113,7 +113,9 @@ int main() {
 	// Bind events
 	webinix_bind(MyWindow, "", events);
 
-	// Make Deno as the `.ts` and `.js` interpreter
+	// Set the `.ts` and `.js` runtime
+	// webinix_set_runtime(MyWindow, NodeJS);
+	// webinix_set_runtime(MyWindow, Bun);
 	webinix_set_runtime(MyWindow, Deno);
 
 	// Set a custom files handler
