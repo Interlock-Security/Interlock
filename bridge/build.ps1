@@ -59,7 +59,7 @@ if (-not (Test-Path "$project_root\bridge\node_modules\esbuild")) {
 
 # Transpile Webinix-Bridge (TS to JS)
 if (!$silent) { Write-Host "Transpile and bundle Webinix-Bridge from TypeScript to JavaScript..." }
-.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=. ./webinix_bridge.ts $log_level
+.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --minify-syntax --minify-whitespace --outdir=. ./webinix_bridge.ts $log_level
 
 # Convert Webinix-Bridge (JS to C)
 if (!$silent) { Write-Host "Convert Webinix-Bridge JavaScript to C Header..." }
