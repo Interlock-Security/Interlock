@@ -3156,7 +3156,7 @@ void webinix_set_runtime(size_t window, size_t runtime) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
-    if (runtime != Deno && runtime != NodeJS)
+    if (runtime != Deno && runtime != NodeJS && runtime != Bun)
         win->runtime = None;
     else
         win->runtime = runtime;
@@ -4212,6 +4212,25 @@ static int _webinix_serve_file(_webinix_window_t* win, struct mg_connection* cli
     return http_status_code;
 }
 
+static bool _webinix_bun_exist(_webinix_window_t* win) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_bun_exist()\n");
+    #endif
+
+    static bool found = false;
+
+    if (found)
+        return true;
+
+    if (_webinix_cmd_sync(win, "bun -v", false) == 0) {
+
+        found = true;
+        return true;
+    } else
+        return false;
+}
+
 static bool _webinix_deno_exist(_webinix_window_t* win) {
 
     #ifdef WEBUI_LOG
@@ -4425,7 +4444,7 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection*
             if (_webinix_deno_exist(win)) {
 
                 // Set command
-                // [disable coloring][cmd][file][query]
+                // [disable coloring][deno][file][query]
                 size_t bf_len = (128 + _webinix_strlen(full_path) + _webinix_strlen(query));
                 char* cmd = (char*)_webinix_malloc(bf_len);
                 #ifdef _WIN32
@@ -4466,6 +4485,41 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection*
                 // Send back an empty `200 OK`
                 _webinix_http_send(win, client, "text/plain", "", 0, false);
             }
+        } else if (win->runtime == Bun) {
+
+            // Use Bun
+            if (_webinix_bun_exist(win)) {
+
+                // Set command
+                // [bun][file][query]
+                size_t bf_len = (32 + _webinix_strlen(full_path) + _webinix_strlen(query));
+                char* cmd = (char*)_webinix_malloc(bf_len);
+                WEBUI_SN_PRINTF_DYN(cmd, bf_len, "bun \"%s\" \"%s\"", full_path, query);
+
+                // Run command
+                const char* out = _webinix_interpret_command(cmd);
+
+                if (out != NULL) {
+
+                    // Send Bun output 200
+                    _webinix_http_send(win, client, "text/plain", out, _webinix_strlen(out), false);
+                }
+                else {
+
+                    // Bun interpretation failed.
+                    // Send back an empty `200 OK`
+                    _webinix_http_send(win, client, "text/plain", "", 0, false);
+                }
+
+                _webinix_free_mem((void*)cmd);
+                _webinix_free_mem((void*)out);
+            }
+            else {
+
+                // Bun not installed
+                // Send back an empty `200 OK`
+                _webinix_http_send(win, client, "text/plain", "", 0, false);
+            }
         } else if (win->runtime == NodeJS) {
 
             // Use Nodejs
@@ -4474,7 +4528,7 @@ static int _webinix_interpret_file(_webinix_window_t* win, struct mg_connection*
 
                 // Set command
                 // [node][file]
-                size_t bf_len = (16 + _webinix_strlen(full_path));
+                size_t bf_len = (32 + _webinix_strlen(full_path) + _webinix_strlen(query));
                 char* cmd = (char*)_webinix_malloc(bf_len);
                 WEBUI_SN_PRINTF_DYN(cmd, bf_len, "node \"%s\" \"%s\"", full_path, query);
 
@@ -7951,7 +8005,7 @@ static int _webinix_http_handler(struct mg_connection* client, void * _win) {
                     #endif
 
                     // Serve as a script file to be interpreted by
-                    // an external interpreter (Deno, Nodejs)
+                    // an external interpreter (Deno, Bun, Nodejs)
                     http_status_code = _webinix_interpret_file(win, client, NULL, client_id);
                 }
                 else {

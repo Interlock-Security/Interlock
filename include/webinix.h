@@ -136,6 +136,7 @@ enum webinix_runtime {
     None = 0, // 0. Prevent Webinix from using any runtime for .js and .ts files
     Deno,     // 1. Use Deno runtime for .js and .ts files
     NodeJS,   // 2. Use Nodejs runtime for .js files
+    Bun,      // 3. Use Bun runtime for .js and .ts files
 };
 
 enum webinix_event {
@@ -806,7 +807,7 @@ WEBUI_EXPORT bool webinix_script_client(webinix_event_t* e, const char* script, 
  * @brief Chose between Deno and Nodejs as runtime for .js and .ts files.
  *
  * @param window The window number
- * @param runtime Deno | Nodejs | None
+ * @param runtime Deno | Bun | Nodejs | None
  *
  * @example webinix_set_runtime(myWindow, Deno);
  */
