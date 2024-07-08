@@ -96,7 +96,7 @@ fn addLinkerFlags(b: *Build, webinix: *Compile, enable_tls: bool) !void {
         webinix.linkFramework("WebKit");
     } else if (is_windows) {
         webinix.linkSystemLibrary("ws2_32");
-        webinix.linkSystemLibrary("Ole32");
+        webinix.linkSystemLibrary("ole32");
         if (webinix_target.abi == .msvc) {
             webinix.linkSystemLibrary("Advapi32");
             webinix.linkSystemLibrary("Shell32");
