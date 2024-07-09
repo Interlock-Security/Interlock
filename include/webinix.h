@@ -712,9 +712,9 @@ WEBUI_EXPORT bool webinix_set_port(size_t window, size_t port);
  *
  * @return Returns a free port
  *
- * @example int port = _webinix_get_free_port(); webinix_set_port(myWindow, port);
+ * @example int port = webinix_get_free_port(); webinix_set_port(myWindow, port);
  */
-WEBUI_EXPORT size_t _webinix_get_free_port(void);
+WEBUI_EXPORT size_t webinix_get_free_port(void);
 
 /**
  * @brief Control the Webinix behaviour. It's recommended to be called at the beginning.
