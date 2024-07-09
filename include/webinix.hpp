@@ -180,6 +180,9 @@ class window {
     // link of `webinix.js` in case you are trying to use Webinix with an external web-server like NGNIX
     void set_port(size_t port) const { webinix_set_port(webinix_window, port); }
 
+    // Get an available network port to be used by your app or by Webinix.
+    size_t get_free_port() { webinix_get_free_port(); }
+
     // Set window position
     void set_position(unsigned int x, unsigned int y) const { webinix_set_position(webinix_window, x, y); }
 
