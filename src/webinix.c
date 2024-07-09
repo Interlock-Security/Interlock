@@ -473,7 +473,7 @@ static void * _webinix_run_browser_task(void * _arg);
 static void _webinix_init(void);
 static bool _webinix_show(_webinix_window_t* win, struct mg_connection* client, const char* content, size_t browser);
 static bool _webinix_get_cb_index(_webinix_window_t* win, const char* element, size_t* id);
-static size_t _webinix_get_free_port(void);
+// static size_t _webinix_get_free_port(void); // now in headers
 static void _webinix_free_port(size_t port);
 static char* _webinix_get_current_path(void);
 static void _webinix_send_client_ws(_webinix_window_t* win, struct mg_connection* client,
@@ -7294,7 +7294,7 @@ static void _webinix_free_port(size_t port) {
     }
 }
 
-static size_t _webinix_get_free_port(void) {
+size_t _webinix_get_free_port(void) {
 
     #ifdef WEBUI_LOG
     printf("[Core]\t\t_webinix_get_free_port()\n");
