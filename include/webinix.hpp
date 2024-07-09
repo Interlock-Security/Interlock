@@ -176,15 +176,15 @@ class window {
     // Set window size
     void set_size(unsigned int width, unsigned int height) const { webinix_set_size(webinix_window, width, height); }
 
-    // Get the web-server network port to be used by Webinix. Returns 0 if no port is used.
+    // Get the web-server network port of this current window.
     size_t get_port() const { return webinix_get_port(webinix_window); }
 
     // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP 
     // link of `webinix.js` in case you are trying to use Webinix with an external web-server like NGNIX
     void set_port(size_t port) const { webinix_set_port(webinix_window, port); }
 
-    // Get an available network port to be used by your app or by Webinix.
-    size_t get_free_port() { webinix_get_free_port(); }
+    // Get an available usable free network port.
+    size_t get_free_port() { return webinix_get_free_port(); }
 
     // Set window position
     void set_position(unsigned int x, unsigned int y) const { webinix_set_position(webinix_window, x, y); }
