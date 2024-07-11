@@ -1,8 +1,9 @@
-# http://webinix.me
+# https://webinix.me
 # https://github.com/webinix-dev/webinix
 # Copyright (c) 2020-2024 Hassan Draga.
 # Licensed under MIT License.
 # All rights reserved.
+# Canada.
 #
 # Special Thanks to Turiiya (https://github.com/ttytm)
 

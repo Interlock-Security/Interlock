@@ -1,6 +1,6 @@
 /*
   Webinix Library
-  http://webinix.me
+  https://webinix.me
   https://github.com/webinix-dev/webinix
   Copyright (c) 2020-2024 Hassan Draga.
   Licensed under MIT License.
