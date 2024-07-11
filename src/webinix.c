@@ -4218,6 +4218,12 @@ static int _webinix_external_file_handler(_webinix_window_t* win, struct mg_conn
             );
             #endif
 
+            #ifdef WEBUI_LOG
+            printf("---[ External File Handler ]--------\n");
+            printf("%s\n", (char*)callback_resp);
+            printf("------------------------------------\n");
+            #endif
+
             // Send user data (Header + Body)
             mg_write(client, callback_resp, length);
             
