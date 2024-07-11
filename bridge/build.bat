@@ -37,7 +37,7 @@ IF NOT EXIST "%project_root%\bridge\node_modules\esbuild\" (
 
 REM Transpile Webinix-Bridge (TS to JS) & Convert Webinix-Bridge (JS to C)
 echo Transpile and bundle Webinix-Bridge from TypeScript to JavaScript...
-.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --minify-syntax --minify-whitespace --outdir=. ./webinix_bridge.ts & %python_cmd% js2c.py
+.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --minify-syntax --minify-whitespace --outdir=. ./webinix.ts & %python_cmd% js2c.py
 
 echo Done.
 cd %cd%

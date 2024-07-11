@@ -41,4 +41,4 @@ def js_to_c_header(input_filename, output_filename):
         return
 
 # Main
-js_to_c_header('webinix_bridge.js', 'webinix_bridge.h')
+js_to_c_header('webinix.js', 'webinix_bridge.h')

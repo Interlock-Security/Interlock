@@ -1,6 +1,6 @@
 # Webinix Bridge
 
-The Webinix Bridge connects the UI (_Web Browser_) with the backend application through WebSocket. This bridge is written in TypeScript, and it needs to be transpiled to JavaScript using [ESBuild](https://esbuild.github.io/) to produce `webinix_bridge.js`, then converted to C header using the Python script `js2c.py` to generate `webinix_bridge.h`.
+The Webinix Bridge connects the UI (_Web Browser_) with the backend application through WebSocket. This bridge is written in TypeScript, and it needs to be transpiled to JavaScript using [ESBuild](https://esbuild.github.io/) to produce `webinix.js`, then converted to C header using the Python script `js2c.py` to generate `webinix_bridge.h`.
 
 ### Windows
 
@@ -8,7 +8,7 @@ The Webinix Bridge connects the UI (_Web Browser_) with the backend application 
 - Install [Node.js](https://nodejs.org/en/download)
 - cd `webinix\bridge`
 - `npm install esbuild`
-- `.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=.\ .\webinix_bridge.ts`
+- `.\node_modules\.bin\esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=.\ .\webinix.ts`
 - `python js2c.py`
 
 ### Windows PowerShell
@@ -24,7 +24,7 @@ The Webinix Bridge connects the UI (_Web Browser_) with the backend application 
 - Install [Node.js](https://nodejs.org/en/download)
 - cd `webinix/bridge`
 - `npm install esbuild`
-- `./node_modules/.bin/esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./ ./webinix_bridge.ts`
+- `./node_modules/.bin/esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./ ./webinix.ts`
 - `python js2c.py`
 
 ### Linux Bash
@@ -38,7 +38,7 @@ The Webinix Bridge connects the UI (_Web Browser_) with the backend application 
 - Install [Node.js](https://nodejs.org/en/download)
 - cd `webinix/bridge`
 - `npm install esbuild`
-- `./node_modules/.bin/esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./ ./webinix_bridge.ts`
+- `./node_modules/.bin/esbuild --bundle --target="chrome90,firefox90,safari15" --format=esm --tree-shaking=false --outdir=./ ./webinix.ts`
 - `python js2c.py`
 
 ### macOS Bash
