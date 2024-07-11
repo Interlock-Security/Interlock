@@ -1649,7 +1649,7 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     _webinix_window_t* win = _webinix.wins[window];
 
     // Show the window using a specific browser only
-    win->allow_webview = (browser == WebView ? true : false);
+    win->allow_webview = (browser == Webview ? true : false);
 
     // Show for all connected clients
     return _webinix_show(win, NULL, content, browser);
@@ -7056,7 +7056,7 @@ static bool _webinix_show_window(_webinix_window_t* win, struct mg_connection* c
                 #ifdef WEBUI_LOG
                 printf("[Core]\t\t_webinix_show_window() -> WebView Found\n");
                 #endif
-                win->current_browser = WebView;
+                win->current_browser = Webview;
                 runWebView = true;
             }
             else {
