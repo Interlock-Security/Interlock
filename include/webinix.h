@@ -348,7 +348,7 @@ WEBUI_EXPORT void webinix_set_high_contrast(size_t window, bool status);
  *
  * @example bool hc = webinix_is_high_contrast();
  */
-WEBUI_EXPORT bool webinix_is_high_contrast();
+WEBUI_EXPORT bool webinix_is_high_contrast(void);
 
 /**
  * @brief Check if a web browser is installed.

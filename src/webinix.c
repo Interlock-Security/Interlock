@@ -1006,7 +1006,7 @@ bool webinix_browser_exist(size_t browser) {
     return _webinix_browser_exist(NULL, browser);
 }
 
-bool webinix_is_high_contrast() {
+bool webinix_is_high_contrast(void) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_is_high_contrast()\n");
