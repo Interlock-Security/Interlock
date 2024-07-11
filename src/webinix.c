@@ -9479,7 +9479,7 @@ static void _webinix_ws_process(
 
                 // Send the packet
                 _webinix_send_client(
-                    win, client, packet_id, 0x00, NULL, 0, true
+                    win, client, packet_id, (unsigned char)packet[WEBUI_PROTOCOL_CMD], NULL, 0, true
                 );
 
                 // Forced close
