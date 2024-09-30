@@ -263,6 +263,11 @@ namespace webinix {
             webinix_set_size(webinix_window, width, height);
         }
 
+        // Set window minimum size (currently windows only.)
+        void set_minimum_size(unsigned int width, unsigned int height) const {
+        	webinix_set_minimum_size(webinix_window, width, height);
+        }
+
         // Get the network port of a running window. This can be useful to determine the HTTP link of `webinix.js`
         size_t get_port() const {
             return webinix_get_port(webinix_window);
