@@ -430,7 +430,7 @@ WEBUI_EXPORT bool webinix_set_default_root_folder(const char* path);
  * @param handler The handler function: `void myHandler(const char* filename,
  * int* length)`
  *
- * @example webinix_set_file_handler(myWindow, myHandlerFunction);
+ * @example webinix_set_file_handler_window(myWindow, myHandlerFunction);
  */
 WEBUI_EXPORT void webinix_set_file_handler(size_t window, const void* (*handler)(const char* filename, int* length));
 
