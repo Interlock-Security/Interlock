@@ -424,6 +424,7 @@ WEBUI_EXPORT bool webinix_set_default_root_folder(const char* path);
 /**
  * @brief Set a custom handler to serve files. This custom handler should
  * return full HTTP header and body.
+ * This deactivates any previous handler set with `webinix_set_file_handler_window`
  *
  * @param window The window number
  * @param handler The handler function: `void myHandler(const char* filename,
@@ -432,6 +433,20 @@ WEBUI_EXPORT bool webinix_set_default_root_folder(const char* path);
  * @example webinix_set_file_handler(myWindow, myHandlerFunction);
  */
 WEBUI_EXPORT void webinix_set_file_handler(size_t window, const void* (*handler)(const char* filename, int* length));
+
+/**
+ * @brief Set a custom handler to serve files. This custom handler should
+ * return full HTTP header and body.
+ * This deactivates any previous handler set with `webinix_set_file_handler`
+ *
+ * @param window The window number
+ * @param handler The handler function: `void myHandler(size_t window, const char* filename,
+ * int* length)`
+ *
+ * @example webinix_set_file_handler_window(myWindow, myHandlerFunction);
+ */
+WEBUI_EXPORT void webinix_set_file_handler_window(size_t window, const void* (*handler)(size_t window, const char* filename, int* length));
+
 
 /**
  * @brief Check if the specified window is still running.

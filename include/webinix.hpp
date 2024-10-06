@@ -304,8 +304,15 @@ namespace webinix {
         }
 
         // Set a custom handler to serve files. This custom handler should return full HTTP header and body.
+        // Resets previous handler set with `set_file_handler_window`.
         void set_file_handler(const void* (*handler)(const char* filename, int* length)) const {
             webinix_set_file_handler(webinix_window, handler);
+        }
+
+        // Set a custom handler to serve files. This custom handler should return full HTTP header and body.
+        // Resets previous handler set with `set_file_handler`
+        void set_file_handler_window(const void* (*handler)(size_t window, const char* filename, int* length)) const {
+            webinix_set_file_handler_window(webinix_window, handler);
         }
 
         // Set the web browser profile to use. An empty `name` and `path` means the default user profile. Need

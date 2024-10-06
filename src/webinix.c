@@ -329,6 +329,7 @@ typedef struct _webinix_window_t {
     bool position_set;
     size_t process_id;
     const void*(*files_handler)(const char* filename, int* length);
+    const void*(*files_handler_window)(size_t window, const char* filename, int* length);
     webinix_event_inf_t* events[WEBUI_MAX_IDS];
     size_t events_count;
     bool is_public;
@@ -735,7 +736,29 @@ void webinix_set_file_handler(size_t window, const void*(*handler)(const char* f
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
+    // Set the new `files_handler`
     win->files_handler = handler;
+    // And reset any previous `files_handler_window`
+    win->files_handler_window = NULL;
+}
+
+void webinix_set_file_handler_window(size_t window, const void*(*handler)(size_t window, const char* filename, int* length)) {
+
+    if (handler == NULL)
+        return;
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Reset any previous `files_handler`
+    win->files_handler = NULL;
+    // And set `files_handler_window`
+    win->files_handler_window = handler;
 }
 
 bool webinix_script_client(webinix_event_t* e, const char* script, size_t timeout,
@@ -4170,8 +4193,7 @@ static int _webinix_external_file_handler(_webinix_window_t* win, struct mg_conn
     const struct mg_request_info * ri = mg_get_request_info(client);
     const char* url = ri->local_uri;
 
-    if (win->files_handler != NULL) {
-
+    if (win->files_handler != NULL || win->files_handler_window != NULL) {
         // Get file content from the external files handler
         size_t length = 0;
 
@@ -4195,7 +4217,10 @@ static int _webinix_external_file_handler(_webinix_window_t* win, struct mg_conn
         printf("[Core]\t\t_webinix_external_file_handler() -> Calling custom files handler callback\n");
         printf("[Call]\n");
         #endif
-        const void* callback_resp = win->files_handler(url, (int*)&length);
+
+        // True if we pass the window num to the handler, false otherwise.
+        int is_file_handler_window = win->files_handler_window != NULL;
+        const void* callback_resp = is_file_handler_window ? win->files_handler_window(win->num, url, (int*)&length) : win->files_handler(url, (int*)&length);
 
         if (callback_resp != NULL) {
 
@@ -7924,7 +7949,7 @@ static int _webinix_http_handler(struct mg_connection* client, void * _win) {
                 _webinix_http_send(win, client, "application/javascript", "", 0, false);
             }
         }
-        else if ((win->files_handler != NULL) && (_webinix_external_file_handler(win, client, client_id) != 0)) {
+        else if ((win->files_handler != NULL || (win->files_handler_window != NULL)) && (_webinix_external_file_handler(win, client, client_id) != 0)) {
 
             // File already handled by the custom external file handler
             // nothing to do now.
