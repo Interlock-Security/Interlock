@@ -223,6 +223,11 @@ namespace webinix {
             webinix_set_kiosk(webinix_window, status);
         }
 
+        // Add user-defined command line parameters
+        void set_custom_parameters(int paramsLen, char *params) const {
+            webinix_set_custom_parameters(webinix_window, paramsLen, params);
+        }
+
         // Set the window with high-contrast support. Useful when you want to build a better high-contrast theme with CSS.
         void set_high_contrast(bool status) const {
             webinix_set_high_contrast(webinix_window, status);

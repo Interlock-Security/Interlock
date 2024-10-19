@@ -317,6 +317,7 @@ typedef struct _webinix_window_t {
     bool default_profile;
     char* profile_path;
     char* profile_name;
+    char* custom_parameters;
     size_t runtime;
     bool kiosk_mode;
     bool disable_browser_high_contrast;
@@ -996,6 +997,24 @@ void webinix_set_kiosk(size_t window, bool status) {
     _webinix_window_t* win = _webinix.wins[window];
 
     win->kiosk_mode = status;
+}
+
+void webinix_set_custom_parameters(size_t window, int paramsLen, char *params) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_custom_parameters([%zu], [%s])\n", window, params);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    win->custom_parameters = (char *)_webinix_malloc(paramsLen + 1);
+    WEBUI_STR_COPY_STATIC(win->custom_parameters, paramsLen, params);
 }
 
 void webinix_set_high_contrast(size_t window, bool status) {
@@ -6073,6 +6092,11 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
                 c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " --proxy-server=%s", win->proxy_server);
             else
                 c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--no-proxy-server");
+            // User-defined command line parameters.
+            if (!_webinix_is_empty(win->custom_parameters)) {
+                c += WEBUI_SN_PRINTF_DYN(buffer, len, " %s", win->custom_parameters);
+                _webinix_free_mem((void*)win->custom_parameters);
+            }
 
             // URL (END)
             c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--app=");
@@ -6101,6 +6125,11 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
                 // TODO: Add proxy feature to Firefox
                 // Method 1: modifying `prefs.js` / user.js
                 // Method 2: use Proxy Auto-Configuration (PAC) file
+            }
+            // User-defined command line parameters.
+            if (!_webinix_is_empty(win->custom_parameters)) {
+                c += WEBUI_SN_PRINTF_DYN(buffer, len, " %s", win->custom_parameters);
+                _webinix_free_mem((void*)win->custom_parameters);
             }
 
             // URL (END)
