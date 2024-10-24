@@ -4138,7 +4138,7 @@ static char* _webinix_get_file_name_from_url(const char* url) {
     }
 
     // Copy the path to a new string
-    char* file = strdup(pos);
+    char* file = _webinix_str_dup(pos);
 
     // Find the position of the first '?'
     char* question_mark = strchr(file, '?');
@@ -4180,9 +4180,6 @@ static char* _webinix_get_full_path(_webinix_window_t* win, const char* file) {
         }
     }
     #endif
-
-    // Clean
-    _webinix_free_mem((void*)file);
 
     #ifdef WEBUI_LOG_VERBOSE
     printf("[Core]\t\t_webinix_get_full_path() -> Full path: [%s]\n", full_path);
@@ -8857,7 +8854,8 @@ static void _webinix_receive(_webinix_window_t* win, struct mg_connection* clien
     if (win->ws_block) {
         // Process the packet in this current thread
         _webinix_ws_process(win, client, connection_id, arg_ptr, arg_len, ++recvNum, event_type);
-        _webinix_free_mem((void*)arg_ptr);
+        if (arg_ptr != data)
+            _webinix_free_mem((void*)arg_ptr);
     }
     else {
         // Process the packet in a new thread
@@ -9331,7 +9329,7 @@ static void _webinix_ws_process(
 
                             // Check the response
                             if (_webinix_is_empty(event_inf->response))
-                                event_inf->response = (char*)"";
+                                event_inf->response = NULL;
 
                             #ifdef WEBUI_LOG
                             printf(
