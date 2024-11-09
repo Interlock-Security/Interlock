@@ -3755,7 +3755,7 @@ static size_t _webinix_mb(size_t size) {
     size--;
 
     size_t block_size = 4;
-    while(block_size <= size)
+    while(block_size < size)
         block_size *= 2;
 
     return block_size;
