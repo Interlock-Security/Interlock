@@ -999,7 +999,7 @@ void webinix_set_kiosk(size_t window, bool status) {
     win->kiosk_mode = status;
 }
 
-void webinix_set_custom_parameters(size_t window, int paramsLen, char *params) {
+void webinix_set_custom_parameters(size_t window, char* params) {
 
     #ifdef WEBUI_LOG
     printf("[User] webinix_set_custom_parameters([%zu], [%s])\n", window, params);
@@ -1013,8 +1013,12 @@ void webinix_set_custom_parameters(size_t window, int paramsLen, char *params) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
-    win->custom_parameters = (char *)_webinix_malloc(paramsLen + 1);
-    WEBUI_STR_COPY_STATIC(win->custom_parameters, paramsLen, params);
+    size_t len = _webinix_strlen(params);
+    if (len < 1)
+        return;
+
+    win->custom_parameters = (char*)_webinix_malloc(len);
+    WEBUI_STR_COPY_STATIC(win->custom_parameters, len, params);
 }
 
 void webinix_set_high_contrast(size_t window, bool status) {
