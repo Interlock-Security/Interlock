@@ -179,6 +179,10 @@ typedef enum {
     //
     // Default: False
     use_cookies,
+    // If the backend uses asynchronous operations, set this 
+    // option to `True`. This will make webinix wait until the 
+    // backend sets a response using `webinix_return_x()`.
+    asynchronous_response
 } webinix_config;
 
 // -- Structs -------------------------
