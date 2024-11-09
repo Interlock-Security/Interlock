@@ -1013,10 +1013,15 @@ void webinix_set_custom_parameters(size_t window, char* params) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
+    // Check size
     size_t len = _webinix_strlen(params);
     if (len < 1)
         return;
 
+    // Free old
+    _webinix_free_mem((void*)win->custom_parameters);
+
+    // Set new
     win->custom_parameters = (char*)_webinix_malloc(len);
     WEBUI_STR_COPY_STATIC(win->custom_parameters, len, params);
 }
@@ -6098,8 +6103,7 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
                 c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", "--no-proxy-server");
             // User-defined command line parameters.
             if (!_webinix_is_empty(win->custom_parameters)) {
-                c += WEBUI_SN_PRINTF_DYN(buffer, len, " %s", win->custom_parameters);
-                _webinix_free_mem((void*)win->custom_parameters);
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", win->custom_parameters);
             }
 
             // URL (END)
@@ -6121,20 +6125,17 @@ static int _webinix_get_browser_args(_webinix_window_t* win, size_t browser, cha
             if (win->size_set)
                 c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " -width %u -height %u", win->width, win->height);
             // Window Position
-            // Firefox does not support window positioning.
+                // Firefox does not support window positioning.
             // Proxy
             if (win->proxy_set) {
                 // Server: `win->proxy_server`
-
                 // TODO: Add proxy feature to Firefox
                 // Method 1: modifying `prefs.js` / user.js
                 // Method 2: use Proxy Auto-Configuration (PAC) file
             }
             // User-defined command line parameters.
-            if (!_webinix_is_empty(win->custom_parameters)) {
-                c += WEBUI_SN_PRINTF_DYN(buffer, len, " %s", win->custom_parameters);
-                _webinix_free_mem((void*)win->custom_parameters);
-            }
+            if (!_webinix_is_empty(win->custom_parameters))
+                c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " %s", win->custom_parameters);
 
             // URL (END)
             c += WEBUI_SN_PRINTF_DYN(buffer + c, len, " -new-window ");
