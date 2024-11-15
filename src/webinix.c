@@ -399,6 +399,7 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_http_handler;
     webinix_mutex_t mutex_client;
     webinix_mutex_t mutex_async_response;
+    webinix_mutex_t mutex_mem;
     webinix_condition_t condition_wait;
     char* default_server_root_path;
     bool ui;
@@ -3744,6 +3745,8 @@ static void _webinix_free_mem(void * ptr) {
     if (ptr == NULL)
         return;
 
+    _webinix_mutex_lock(&_webinix.mutex_mem);
+
     for (size_t i = 0; i < _webinix.ptr_position; i++) {
 
         if (_webinix.ptr_list[i] == ptr) {
@@ -3767,6 +3770,8 @@ static void _webinix_free_mem(void * ptr) {
             break;
         }
     }
+
+    _webinix_mutex_unlock(&_webinix.mutex_mem);
 }
 
 static void _webinix_free_all_mem(void) {
@@ -3780,6 +3785,8 @@ static void _webinix_free_all_mem(void) {
     if (freed)
         return;
     freed = true;
+
+    _webinix_mutex_lock(&_webinix.mutex_mem);
 
     void * ptr = NULL;
     for (size_t i = 0; i < _webinix.ptr_position; i++) {
@@ -3797,6 +3804,8 @@ static void _webinix_free_all_mem(void) {
             free(ptr);
         }
     }
+
+    _webinix_mutex_unlock(&_webinix.mutex_mem);
 }
 
 static void _webinix_panic(char* msg) {
@@ -3843,6 +3852,8 @@ static void * _webinix_malloc(size_t size) {
     printf("[Core]\t\t_webinix_malloc([%zu])\n", size);
     #endif
 
+    _webinix_mutex_lock(&_webinix.mutex_mem);
+
     size = _webinix_mb(size);
 
     void * block = NULL;
@@ -3868,6 +3879,8 @@ static void * _webinix_malloc(size_t size) {
     memset(block, 0, size);
 
     _webinix_ptr_add((void*)block, size);
+
+    _webinix_mutex_unlock(&_webinix.mutex_mem);
 
     return block;
 }
@@ -6008,6 +6021,7 @@ static void _webinix_clean(void) {
     _webinix_mutex_destroy(&_webinix.mutex_http_handler);
     _webinix_mutex_destroy(&_webinix.mutex_client);
     _webinix_mutex_destroy(&_webinix.mutex_async_response);
+    _webinix_mutex_destroy(&_webinix.mutex_mem);
     _webinix_condition_destroy(&_webinix.condition_wait);
 
     #ifdef WEBUI_LOG
@@ -7556,6 +7570,22 @@ static void _webinix_init(void) {
     printf("[Core]\t\t_webinix_init()\n");
     #endif
 
+    // Initializing mutex
+    _webinix_mutex_init(&_webinix.mutex_server_start);
+    _webinix_mutex_init(&_webinix.mutex_send);
+    _webinix_mutex_init(&_webinix.mutex_receive);
+    _webinix_mutex_init(&_webinix.mutex_wait);
+    _webinix_mutex_init(&_webinix.mutex_bridge);
+    _webinix_mutex_init(&_webinix.mutex_js_run);
+    _webinix_mutex_init(&_webinix.mutex_win_connect);
+    _webinix_mutex_init(&_webinix.mutex_exit_now);
+    _webinix_mutex_init(&_webinix.mutex_webview_stop);
+    _webinix_mutex_init(&_webinix.mutex_http_handler);
+    _webinix_mutex_init(&_webinix.mutex_client);
+    _webinix_mutex_init(&_webinix.mutex_async_response);
+    _webinix_mutex_init(&_webinix.mutex_mem);
+    _webinix_condition_init(&_webinix.condition_wait);
+
     // Random
     #ifdef _WIN32
     srand((unsigned int) time(NULL));
@@ -7580,21 +7610,6 @@ static void _webinix_init(void) {
     #else
     mg_init_library(0);
     #endif
-
-    // Initializing mutex
-    _webinix_mutex_init(&_webinix.mutex_server_start);
-    _webinix_mutex_init(&_webinix.mutex_send);
-    _webinix_mutex_init(&_webinix.mutex_receive);
-    _webinix_mutex_init(&_webinix.mutex_wait);
-    _webinix_mutex_init(&_webinix.mutex_bridge);
-    _webinix_mutex_init(&_webinix.mutex_js_run);
-    _webinix_mutex_init(&_webinix.mutex_win_connect);
-    _webinix_mutex_init(&_webinix.mutex_exit_now);
-    _webinix_mutex_init(&_webinix.mutex_webview_stop);
-    _webinix_mutex_init(&_webinix.mutex_http_handler);
-    _webinix_mutex_init(&_webinix.mutex_client);
-    _webinix_mutex_init(&_webinix.mutex_async_response);
-    _webinix_condition_init(&_webinix.condition_wait);
 }
 
 static const char* _webinix_url_encode(const char* str) {
