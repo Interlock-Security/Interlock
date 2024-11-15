@@ -510,7 +510,6 @@ static void _webinix_timer_clock_gettime(struct timespec * spec);
 static bool _webinix_set_root_folder(_webinix_window_t* win, const char* path);
 static const char* _webinix_generate_js_bridge(_webinix_window_t* win, struct mg_connection* client);
 static void _webinix_free_mem(void * ptr);
-static size_t _webinix_mb(size_t size);
 static bool _webinix_file_exist_mg(_webinix_window_t* win, struct mg_connection* client);
 static bool _webinix_file_exist(const char* path);
 static void _webinix_free_all_mem(void);
@@ -633,20 +632,20 @@ static WEBUI_THREAD_MONITOR;
 #ifdef _WIN32
 #define WEBUI_STR_TOK(str, delim, context) strtok_s(str, delim, context)
 #define WEBUI_FILE_OPEN(file, filename, mode) fopen_s(&file, filename, mode)
-#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
+#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
 #define WEBUI_SN_PRINTF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
-#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strcpy_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strcpy_s(dest, dest_size, src)
 #define WEBUI_STR_COPY_STATIC(dest, dest_size, src) strcpy_s(dest, dest_size, src)
-#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strcat_s(dest, _webinix_mb(dest_size), src)
+#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strcat_s(dest, dest_size, src)
 #define WEBUI_STR_CAT_STATIC(dest, dest_size, src) strcat_s(dest, dest_size, src)
 #else
 #define WEBUI_STR_TOK(str, delim, context) strtok_r(str, delim, context)
 #define WEBUI_FILE_OPEN(file, filename, mode) ((file) = fopen(filename, mode))
-#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, _webinix_mb(buffer_size), format, ##__VA_ARGS__)
+#define WEBUI_SN_PRINTF_DYN(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
 #define WEBUI_SN_PRINTF_STATIC(buffer, buffer_size, format, ...) snprintf(buffer, buffer_size, format, ##__VA_ARGS__)
-#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strncpy(dest, src, _webinix_mb(dest_size))
+#define WEBUI_STR_COPY_DYN(dest, dest_size, src) strncpy(dest, src, dest_size)
 #define WEBUI_STR_COPY_STATIC(dest, dest_size, src) strncpy(dest, src, dest_size)
-#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strncat(dest, src, _webinix_mb(dest_size))
+#define WEBUI_STR_CAT_DYN(dest, dest_size, src) strncat(dest, src, dest_size)
 #define WEBUI_STR_CAT_STATIC(dest, dest_size, src) strncat(dest, src, dest_size)
 #endif
 
@@ -3708,31 +3707,22 @@ static void _webinix_ptr_add(void * ptr, size_t size) {
     if (ptr == NULL)
         return;
 
+    // Search for first empty slot & add
     if (!_webinix_ptr_exist(ptr)) {
-
-        for (size_t i = 0; i < _webinix.ptr_position; i++) {
-
+        size_t i = 0; 
+        for (; i < _webinix.ptr_position; i++) {
             if (_webinix.ptr_list[i] == NULL) {
-
-                #ifdef WEBUI_LOG_VERBOSE
-                printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
-                #endif
-
-                _webinix.ptr_list[i] = ptr;
-                _webinix.ptr_size[i] = size;
-                return;
+                break;
             }
         }
-
-        #ifdef WEBUI_LOG_VERBOSE
-        printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Allocate %zu bytes\n", ptr, size);
-        #endif
-
         _webinix.ptr_list[_webinix.ptr_position] = ptr;
         _webinix.ptr_size[_webinix.ptr_position] = size;
         _webinix.ptr_position++;
         if (_webinix.ptr_position >= WEBUI_MAX_IDS)
             _webinix.ptr_position = (WEBUI_MAX_IDS - 1);
+        #ifdef WEBUI_LOG_VERBOSE
+        printf("[Core]\t\t_webinix_ptr_add(0x%p) -> Pointer #%zu saved (%zu + 1 bytes)\n", ptr, i, size);
+        #endif        
     }
 }
 
@@ -3747,25 +3737,21 @@ static void _webinix_free_mem(void * ptr) {
 
     _webinix_mutex_lock(&_webinix.mutex_mem);
 
+    // Search for pointer & free
     for (size_t i = 0; i < _webinix.ptr_position; i++) {
-
         if (_webinix.ptr_list[i] == ptr) {
-
             #ifdef WEBUI_LOG_VERBOSE
-            printf("[Core]\t\t_webinix_free_mem(0x%p) -> Free %zu bytes\n", ptr, _webinix.ptr_size[i]);
+            printf("[Core]\t\t_webinix_free_mem(0x%p) -> Pointer #%zu freed (%zu + 1 bytes)\n", ptr, i, _webinix.ptr_size[i]);
             #endif
-
             free(ptr);
-
             _webinix.ptr_size[i] = 0;
             _webinix.ptr_list[i] = NULL;
         }
     }
 
+    // Search (backward) for first empty slot
     for (int i = _webinix.ptr_position; i >= 0;i--) {
-
         if (_webinix.ptr_list[i] == NULL) {
-
             _webinix.ptr_position = i;
             break;
         }
@@ -3780,27 +3766,23 @@ static void _webinix_free_all_mem(void) {
     printf("[Core]\t\t_webinix_free_all_mem()\n");
     #endif
 
+    _webinix_mutex_lock(&_webinix.mutex_mem);    
+
     // Makes sure we run this once
     static bool freed = false;
     if (freed)
         return;
     freed = true;
 
-    _webinix_mutex_lock(&_webinix.mutex_mem);
-
+    // Free all pointers in the list
     void * ptr = NULL;
     for (size_t i = 0; i < _webinix.ptr_position; i++) {
-
         ptr = _webinix.ptr_list[i];
-
         if (ptr != NULL) {
-
             #ifdef WEBUI_LOG
-            printf(
-                "[Core]\t\t_webinix_free_all_mem() -> Free %zu bytes @ 0x%p\n", _webinix.ptr_size[i], ptr
-            );
+            printf("[Core]\t\t_webinix_free_all_mem() -> Free %zu bytes @ 0x%p\n",
+            _webinix.ptr_size[i], ptr);
             #endif
-
             free(ptr);
         }
     }
@@ -3818,34 +3800,6 @@ static void _webinix_panic(char* msg) {
     webinix_exit();
 }
 
-static size_t _webinix_mb(size_t size) {
-
-    // Round `size` to fit a memory block
-    // 07 -> 8
-    // 14 -> 16
-    // 29 -> 32
-    // 55 -> 64
-    // ...
-
-    // Make sure we have the null
-    // terminator if it's a string
-    size++;
-
-    // If size is negative
-    if (size < 4)
-        size = 4;
-
-    // If size is already a full block
-    // we should return the same block
-    size--;
-
-    size_t block_size = 4;
-    while(block_size <= size)
-        block_size *= 2;
-
-    return block_size;
-}
-
 static void * _webinix_malloc(size_t size) {
 
     #ifdef WEBUI_LOG_VERBOSE
@@ -3854,35 +3808,25 @@ static void * _webinix_malloc(size_t size) {
 
     _webinix_mutex_lock(&_webinix.mutex_mem);
 
-    size = _webinix_mb(size);
+    // Dynamic allocation + null terminator
+    void* mem = NULL;
+    mem = malloc(size + 1);
 
-    void * block = NULL;
-    for (size_t i = 0; i < 8; i++) {
-
-        if (size > WEBUI_MAX_BUF)
-            size = WEBUI_MAX_BUF;
-
-        block = malloc(size);
-
-        if (block == NULL)
-            size++;
-        else
-            break;
-    }
-
-    if (block == NULL) {
-
+    // Check
+    if (mem == NULL) {
         WEBUI_ASSERT("malloc() failed");
         return NULL;
     }
 
-    memset(block, 0, size);
+    // Ini memory block
+    memset(mem, 0, size);
 
-    _webinix_ptr_add((void*)block, size);
+    // Add pointer to the list
+    _webinix_ptr_add((void*)mem, size);
 
     _webinix_mutex_unlock(&_webinix.mutex_mem);
 
-    return block;
+    return mem;
 }
 
 static _webinix_window_t* _webinix_dereference_win_ptr(void * ptr) {
