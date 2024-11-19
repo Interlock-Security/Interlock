@@ -73,7 +73,6 @@ fn addLinkerFlags(
 ) !void {
     const webinix_target = webinix.rootModuleTarget();
     const is_windows = webinix_target.os.tag == .windows;
-
     const debug = webinix.root_module.optimize.? == .Debug;
 
     // Prepare compiler flags.
@@ -86,6 +85,9 @@ fn addLinkerFlags(
         "-Wno-error=date-time",
     };
 
+    if (debug) {
+        webinix.root_module.addCMacro("WEBUI_LOG", "");
+    }
     webinix.addCSourceFile(.{
         .file = b.path("src/webinix.c"),
         .flags = if (enable_tls) tls_flags else no_tls_flags,
