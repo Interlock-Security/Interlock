@@ -1016,17 +1016,18 @@ void webinix_set_custom_parameters(size_t window, char* params) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
+    // Always free old data to allow user to clear custom params
+    // by passing an empty `params`.
+    _webinix_free_mem((void*)win->custom_parameters);
+
     // Check size
     size_t len = _webinix_strlen(params);
     if (len < 1)
         return;
 
-    // Free old
-    _webinix_free_mem((void*)win->custom_parameters);
-
     // Set new
     win->custom_parameters = (char*)_webinix_malloc(len);
-    WEBUI_STR_COPY_STATIC(win->custom_parameters, len, params);
+    WEBUI_STR_COPY_DYN(win->custom_parameters, len, params);
 }
 
 void webinix_set_high_contrast(size_t window, bool status) {
