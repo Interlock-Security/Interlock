@@ -1019,6 +1019,7 @@ void webinix_set_custom_parameters(size_t window, char* params) {
     // Always free old data to allow user to clear custom params
     // by passing an empty `params`.
     _webinix_free_mem((void*)win->custom_parameters);
+    win->custom_parameters = NULL;
 
     // Check size
     size_t len = _webinix_strlen(params);
