@@ -170,25 +170,29 @@ class WebuiBridge {
 		}
 	}
 	#freezeUi() {
-		if (document.getElementById('webinix-error-connection-lost')) return;
-		const div = document.createElement('div');
-		div.id = 'webinix-error-connection-lost';
-		Object.assign(div.style, {
-			position: 'relative',
-			top: '0',
-			left: '0',
-			width: '100%',
-			backgroundColor: '#ff4d4d',
-			color: '#fff',
-			textAlign: 'center',
-			padding: '2px 0',
-			fontFamily: 'Arial, sans-serif',
-			fontSize: '14px',
-			zIndex: '1000',
-			lineHeight: '1'
-		});
-		div.innerText = 'Webinix Error: Connection with the backend is lost.';
-		document.body.insertBefore(div, document.body.firstChild);
+		setTimeout(() => {
+			if (!this.#wsIsConnected()) {
+				if (document.getElementById('webinix-error-connection-lost')) return;
+				const div = document.createElement('div');
+				div.id = 'webinix-error-connection-lost';
+				Object.assign(div.style, {
+					position: 'relative',
+					top: '0',
+					left: '0',
+					width: '100%',
+					backgroundColor: '#ff4d4d',
+					color: '#fff',
+					textAlign: 'center',
+					padding: '2px 0',
+					fontFamily: 'Arial, sans-serif',
+					fontSize: '14px',
+					zIndex: '1000',
+					lineHeight: '1'
+				});
+				div.innerText = 'Webinix Error: Connection with the backend is lost.';
+				document.body.insertBefore(div, document.body.firstChild);
+			}
+		}, 1000);
 	}
 	#unfreezeUI() {
 		const div = document.getElementById('webinix-error-connection-lost');
@@ -508,7 +512,7 @@ class WebuiBridge {
 		return ((this.#ws) && (this.#ws.readyState === WebSocket.OPEN));
 	}
 	#wsConnect(): void {
-		if (this.#ws) {
+		if (this.#wsIsConnected()) {
 			this.#ws.close();
 		}
 		this.#TokenAccepted = false;
