@@ -172,7 +172,7 @@ namespace webinix {
 
             // Same as `show()` but for a specific single client
             bool show_client(const std::string_view s) {
-                webinix_show_client(this, s.data());
+                return webinix_show_client(this, s.data());
             }
 
             // Extras
@@ -364,7 +364,7 @@ namespace webinix {
 
         // Same as `webinix_show()`. But start only the web server and return the URL. No window will be shown.
         std::string_view start_server(const std::string_view content) const {
-            webinix_start_server(webinix_window, content.data());
+            return std::string_view{webinix_start_server(webinix_window, content.data())};
         }
 
         // Quickly run a JavaScript (no response waiting).
