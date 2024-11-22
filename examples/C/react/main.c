@@ -13,10 +13,10 @@ int main() {
     size_t react_window = webinix_new_window();
 
     // Set window size
-    webinix_set_size(react_window, 800, 800);
+    webinix_set_size(react_window, 550, 450);
 
     // Set window position
-    webinix_set_position(react_window, 200, 200);
+    webinix_set_position(react_window, 250, 250);
 
     // Allow multi-user connection to Webinix window
     webinix_set_config(multi_client, true);
