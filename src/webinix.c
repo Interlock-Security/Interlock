@@ -727,7 +727,7 @@ void webinix_run(size_t window, const char* script) {
     // [CMD]
     // [Script]
 
-    // Send the packet to all clients
+    // Send the packet to all clients because no need for client's response
     _webinix_send_all(win, 0, WEBUI_CMD_JS_QUICK, script, js_len);
 }
 
@@ -814,7 +814,7 @@ bool webinix_script_client(webinix_event_t* e, const char* script, size_t timeou
     // [CMD]
     // [Script]
 
-    // Send the packet to a single client
+    // Send the packet to a single specific client and wait for response
     _webinix_send_client(win, _webinix.clients[e->connection_id], run_id, WEBUI_CMD_JS, script, js_len, false);
 
     bool js_status = false;
@@ -879,6 +879,14 @@ bool webinix_script(size_t window, const char* script, size_t timeout,
     printf("[User] webinix_script([%zu])\n", window);
     #endif
 
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return false;
+    _webinix_window_t* win = _webinix.wins[window];
+
     // Stop if multi-client mode is enabled.
     // we can't send and receive from all clients
     if (_webinix.config.multi_client) {
@@ -892,10 +900,18 @@ bool webinix_script(size_t window, const char* script, size_t timeout,
         return false;
     }
 
-    // Event
+    // New Event
     webinix_event_t e;
     e.window = window;
-    e.connection_id = 0; // Single client
+    e.connection_id = 0;
+    
+    // Get the single client ID of this current window
+    // because we are in single client mode, and we need
+    // to wait for this client's response.
+    if (!_webinix_connection_get_id(win, win->single_client, &e.connection_id))
+        return false;
+    if (_webinix.clients[e.connection_id] == NULL)
+        return false;
 
     return webinix_script_client(&e, script, timeout, buffer, buffer_length);
 }
@@ -5200,9 +5216,10 @@ static void _webinix_send_client(
     }
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_send_client() -> ID = 0x%04X \n", id);
-    printf("[Core]\t\t_webinix_send_client() -> CMD = 0x%02x \n", cmd);
-    printf("[Core]\t\t_webinix_send_client() -> Data = %zu bytes \n", len);
+    printf("[Core]\t\t_webinix_send_client() -> Connection ID = %zu \n", connection_id);
+    printf("[Core]\t\t_webinix_send_client() -> Packet ID = 0x%04X \n", id);
+    printf("[Core]\t\t_webinix_send_client() -> Packet CMD = 0x%02x \n", cmd);
+    printf("[Core]\t\t_webinix_send_client() -> Packet Data = %zu bytes \n", len);
     #endif
 
     // Protocol
