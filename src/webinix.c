@@ -3411,10 +3411,10 @@ bool webinix_set_default_root_folder(const char* path) {
 }
 
 // -- Interface's Functions ----------------
-static void _webinix_interface_bind_handler(webinix_event_t* e) {
+static void _webinix_interface_bind_handler_all(webinix_event_t* e) {
 
     #ifdef WEBUI_LOG
-    printf("[Core]\t\t_webinix_interface_bind_handler()\n");
+    printf("[Core]\t\t_webinix_interface_bind_handler_all()\n");
     #endif
 
     // Initialization
@@ -3433,21 +3433,36 @@ static void _webinix_interface_bind_handler(webinix_event_t* e) {
             // Call user all-events cb
             #ifdef WEBUI_LOG
             printf(
-                "[Core]\t\t_webinix_interface_bind_handler() -> User all-events callback @ 0x%p\n",
+                "[Core]\t\t_webinix_interface_bind_handler_all() -> User all-events callback @ 0x%p\n",
                 win->cb_interface[events_cb_index]
             );
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->event_type [%zu]\n", e->event_type);
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->element [%s]\n", e->element);
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->event_number %zu\n", e->event_number);
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> User all-events e->bind_id %zu\n", e->bind_id);
+            printf("[Core]\t\t_webinix_interface_bind_handler_all() -> User all-events e->event_type [%zu]\n", e->event_type);
+            printf("[Core]\t\t_webinix_interface_bind_handler_all() -> User all-events e->element [%s]\n", e->element);
+            printf("[Core]\t\t_webinix_interface_bind_handler_all() -> User all-events e->event_number %zu\n", e->event_number);
+            printf("[Core]\t\t_webinix_interface_bind_handler_all() -> User all-events e->bind_id %zu\n", e->bind_id);
             #endif
             // Call all-events cb
             #ifdef WEBUI_LOG
-            printf("[Core]\t\t_webinix_interface_bind_handler() -> Calling user all-events callback\n[Call]\n");
+            printf("[Core]\t\t_webinix_interface_bind_handler_all() -> Calling user all-events callback\n[Call]\n");
             #endif
             win->cb_interface[events_cb_index](e->window, e->event_type, e->element, e->event_number, e->bind_id);
         }
     }
+}
+
+static void _webinix_interface_bind_handler(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_interface_bind_handler()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[e->window];
 
     // Check for the regular bind functions
     if (!_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) && !_webinix_is_empty(e->element)) {
@@ -3604,7 +3619,12 @@ size_t webinix_interface_bind(size_t window, const char* element, void(*func)(si
     _webinix_window_t* win = _webinix.wins[window];
 
     // Bind
-    size_t cb_index = webinix_bind(window, element, _webinix_interface_bind_handler);
+    size_t cb_index = 0;
+    if (_webinix_is_empty(element)) {
+        cb_index = webinix_bind(window, "", _webinix_interface_bind_handler_all);
+    } else {
+        cb_index = webinix_bind(window, element, _webinix_interface_bind_handler);
+    }
     win->cb_interface[cb_index] = func;
     return cb_index;
 }
