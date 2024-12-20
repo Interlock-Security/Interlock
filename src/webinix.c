@@ -163,6 +163,10 @@ typedef struct _webinix_timer_t {
 
 // Event data
 typedef struct webinix_event_inf_t {
+    // Client
+    struct mg_connection* client;
+    size_t connection_id;
+    // Args and Response
     char* event_data[WEBUI_MAX_ARG + 1]; // Event data (string | num | bool | raw)
     size_t event_size[WEBUI_MAX_ARG + 1]; // Event data size (in bytes)
     char* response; // Event response (string)
@@ -3716,6 +3720,168 @@ size_t webinix_interface_get_window_id(size_t window) {
     _webinix_window_t* win = _webinix.wins[window];
 
     return win->num;
+}
+
+bool webinix_interface_show_client(size_t window, size_t event_number, const char* content) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_show_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return false;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return false;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    return webinix_show_client(&e, content);
+}
+
+void webinix_interface_close_client(size_t window, size_t event_number) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_close_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    webinix_close_client(&e);
+}
+
+void webinix_interface_send_raw_client(size_t window, size_t event_number, const char* function, const void* raw, size_t size) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_send_raw_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    webinix_send_raw_client(&e, function, raw, size);
+}
+
+void webinix_interface_navigate_client(size_t window, size_t event_number, const char* url) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_navigate_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    webinix_navigate_client(&e, url);
+}
+
+void webinix_interface_run_client(size_t window, size_t event_number, const char* script) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_run_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    webinix_run_client(&e, script);
+}
+
+bool webinix_interface_script_client(size_t window, size_t event_number, const char* script, size_t timeout, char* buffer, size_t buffer_length) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_script_client()\n");
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return false;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // Get event inf
+    webinix_event_inf_t* event_inf = win->events[event_number];
+    if (event_inf == NULL)
+        return false;
+
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+    e.connection_id = event_inf->connection_id;
+
+    return webinix_script_client(&e, script, timeout, buffer, buffer_length);
 }
 
 // -- Core's Functions ----------------
@@ -9216,25 +9382,24 @@ static void _webinix_ws_process(
                         );
                         #endif
 
-                        // New event inf (Click)
-                        // webinix_event_inf_t* event_inf = NULL;
-                        // size_t event_num = _webinix_new_event_inf(win, &event_inf);
-
-                        // Set arguments
-                        // ...
+                        // Event Info
+                        webinix_event_inf_t* event_inf = NULL;
+                        size_t event_num = _webinix_new_event_inf(win, &event_inf);
+                        event_inf->client = client;
+                        event_inf->connection_id = connection_id;
 
                         _webinix_window_event(
                             win, // Event -> Window
                             connection_id, // Event -> Client Unique ID
                             WEBUI_EVENT_MOUSE_CLICK, // Event -> Type of this event
                             element, // Event -> HTML Element
-                            0, // Event -> Event Number
+                            event_num, // Event -> Event Number
                             _webinix_client_get_id(win, client), // Event -> Client ID
                             _webinix_get_cookies_full(client) // Event -> Full cookies
                         );
 
                         // Free event
-                        // _webinix_free_event_inf(win, event_num);
+                        _webinix_free_event_inf(win, event_num);
                     } else if ((unsigned char)packet[WEBUI_PROTOCOL_CMD] == WEBUI_CMD_JS) {
 
                         // JS Result
@@ -9344,11 +9509,13 @@ static void _webinix_ws_process(
                             );
                             #endif
 
-                            // New event inf (Navigation)
+                            // Event Info
                             webinix_event_inf_t* event_inf = NULL;
                             size_t event_num = _webinix_new_event_inf(win, &event_inf);
+                            event_inf->client = client;
+                            event_inf->connection_id = connection_id;
 
-                            // Set arguments
+                            // Event Info Extras
                             event_inf->event_data[0] = url;
                             event_inf->event_size[0] = url_len;
 
@@ -9608,25 +9775,24 @@ static void _webinix_ws_process(
                             // New Event
                             if (win->has_all_events) {
 
-                                // New event inf (Connected)
-                                // webinix_event_inf_t* event_inf = NULL;
-                                // size_t event_num = _webinix_new_event_inf(win, &event_inf);
-
-                                // Set arguments
-                                // ...
+                                // Event Info
+                                webinix_event_inf_t* event_inf = NULL;
+                                size_t event_num = _webinix_new_event_inf(win, &event_inf);
+                                event_inf->client = client;
+                                event_inf->connection_id = connection_id;
 
                                 _webinix_window_event(
                                     win, // Event -> Window
                                     connection_id, // Event -> Client Unique ID
                                     WEBUI_EVENT_CONNECTED, // Event -> Type of this event
                                     "", // Event -> HTML Element
-                                    0, // Event -> Event Number
+                                    event_num, // Event -> Event Number
                                     _webinix_client_get_id(win, client), // Event -> Client ID
                                     _webinix_get_cookies_full(client) // Event -> Full cookies
                                 );
 
                                 // Free event
-                                // _webinix_free_event_inf(win, event_num);
+                                _webinix_free_event_inf(win, event_num);
                             }
                         }
                         else {
@@ -9715,25 +9881,24 @@ static void _webinix_ws_process(
             // New Event
             if (win->has_all_events) {
 
-                // New event inf (Connected)
-                // webinix_event_inf_t* event_inf = NULL;
-                // size_t event_num = _webinix_new_event_inf(win, &event_inf);
-
-                // Set arguments
-                // ...
+                // Event Info
+                webinix_event_inf_t* event_inf = NULL;
+                size_t event_num = _webinix_new_event_inf(win, &event_inf);
+                event_inf->client = client;
+                event_inf->connection_id = connection_id;
 
                 _webinix_window_event(
                     win, // Event -> Window
                     connection_id, // Event -> Client Unique ID
                     WEBUI_EVENT_CONNECTED, // Event -> Type of this event
                     "", // Event -> HTML Element
-                    0, // Event -> Event Number
+                    event_num, // Event -> Event Number
                     _webinix_client_get_id(win, client), // Event -> Client ID
                     _webinix_get_cookies_full(client) // Event -> Full cookies
                 );
 
                 // Free event
-                // _webinix_free_event_inf(win, event_num);
+                _webinix_free_event_inf(win, event_num);
             }
             */
         } else if (event_type == WEBUI_WS_CLOSE) {
@@ -9750,25 +9915,24 @@ static void _webinix_ws_process(
             // Events
             if (win->has_all_events) {
 
-                // New event inf (Disconnected)
-                // webinix_event_inf_t* event_inf = NULL;
-                // size_t event_num = _webinix_new_event_inf(win, &event_inf);
-
-                // Set arguments
-                // ...
+                // Event Info
+                webinix_event_inf_t* event_inf = NULL;
+                size_t event_num = _webinix_new_event_inf(win, &event_inf);
+                event_inf->client = client;
+                event_inf->connection_id = connection_id;
 
                 _webinix_window_event(
                     win, // Event -> Window
                     connection_id, // Event -> Client Unique ID
                     WEBUI_EVENT_DISCONNECTED, // Event -> Type of this event
                     "", // Event -> HTML Element
-                    0, // Event -> Event Number
+                    event_num, // Event -> Event Number
                     _webinix_client_get_id(win, client), // Event -> Client ID
                     _webinix_get_cookies_full(client) // Event -> Full cookies
                 );
 
                 // Free event
-                // _webinix_free_event_inf(win, event_num);
+                _webinix_free_event_inf(win, event_num);
             }
         }
         #ifdef WEBUI_LOG
