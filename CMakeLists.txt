@@ -32,7 +32,7 @@ if(BUILD_SHARED_LIBS AND WIN32)
 endif()
 
 if(WEBUI_USE_TLS)
-    target_compile_definitions(webinix PUBLIC WEBUI_TLS WEBUI_TLS NO_SSL_DL OPENSSL_API_1_1)
+    target_compile_definitions(webinix PUBLIC WEBUI_TLS NO_SSL_DL OPENSSL_API_1_1)
     target_link_libraries(webinix PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 else()
     target_compile_definitions(webinix PUBLIC NO_SSL)
