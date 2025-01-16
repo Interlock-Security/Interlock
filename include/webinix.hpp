@@ -90,7 +90,7 @@ namespace webinix {
             // ------ Event methods `e->xxx()` ------
 
             // Get how many arguments there are in an event.
-            size_t get_count(size_t index = 0) { 
+            size_t get_count(size_t index = 0) {
                 return webinix_get_count(this);
             }
 
@@ -125,9 +125,9 @@ namespace webinix {
             }
 
             // Run JavaScript without waiting for the response. Single client.
-            void script_client(const std::string_view script, unsigned int timeout, 
+            bool script_client(const std::string_view script, unsigned int timeout,
                             char* buffer, size_t buffer_length) {
-                webinix_script_client(this, script.data(), timeout, buffer, buffer_length);
+                return webinix_script_client(this, script.data(), timeout, buffer, buffer_length);
             }
 
             // Run JavaScript without waiting for the response. Single client.
@@ -278,10 +278,10 @@ namespace webinix {
             return webinix_get_port(webinix_window);
         }
 
-        // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP 
+        // Set a custom web-server network port to be used by Webinix. This can be useful to determine the HTTP
         // link of `webinix.js` in case you are trying to use Webinix with an external web-server like NGNIX
-        void set_port(size_t port) const {
-            webinix_set_port(webinix_window, port);
+        bool set_port(size_t port) const {
+            return webinix_set_port(webinix_window, port);
         }
 
         // Set window position
@@ -346,7 +346,7 @@ namespace webinix {
             webinix_navigate(webinix_window, url.data());
         }
 
-        // Control if UI events coming from this window should be processed one at a time in a 
+        // Control if UI events coming from this window should be processed one at a time in a
         // single blocking thread `True`, or process every event in a new non-blocking thread `False`.
         void set_event_blocking(bool status) const {
             webinix_set_event_blocking(webinix_window, status);
@@ -373,7 +373,7 @@ namespace webinix {
         }
 
         // Run a JavaScript, and get the response back (Make sure your local buffer can hold the response).
-        bool script(const std::string_view script, unsigned int timeout, 
+        bool script(const std::string_view script, unsigned int timeout,
                     char* buffer, size_t buffer_length) const {
             return webinix_script(webinix_window, script.data(), timeout, buffer, buffer_length);
         }
@@ -443,9 +443,9 @@ namespace webinix {
 
     // Set the SSL/TLS certificate and the private key content, both in PEM format.
     // This works only with `webinix-2-secure` library. If set empty Webinix will generate a self-signed certificate.
-    inline void set_tls_certificate(const std::string_view certificate_pem, 
+    inline bool set_tls_certificate(const std::string_view certificate_pem,
                                     const std::string_view private_key_pem) {
-        webinix_set_tls_certificate(certificate_pem.data(), private_key_pem.data());
+        return webinix_set_tls_certificate(certificate_pem.data(), private_key_pem.data());
     }
 
     // Safely free a buffer allocated by Webinix, for example when using webinix_encode().
