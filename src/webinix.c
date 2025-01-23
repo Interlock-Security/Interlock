@@ -9737,10 +9737,13 @@ static void _webinix_ws_process(
                                     csv_size += _webinix_strlen(win->html_elements[i]) + 1;
                                 }
                             }
-
+                            if (win->has_all_events) {
+                                csv_size++;
+                            }
                             // Allocate
                             char* csv = (char*)_webinix_malloc(csv_size);
                             csv[0] = 0x01;
+                            csv_size--;
 
                             // Generate the bind list array (CSV)
                             for (size_t i = 0; i < WEBUI_MAX_IDS; i++) {
