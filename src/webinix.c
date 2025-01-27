@@ -3683,7 +3683,7 @@ void webinix_interface_set_response_file_handler(size_t window, const void* resp
     #ifdef WEBUI_LOG
     printf("[User] webinix_interface_set_response_file_handler()\n");
     printf("[User] webinix_interface_set_response_file_handler() -> window #%zu\n", window);
-    printf("[User] webinix_interface_set_response_file_handler() -> Response %zu bytes\n", length);
+    printf("[User] webinix_interface_set_response_file_handler() -> Response %d bytes\n", length);
     #endif
 
     // Initialization
@@ -5227,10 +5227,24 @@ static bool _webinix_browser_create_new_profile(_webinix_window_t* win, size_t b
         #endif
 
         if (!win->custom_profile){
-            if(!win->disable_browser_high_contrast)
-                WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile", temp, os_sep, os_sep);
-            else
-                WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%sWebinixFirefoxProfile-NoHC", temp, os_sep, os_sep);
+            // Set Firefox profile folder name
+            const char* ff = "FirefoxProfile";
+            if(!win->disable_browser_high_contrast) {
+                ff = "WebinixFirefoxProfile-NoHC";
+            }
+            // Generate Firefox profile path
+            if (WEBUI_SN_PRINTF_DYN(win->profile_path, WEBUI_MAX_PATH, "%s%s.Webinix%s%s",
+                temp, os_sep, os_sep, ff) >= WEBUI_MAX_PATH) {
+                // Generated path is too big
+                #ifdef WEBUI_LOG
+                printf(
+                    "[Core]\t\t_webinix_browser_create_new_profile(%zu) -> "
+                    "Generated Firefox profile folder path is too big\n",
+                    browser
+                );
+                #endif
+                return false;
+            }
         }
 
         if (!_webinix_folder_exist(win->profile_path) ||
