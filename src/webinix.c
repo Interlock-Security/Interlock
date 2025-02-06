@@ -6730,7 +6730,7 @@ static bool _webinix_browser_start(_webinix_window_t* win, const char* address, 
     #endif
 
     // Non existing browser
-    if (_browser > 12)
+    if (_browser > 13)
         return false;
 
     // No browser mode
