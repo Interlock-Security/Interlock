@@ -847,6 +847,17 @@ class WebuiBridge {
 		if (this.#log) console.log(`Core Response: [${response}]`);
 		return response;
 	}
+	/**
+	 * When binding all events on the backend, Webinix blocks all navigation events
+	 * and sends them to the backend. This API allows you to control that behavior.
+	 *
+	 * @param status - Boolean `True` means Webinix will allow navigations
+	 * @example - webinix.allowNavigation(true); // Allow navigation
+	 * window.location.replace('www.test.com'); // This will now proceed as usual
+	 */
+	allowNavigation(status: boolean): void {
+        this.#allowNavigation = status;
+    }
 }
 // Export
 type webinix = WebuiBridge;
