@@ -3083,6 +3083,18 @@ void webinix_free(void * ptr) {
     _webinix_free_mem(ptr);
 }
 
+void webinix_memcpy(void* dest, void* src, size_t count) {
+    
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_memcpy()\n");
+    printf("[User] webinix_memcpy() -> Copying %zu bytes from [%p] to [%p]\n", count, src, dest);
+    #endif
+
+    if ((dest != NULL) && (src != NULL) && (count > 0)) {
+        memcpy(dest, src, count);
+    }
+}
+
 void * webinix_malloc(size_t size) {
 
     #ifdef WEBUI_LOG

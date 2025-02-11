@@ -584,6 +584,17 @@ WEBUI_EXPORT void webinix_free(void* ptr);
 WEBUI_EXPORT void* webinix_malloc(size_t size);
 
 /**
+ * @brief Copy raw data.
+ *
+ * @param dest Destination memory pointer
+ * @param src Source memory pointer
+ * @param count Bytes to copy
+ *
+ * @example webinix_memcpy(myBuffer, myData, 64);
+ */
+WEBUI_EXPORT void webinix_memcpy(void* dest, void* src, size_t count);
+
+/**
  * @brief Safely send raw data to the UI. All clients.
  *
  * @param window The window number
