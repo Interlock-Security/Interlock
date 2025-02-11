@@ -246,6 +246,43 @@ WEBUI_EXPORT size_t webinix_get_new_window_id(void);
 WEBUI_EXPORT size_t webinix_bind(size_t window, const char* element, void (*func)(webinix_event_t* e));
 
 /**
+ * @brief Use this API after using `webinix_bind()` to add any user data to it that can be
+ * read later using `webinix_get_context()`.
+ *
+ * @param window The window number
+ * @param element The HTML element / JavaScript object
+ * @param context Any user data
+ *
+ * @example
+ * webinix_bind(myWindow, "myFunction", myFunction);
+ * 
+ * webinix_set_context(myWindow, "myFunction", myData);
+ * 
+ * void myFunction(webinix_event_t* e) {
+ *   void* myData = webinix_get_context(e);
+ * }
+ */
+WEBUI_EXPORT void webinix_set_context(size_t window, const char* element, void* context);
+
+/**
+ * @brief Get user data that is set using `webinix_set_context()`.
+ *
+ * @param e The event struct
+ * 
+ * @return Returns user data pointer.
+ *
+ * @example
+ * webinix_bind(myWindow, "myFunction", myFunction);
+ * 
+ * webinix_set_context(myWindow, "myFunction", myData);
+ * 
+ * void myFunction(webinix_event_t* e) {
+ *   void* myData = webinix_get_context(e);
+ * }
+ */
+WEBUI_EXPORT void* webinix_get_context(webinix_event_t* e);
+
+/**
  * @brief Get the recommended web browser ID to use. If you 
  * are already using one, this function will return the same ID.
  * 

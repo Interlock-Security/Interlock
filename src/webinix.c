@@ -308,6 +308,7 @@ typedef struct _webinix_window_t {
     size_t num; // Window number
     const char* html_elements[WEBUI_MAX_IDS];
     bool has_all_events;
+    void* cb_context[WEBUI_MAX_IDS];
     void(*cb[WEBUI_MAX_IDS])(webinix_event_t* e);
     void(*cb_interface[WEBUI_MAX_IDS])(size_t, size_t, char* , size_t, size_t);
     bool ws_block;
@@ -1730,6 +1731,59 @@ bool webinix_show_browser(size_t window, const char* content, size_t browser) {
     return _webinix_show(win, NULL, content, browser);
 }
 
+void* webinix_get_context(webinix_event_t* e) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_get_context()\n");
+    #endif
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[e->window] == NULL)
+        return 0;
+    _webinix_window_t* win = _webinix.wins[e->window];
+
+    // Search
+    size_t cb_index = 0;
+    if (_webinix_get_cb_index(win, e->element, &cb_index)) {
+        // Get context
+        #ifdef WEBUI_LOG
+        printf("[User] webinix_get_context() -> Found context at %p\n", win->cb_context[cb_index]);
+        #endif
+        return win->cb_context[cb_index];
+    }
+
+    return NULL;
+}
+
+void webinix_set_context(size_t window, const char* element, void* context) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_context([%zu])\n", window);
+    printf("[User] webinix_set_context() -> Element: [%s]\n", element);
+    printf("[User] webinix_set_context() -> Context: [%p]\n", context);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return;
+    _webinix_window_t* win = _webinix.wins[window];
+    
+    // Get bind Index
+    // We should use `webinix_bind()` with NULL to make `webinix_set_context()`
+    // works fine if user call it before or after `webinix_bind()`.
+    size_t cb_index = webinix_bind(window, element, NULL);
+
+    // Set context
+    win->cb_context[cb_index] = context;
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_context() -> Context saved at %zu\n", cb_index);
+    #endif
+}
+
 size_t webinix_bind(size_t window, const char* element, void(*func)(webinix_event_t* e)) {
 
     #ifdef WEBUI_LOG
@@ -1746,41 +1800,48 @@ size_t webinix_bind(size_t window, const char* element, void(*func)(webinix_even
 
     // Search
     size_t cb_index = 0;
-    bool exist = _webinix_get_cb_index(win, element, &cb_index);    
+    bool exist = _webinix_get_cb_index(win, element, &cb_index);
 
-    // All events
-    if (_webinix_is_empty(element)) {
-        win->has_all_events = true;
-        size_t index = (exist ? cb_index : _webinix.cb_count++);
-        win->html_elements[index] = "";
-        win->cb[index] = func;
-        #ifdef WEBUI_LOG
-        printf("[User] webinix_bind() -> Save bind (all events) at %zu\n", index);
-        #endif
-        return index;
-    }
-
-    // New bind
-    const char* element_cpy = (const char*)_webinix_str_dup(element);
+    // Free old ID
     size_t index = (exist ? cb_index : _webinix.cb_count++);
-    win->html_elements[index] = element_cpy;
-    win->cb[index] = func;
-    #ifdef WEBUI_LOG
-    printf("[User] webinix_bind() -> Save bind at %zu\n", index);
-    #endif
+    _webinix_free_mem((void*)win->html_elements[index]);
 
-    // Send to all connected clients the new binding ID
-    // Packet Protocol Format:
+    // All events binding
+    if (_webinix_is_empty(element)) {
+        // Empty Element ID Binding (New / Update)
+        win->html_elements[index] = "";
+        if (func != NULL) {
+            win->has_all_events = true;
+            win->cb[index] = func;
+            #ifdef WEBUI_LOG
+            printf("[User] webinix_bind() -> Save bind (all events) at %zu\n", index);
+            #endif
+        }
+        return index;
+    } else {
+        // Non-empty Element ID Binding (New / Update)
+        const char* element_cpy = (const char*)_webinix_str_dup(element);
+        win->html_elements[index] = element_cpy;
+        if (func != NULL) {
+            win->cb[index] = func;
+            #ifdef WEBUI_LOG
+            printf("[User] webinix_bind() -> Save bind at %zu\n", index);
+            #endif
 
-    // [...]
-    // [CMD]
-    // [NewElement]
-    // Send the packet
+            // Send to all connected clients the new binding ID
+            // Packet Protocol Format:
 
-    _webinix_send_all(
-        win, 0, WEBUI_CMD_ADD_ID,
-        element, _webinix_strlen(element_cpy)
-    );
+            // [...]
+            // [CMD]
+            // [NewElement]
+            // Send the packet
+
+            _webinix_send_all(
+                win, 0, WEBUI_CMD_ADD_ID,
+                element, _webinix_strlen(element_cpy)
+            );        
+        }
+    }
 
     return index;
 }
