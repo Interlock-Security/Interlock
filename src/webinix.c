@@ -3988,6 +3988,25 @@ bool webinix_interface_script_client(size_t window, size_t event_number, const c
     return webinix_script_client(&e, script, timeout, buffer, buffer_length);
 }
 
+void* webinix_interface_get_context(size_t window, size_t event_number) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_interface_get_context([%zu], [%zu])\n", window, event_number);
+    #endif
+
+    // Dereference
+    if (_webinix_mutex_is_exit_now(WEBUI_MUTEX_NONE) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    // New Event (Wrapper)
+    webinix_event_t e;
+    e.window = window;
+    e.event_number = event_number;
+
+    return webinix_get_context(&e);
+}
+
 // -- Core's Functions ----------------
 static bool _webinix_ptr_exist(void * ptr) {
 
