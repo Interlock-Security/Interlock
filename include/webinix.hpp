@@ -175,6 +175,11 @@ namespace webinix {
                 return webinix_show_client(this, s.data());
             }
 
+            // Get user data that is set using `set_context()`
+            void* get_context() {
+                return webinix_get_context(this);
+            }
+
             // Extras
 
             // Get current window object pointer
@@ -381,6 +386,12 @@ namespace webinix {
         // Chose between Deno and Nodejs runtime for .js and .ts files.
         void set_runtime(unsigned int runtime) const {
             webinix_set_runtime(webinix_window, runtime);
+        }
+
+        // Use this API after using `bind()` to add any user data to it that can be
+        // read later using `get_context()`.
+        void set_context(const std::string_view element, void* context) const {
+            webinix_set_context(webinix_window, element.data(), context);
         }
     };
 
