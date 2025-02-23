@@ -73,6 +73,7 @@ fn addLinkerFlags(
 ) !void {
     const webinix_target = webinix.rootModuleTarget();
     const is_windows = webinix_target.os.tag == .windows;
+    const is_darwin = webinix_target.os.tag == .macos;
     const debug = webinix.root_module.optimize.? == .Debug;
 
     // Prepare compiler flags.
@@ -108,7 +109,7 @@ fn addLinkerFlags(
     webinix.linkLibC();
     webinix.addIncludePath(b.path("include"));
     webinix.installHeader(b.path("include/webinix.h"), "webinix.h");
-    if (webinix_target.isDarwin()) {
+    if (is_darwin) {
         webinix.addCSourceFile(.{
             .file = b.path("src/webview/wkwebview.m"),
             .flags = &.{},
