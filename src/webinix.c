@@ -5223,6 +5223,10 @@ static bool _webinix_mutex_is_webview_update(_webinix_window_t* win, int update)
 
 static void _webinix_webview_update(_webinix_window_t* win) {
 
+    #ifdef WEBUI_LOG
+    printf("[Core]\t\t_webinix_webview_update(%zu)\n", win->num);
+    #endif
+
     #ifdef _WIN32
     // Windows - WebView2
     _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_SET_TRUE);
@@ -11588,38 +11592,34 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
             while (true) {
 
-                // Check if there is any Webinix Messages
+                // Wait for Webinix Messages
 
-                if (_webinix_mutex_is_webview_update(win, WEBUI_MUTEX_GET_STATUS)) {
-                    _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_SET_FALSE);
-                    if (win->webView) {
-                        // Stop this thread
-                        if (win->webView->stop) {
-                            break;
-                        }
-                        // Window Size
-                        if (win->webView->size) {
-                            win->webView->size = false;
-                            _webinix_wv_set_size(win->webView, win->webView->width, win->webView->height);
-                        }
-                        // Window Position
-                        if (win->webView->position) {
-                            win->webView->position = false;
-                            _webinix_wv_set_position(win->webView, win->webView->x, win->webView->y);
-                        }
-                        // Navigation
-                        if (win->webView->navigate) {
-                            win->webView->navigate = false;
-                            _webinix_wv_navigate(win->webView, win->webView->url);
-                        }
+                _webinix_mutex_lock(&win->mutex_webview_update);
+                _webinix_condition_wait(&win->condition_webview_update, &win->mutex_webview_update);
+
+                if (win->webView) {
+                    // Stop this thread
+                    if (win->webView->stop) {
+                        break;
+                    }
+                    // Window Size
+                    if (win->webView->size) {
+                        win->webView->size = false;
+                        _webinix_wv_set_size(win->webView, win->webView->width, win->webView->height);
+                    }
+                    // Window Position
+                    if (win->webView->position) {
+                        win->webView->position = false;
+                        _webinix_wv_set_position(win->webView, win->webView->x, win->webView->y);
+                    }
+                    // Navigation
+                    if (win->webView->navigate) {
+                        win->webView->navigate = false;
+                        _webinix_wv_navigate(win->webView, win->webView->url);
                     }
                 }
-                else {
 
-                    // At this moment, there is no Webinix messages
-                    // let's IDLE for 250ms in this current thread.
-                    _webinix_sleep(250);
-                }
+                _webinix_mutex_unlock(&win->mutex_webview_update);
             }
         }
 
@@ -11813,37 +11813,33 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 
                 // Check if there is any Webinix Messages
 
-                if (_webinix_mutex_is_webview_update(win, WEBUI_MUTEX_GET_STATUS)) {
-                    _webinix_mutex_is_webview_update(win, WEBUI_MUTEX_SET_FALSE);
-                    if (win->webView) {
-                        // Stop this thread
-                        if (win->webView->stop) {
-                            _webinix_macos_wv_close(win->webView->index);
-                            break;
-                        }
-                        // Window Size
-                        if (win->webView->size) {
-                            win->webView->size = false;
-                            _webinix_wv_set_size(win->webView, win->webView->width, win->webView->height);
-                        }
-                        // Window Position
-                        if (win->webView->position) {
-                            win->webView->position = false;
-                            _webinix_wv_set_position(win->webView, win->webView->x, win->webView->y);
-                        }
-                        // Navigation
-                        if (win->webView->navigate) {
-                            win->webView->navigate = false;
-                            _webinix_wv_navigate(win->webView, win->webView->url);
-                        }
+                _webinix_mutex_lock(&win->mutex_webview_update);
+                _webinix_condition_wait(&win->condition_webview_update, &win->mutex_webview_update);
+
+                if (win->webView) {
+                    // Stop this thread
+                    if (win->webView->stop) {
+                        _webinix_macos_wv_close(win->webView->index);
+                        break;
+                    }
+                    // Window Size
+                    if (win->webView->size) {
+                        win->webView->size = false;
+                        _webinix_wv_set_size(win->webView, win->webView->width, win->webView->height);
+                    }
+                    // Window Position
+                    if (win->webView->position) {
+                        win->webView->position = false;
+                        _webinix_wv_set_position(win->webView, win->webView->x, win->webView->y);
+                    }
+                    // Navigation
+                    if (win->webView->navigate) {
+                        win->webView->navigate = false;
+                        _webinix_wv_navigate(win->webView, win->webView->url);
                     }
                 }
-                else {
 
-                    // At this moment, there is no Webinix messages
-                    // let's IDLE for 250ms in this current thread.
-                    _webinix_sleep(250);
-                }
+                _webinix_mutex_unlock(&win->mutex_webview_update);
             }
         }
 
