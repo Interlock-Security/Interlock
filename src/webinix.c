@@ -351,6 +351,8 @@ typedef struct _webinix_window_t {
     // WebView
     bool allow_webview;
     bool update_webview;
+    webinix_mutex_t mutex_webview_update;
+    webinix_condition_t condition_webview_update;
     #ifdef _WIN32
     _webinix_wv_win32_t* webView;
     #elif __linux__
@@ -403,7 +405,6 @@ typedef struct _webinix_core_t {
     webinix_mutex_t mutex_js_run;
     webinix_mutex_t mutex_win_connect;
     webinix_mutex_t mutex_exit_now;
-    webinix_mutex_t mutex_webview_update;
     webinix_mutex_t mutex_http_handler;
     webinix_mutex_t mutex_client;
     webinix_mutex_t mutex_async_response;
@@ -976,6 +977,10 @@ size_t webinix_new_window_id(size_t num) {
         WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", WEBUI_DEFAULT_PATH);
     else
         WEBUI_SN_PRINTF_DYN(win->server_root_path, WEBUI_MAX_PATH, "%s", _webinix.default_server_root_path);
+    
+    // Mutex Initialisation
+    _webinix_mutex_init(&win->mutex_webview_update);
+    _webinix_condition_init(&win->condition_webview_update);
 
     // Auto bind JavaScript-Bridge Core API Handler
     webinix_bind(num, "__webinix_core_api__", _webinix_bridge_api_handler);
@@ -1263,6 +1268,10 @@ void webinix_destroy(size_t window) {
         if (win->events[i] != NULL)
             _webinix_free_mem((void*)win->events[i]);
     }
+
+    // Free Mutex
+    _webinix_condition_destroy(&win->condition_webview_update);
+    _webinix_mutex_destroy(&win->mutex_webview_update);
 
     // Free window struct
     _webinix_free_mem((void*)_webinix.wins[window]);
@@ -5203,11 +5212,11 @@ static bool _webinix_mutex_is_exit_now(int update) {
 static bool _webinix_mutex_is_webview_update(_webinix_window_t* win, int update) {
 
     bool status = false;
-    _webinix_mutex_lock(&_webinix.mutex_webview_update);
+    _webinix_mutex_lock(&win->mutex_webview_update);
     if (update == WEBUI_MUTEX_SET_TRUE) win->update_webview = true;
     else if (update == WEBUI_MUTEX_SET_FALSE) win->update_webview = false;
     status = win->update_webview;
-    _webinix_mutex_unlock(&_webinix.mutex_webview_update);
+    _webinix_mutex_unlock(&win->mutex_webview_update);
     return status;
 }
 
@@ -6366,7 +6375,6 @@ static void _webinix_clean(void) {
     _webinix_mutex_destroy(&_webinix.mutex_js_run);
     _webinix_mutex_destroy(&_webinix.mutex_win_connect);
     _webinix_mutex_destroy(&_webinix.mutex_exit_now);
-    _webinix_mutex_destroy(&_webinix.mutex_webview_update);
     _webinix_mutex_destroy(&_webinix.mutex_http_handler);
     _webinix_mutex_destroy(&_webinix.mutex_client);
     _webinix_mutex_destroy(&_webinix.mutex_async_response);
@@ -7939,7 +7947,6 @@ static void _webinix_init(void) {
     _webinix_mutex_init(&_webinix.mutex_js_run);
     _webinix_mutex_init(&_webinix.mutex_win_connect);
     _webinix_mutex_init(&_webinix.mutex_exit_now);
-    _webinix_mutex_init(&_webinix.mutex_webview_update);
     _webinix_mutex_init(&_webinix.mutex_http_handler);
     _webinix_mutex_init(&_webinix.mutex_client);
     _webinix_mutex_init(&_webinix.mutex_async_response);
