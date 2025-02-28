@@ -86,10 +86,9 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
 > **Note**
 > We are currently writing documentation.
 
-- [Online Documentation - C](https://webinix.me/docs/#/c_api)
-- [Online Documentation - C++](https://webinix.me/docs/#/cpp_api)
+- [Online Documentation](https://webinix.me/docs/)
 
-## Build
+## Build Webinix Library
 
 - **Windows**
 
@@ -152,10 +151,177 @@ Think of Webinix like a WebView controller, but instead of embedding the WebView
   make WEBUI_USE_TLS=1
   ```
 
-## Examples
+## Minimal Webinix Application
 
-- [C](https://github.com/webinix-dev/webinix/tree/main/examples/C)
-- [C++](https://github.com/webinix-dev/webinix/tree/main/examples/C++)
+- **C**
+
+  ```c
+  #include "webinix.h"
+
+  int main() {
+    size_t my_window = webinix_new_window();
+    webinix_show(my_window, "<html><head><script src=\"webinix.js\"></script></head> Hello World ! </html>");
+    webinix_wait();
+    return 0;
+  }
+  ```
+
+- **C++**
+
+  ```cpp
+  #include "webinix.hpp"
+  #include <iostream>
+
+  int main() {
+    webinix::window my_window;
+    my_window.show("<html><head><script src=\"webinix.js\"></script></head> C++ Hello World ! </html>");
+    webinix::wait();
+    return 0;
+  }
+  ```
+
+- **More C/C++ Examples**
+
+  - [C](https://github.com/webinix-dev/webinix/tree/main/examples/C)
+  - [C++](https://github.com/webinix-dev/webinix/tree/main/examples/C++)
+
+- **Other Languages**
+
+  - [Wrappers List](#Wrappers)
+
+## Build Webinix Application
+
+- **Windows**
+
+  - GCC - Static Webinix
+
+  ```powershell
+  gcc -Os -Wl,-subsystem=windows my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-static -lws2_32 -Wall -luser32 -static -lole32 -o my_application.exe
+  ```
+
+  - GCC - Dynamic Webinix
+
+  ```powershell
+  gcc -Wl,-subsystem=windows my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "webinix-2.dll" -lws2_32 -Wall -luser32 -lole32 -o my_application.exe
+  ```
+
+  - MSVC - Static Webinix
+
+  ```powershell
+  cl my_application.c /I"_PATH_TO_WEBUI_INCLUDE_" /link /LIBPATH:"_PATH_TO_WEBUI_LIB_" /SUBSYSTEM:WINDOWS webinix-2-static.lib user32.lib Advapi32.lib Shell32.lib Ole32.lib /OUT:my_application.exe
+  ```
+
+  - MSVC - Dynamic Webinix
+
+  ```powershell
+  cl my_application.c /I"_PATH_TO_WEBUI_INCLUDE_" /link /LIBPATH:"_PATH_TO_WEBUI_LIB_" /SUBSYSTEM:WINDOWS webinix-2.lib user32.lib Advapi32.lib Shell32.lib Ole32.lib /OUT:my_application.exe
+  ```
+
+  **Windows With SSL/TLS (_Optional_)**
+
+  - GCC - Static TLS Webinix
+
+  ```powershell
+  gcc -Os -Wl,-subsystem=windows my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-secure-static -lws2_32 -Wall -luser32 -static -lole32 -o my_application.exe
+  ```
+
+  - GCC - Dynamic TLS Webinix
+
+  ```powershell
+  gcc -Wl,-subsystem=windows my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "webinix-2-secure.dll" -lws2_32 -Wall -luser32 -lole32 -o my_application.exe
+  ```
+
+  - MSVC - Static TLS Webinix
+
+  ```powershell
+  cl my_application.c /I"_PATH_TO_WEBUI_INCLUDE_" /link /LIBPATH:"_PATH_TO_WEBUI_LIB_" /SUBSYSTEM:WINDOWS webinix-2-secure-static.lib user32.lib Advapi32.lib Shell32.lib Ole32.lib /OUT:my_application.exe
+  ```
+
+  - MSVC - Dynamic TLS Webinix
+
+  ```powershell
+  cl my_application.c /I"_PATH_TO_WEBUI_INCLUDE_" /link /LIBPATH:"_PATH_TO_WEBUI_LIB_" /SUBSYSTEM:WINDOWS webinix-2-secure.lib user32.lib Advapi32.lib Shell32.lib Ole32.lib /OUT:my_application.exe
+  ```
+
+- **Linux**
+
+  - GCC - Static Webinix
+
+  ```sh
+  gcc -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-static -lpthread -lm -ldl -o my_application
+  ```
+
+  - GCC - Dynamic Webinix
+
+  ```sh
+  gcc my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2.so" -lpthread -lm -ldl -o my_application
+  ```
+  
+  - Clang - Static Webinix
+
+  ```sh
+  clang -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-static -lpthread -lm -ldl -o my_application
+  ```
+  
+  - Clang - Dynamic Webinix
+
+  ```sh
+  clang my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2.so" -lpthread -lm -ldl -o my_application
+  ```
+
+  **Linux With SSL/TLS (_Optional_)**
+
+  - GCC - Static TLS Webinix
+
+  ```sh
+  gcc -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-secure-static -lpthread -lm -ldl -o my_application
+  ```
+  
+  - GCC - Dynamic TLS Webinix
+
+  ```sh
+  gcc my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2-secure.so" -lpthread -lm -ldl -o my_application
+  ```
+  
+  - Clang - Static TLS Webinix
+
+  ```sh
+  clang -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-secure-static -lpthread -lm -ldl -o my_application
+  ```
+  
+  - Clang - Dynamic TLS Webinix
+
+  ```sh
+  clang my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2-secure.so" -lpthread -lm -ldl -o my_application
+  ```
+
+- **macOS**
+
+  - Clang - Static Webinix
+
+  ```sh
+  clang -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-static -lpthread -lm -framework Cocoa -framework WebKit -o my_application
+  ```
+  
+  - Clang - Dynamic Webinix
+
+  ```sh
+  clang my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2.dylib" -lpthread -lm -framework Cocoa -framework WebKit -o my_application
+  ```
+
+  **macOS With SSL/TLS (_Optional_)**
+
+  - Clang - Static TLS Webinix
+
+  ```sh
+  clang -Os my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" -lwebinix-2-secure-static -lpthread -lm -framework Cocoa -framework WebKit -o my_application
+  ```
+  
+  - Clang - Dynamic TLS Webinix
+
+  ```sh
+  clang my_application.c -I"_PATH_TO_WEBUI_INCLUDE_" -L"_PATH_TO_WEBUI_LIB_" "./webinix-2-secure.dylib" -lpthread -lm -framework Cocoa -framework WebKit -o my_application
+  ```
 
 ## Wrappers
 
