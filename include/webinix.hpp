@@ -393,6 +393,12 @@ namespace webinix {
         void set_context(const std::string_view element, void* context) const {
             webinix_set_context(webinix_window, element.data(), context);
         }
+
+        // Gets Win32 window `HWND`. More reliable with WebView than web browser 
+        // window, as browser PIDs may change on launch.
+        void* win32_get_hwnd() const {
+            return webinix_win32_get_hwnd(webinix_window);
+        }
     };
 
     // ------ Namespace members `webinix::xxx()` ------
@@ -492,6 +498,11 @@ namespace webinix {
     // Check if the app is still running.
     inline bool is_app_running() {
         return webinix_interface_is_app_running();
+    }
+
+    // Copy raw data.
+    inline void memcpy(void* dest, const void* src, size_t count) {
+        webinix_memcpy(dest, const_cast<void*>(src), count);
     }
 
 } // namespace webinix
