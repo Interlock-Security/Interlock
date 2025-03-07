@@ -2633,6 +2633,54 @@ size_t webinix_get_child_process_id(size_t window) {
     #endif
 }
 
+void* webinix_win32_get_hwnd(size_t window) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_win32_get_hwnd([%zu])\n", window);
+    #endif
+
+    // Initialization
+    _webinix_init();
+
+    // Dereference
+    if (_webinix_mutex_app_is_exit_now(WEBUI_MUTEX_GET_STATUS) || _webinix.wins[window] == NULL)
+        return NULL;
+    _webinix_window_t* win = _webinix.wins[window];
+
+    #ifdef _WIN32
+    if (_webinix.is_webview) {
+        // WebView Window
+        if (win->webView) {
+            return win->webView->hwnd;
+        }
+        return NULL;
+    } else {
+        // Web Browser Window
+        size_t child_pid = webinix_get_child_process_id(window);
+        if (child_pid == 0) {
+            return NULL;
+        }
+        HWND hwnd = NULL;
+        int max_iterations = 10000;
+        do {
+            hwnd = FindWindowEx(NULL, hwnd, NULL, NULL);
+            if (hwnd == NULL) {
+                break;
+            }
+            DWORD pid;
+            GetWindowThreadProcessId(hwnd, &pid);
+            if (pid == child_pid) {
+                return hwnd;
+            }
+        } while (--max_iterations > 0);
+        return NULL;
+    }
+    #endif
+
+    // This API is only available on Windows
+    return NULL;
+}
+
 void webinix_set_hide(size_t window, bool status) {
 
     #ifdef WEBUI_LOG
@@ -2820,7 +2868,6 @@ void webinix_set_profile(size_t window, const char* name, const char* path) {
     else
         win->default_profile = false;
 }
-
 
 void webinix_set_proxy(size_t window, const char* proxy_server) {
 
