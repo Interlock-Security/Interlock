@@ -13,7 +13,7 @@ def js_to_c_header(input_filename, output_filename):
 
         # comment
         comment = (
-            "// Webinix v2.5.0-beta.3\n"
+            "// Webinix v2.5.0-beta.4\n"
             "// https://webinix.me\n"
             "// https://github.com/webinix-dev/webinix\n"
             "// Copyright (c) 2020-2025 Hassan Draga.\n"

@@ -1,4 +1,4 @@
-// Webinix v2.5.0-beta.3
+// Webinix v2.5.0-beta.4
 // https://webinix.me
 // https://github.com/webinix-dev/webinix
 // Copyright (c) 2020-2025 Hassan Draga.
