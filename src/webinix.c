@@ -422,6 +422,7 @@ typedef struct _webinix_core_t {
     webinix_condition_t condition_wait;
     char* default_server_root_path;
     bool ui;
+    char* custom_browser_folder_path;
     #ifdef WEBUI_TLS
     char* root_cert;
     char* root_key;
@@ -3474,6 +3475,23 @@ void webinix_set_runtime(size_t window, size_t runtime) {
         win->runtime = None;
     else
         win->runtime = runtime;
+}
+
+void webinix_set_browser_folder(const char* path) {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_set_browser_folder([%s])\n", path);
+    #endif
+
+    // Free existing custom path
+    if (_webinix.custom_browser_folder_path)
+        _webinix_free_mem((void*)_webinix.custom_browser_folder_path);
+    _webinix.custom_browser_folder_path = NULL;
+
+    // Set new custom path
+    if (!_webinix_is_empty(path)) {
+        _webinix.custom_browser_folder_path = _webinix_str_dup(path);
+    }
 }
 
 bool webinix_set_root_folder(size_t window, const char* path) {

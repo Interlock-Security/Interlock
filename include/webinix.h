@@ -465,6 +465,15 @@ WEBUI_EXPORT void webinix_exit(void);
 WEBUI_EXPORT bool webinix_set_root_folder(size_t window, const char* path);
 
 /**
+ * @brief Set custom browser folder path.
+ *
+ * @param path The browser folder path
+ *
+ * @example webinix_set_browser_folder("/home/Foo/Bar/");
+ */
+WEBUI_EXPORT void webinix_set_browser_folder(const char* path);
+
+/**
  * @brief Set the web-server root folder path for all windows. Should be used
  * before `webinix_show()`.
  *
