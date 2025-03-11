@@ -2654,7 +2654,6 @@ void* webinix_win32_get_hwnd(size_t window) {
         if (win->webView) {
             return win->webView->hwnd;
         }
-        return NULL;
     } else {
         // Web Browser Window
         size_t child_pid = webinix_get_child_process_id(window);
@@ -2674,7 +2673,6 @@ void* webinix_win32_get_hwnd(size_t window) {
                 return hwnd;
             }
         } while (--max_iterations > 0);
-        return NULL;
     }
     #endif
 
