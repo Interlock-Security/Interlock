@@ -6644,12 +6644,8 @@ static void _webinix_clean(void) {
         return;
     cleaned = true;
 
-    // Stop all threads
-    _webinix_mutex_app_is_exit_now(WEBUI_MUTEX_SET_TRUE);
-
-    // Let's give other threads more time to safely exit
-    // and finish cleaning up.    
-    // _webinix_sleep(500);
+    // Make sure app is stopped
+    webinix_exit();
 
     // Clean all servers services
     mg_exit_library();
