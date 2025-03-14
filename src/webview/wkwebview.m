@@ -33,8 +33,18 @@ void (*close_callback)(int index) = NULL;
             windows[i] = nil;
             webViews[i] = nil;
         }
+
+        [NSTimer scheduledTimerWithTimeInterval:3.0
+            target:self
+            selector:@selector(_webinix_macos_wv_timer)
+            userInfo:nil
+            repeats:YES];
     }
     return self;
+}
+
+- (void)_webinix_macos_wv_timer {
+    _webinix_macos_wv_check_exit();
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -115,6 +125,12 @@ void (*close_callback)(int index) = NULL;
 @end
 
 AppDelegate *delegate;
+
+void _webinix_macos_wv_check_exit() {
+    if (_webinix_mutex_app_is_exit_now()) {
+        _webinix_macos_wv_stop();
+    }
+}
 
 bool _webinix_macos_wv_new(int index) {
     #ifdef WEBUI_LOG
