@@ -308,7 +308,7 @@ void _webinix_macos_wv_stop() {
 }
 
 void _webinix_macos_wv_check_exit() {
-    if (webinix_interface_is_app_running()) {
+    if (!webinix_interface_is_app_running()) {
         _webinix_macos_wv_stop();
     }
 }
