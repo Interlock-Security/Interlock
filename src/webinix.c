@@ -273,6 +273,7 @@ typedef struct webinix_event_inf_t {
     extern void _webinix_macos_wv_stop();
     extern void _webinix_macos_wv_set_close_cb(void (*cb)(int index));
     extern void _webinix_macos_wv_new_thread_safe(int index);
+    extern void _webinix_macos_wv_start();
 
     typedef struct _webinix_wv_macos_t {
         // macOS WebView
@@ -3376,13 +3377,8 @@ void webinix_wait(void) {
 
             _webinix.is_wkwebview_main_run = true;
 
-            while (true) {
-
-                _webinix_macos_wv_process();
-
-                if (_webinix_mutex_app_is_exit_now(WEBUI_MUTEX_GET_STATUS))
-                    break;
-            }
+            // WKWebView Run Application
+            _webinix_macos_wv_start();
 
             _webinix.is_wkwebview_main_run = false;
         }
