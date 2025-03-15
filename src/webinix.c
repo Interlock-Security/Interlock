@@ -266,7 +266,7 @@ typedef struct webinix_event_inf_t {
         bool stop;
     } _webinix_wv_linux_t;
 #else
-    extern bool _webinix_macos_wv_new(int index);
+    extern bool _webinix_macos_wv_new(int index, bool frameless);
     extern bool _webinix_macos_wv_show(int index, const char* urlString, int x, int y, int width, int height);
     extern bool _webinix_macos_wv_close(int index);
     extern bool _webinix_macos_wv_set_position(int index, int x, int y);
@@ -275,7 +275,7 @@ typedef struct webinix_event_inf_t {
     extern void _webinix_macos_wv_process();
     extern void _webinix_macos_wv_stop();
     extern void _webinix_macos_wv_set_close_cb(void (*cb)(int index));
-    extern void _webinix_macos_wv_new_thread_safe(int index);
+    extern void _webinix_macos_wv_new_thread_safe(int index, bool frameless);
     extern void _webinix_macos_wv_start();
 
     typedef struct _webinix_wv_macos_t {
@@ -12077,7 +12077,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             return false;
 
         if (!_webinix.is_wkwebview_main_run) {
-            if (_webinix_macos_wv_new(win->num)) {
+            if (_webinix_macos_wv_new(win->num, win->webview_frameless)) {
                 if (!_webinix.is_webview) {
                     // Let `wait()` use safe main-thread WKWebView loop
                     _webinix.is_webview = true;
@@ -12088,7 +12088,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
         }
         else {
 
-            _webinix_macos_wv_new_thread_safe(win->num);
+            _webinix_macos_wv_new_thread_safe(win->num, win->webview_frameless);
             _webinix_sleep(250);
         }
 
