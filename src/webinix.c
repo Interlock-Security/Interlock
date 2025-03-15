@@ -361,7 +361,7 @@ typedef struct _webinix_window_t {
     bool allow_webview;
     bool allow_browser;
     bool update_webview;
-    bool headless_webview;
+    bool webview_frameless;
     webinix_mutex_t mutex_webview_update;
     webinix_condition_t condition_webview_update;
     #ifdef _WIN32
@@ -2502,10 +2502,10 @@ void webinix_set_config(webinix_config option, bool status) {
     }
 }
 
-void webinix_wv_set_headless(size_t window, bool status) {
+void webinix_wv_set_frameless(size_t window, bool status) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_wv_set_headless([%zu], [%d])\n", window, status);
+    printf("[User] webinix_wv_set_frameless([%zu], [%d])\n", window, status);
     #endif
 
     // Initialization
@@ -2516,7 +2516,7 @@ void webinix_wv_set_headless(size_t window, bool status) {
         return;
     _webinix_window_t* win = _webinix.wins[window];
 
-    win->headless_webview = status;
+    win->webview_frameless = status;
 }
 
 void webinix_set_event_blocking(size_t window, bool status) {
@@ -11302,11 +11302,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
             WEBUI_THREAD_RETURN
         }
 
-        // Set window style based on headless flag
+        // Set window style based on frameless flag
         DWORD style = WS_OVERLAPPEDWINDOW;
-        if (win->headless_webview) {
-            // Headless mode
-            style = WS_POPUP | WS_VISIBLE; 
+        if (win->webview_frameless) {
+            // Frameless mode
+            style = WS_POPUP | WS_VISIBLE;
+            // TODO: Make Win32 WebView with CSS drag feature.
         }
 
         win->webView->hwnd = CreateWindowExA(
