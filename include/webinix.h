@@ -705,8 +705,7 @@ WEBUI_EXPORT void webinix_set_position(size_t window, unsigned int x, unsigned i
 
 /**
  * @brief Centers the window on the screen. Works better with 
- * WebView. Does not work on Linux due to portability reasons. 
- * Call this function before `webinix_show()` for better results.
+ * WebView. Call this function before `webinix_show()` for better results.
  *
  * @param window The window number
  *
