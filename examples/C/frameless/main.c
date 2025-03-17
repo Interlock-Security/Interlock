@@ -87,7 +87,7 @@ int main() {
 	webinix_bind(my_window, "maximize", maximize);
 	webinix_bind(my_window, "close_win", close_win);
 	webinix_set_position(my_window, 100, 100);
-	webinix_wv_set_frameless(my_window, true);
+	webinix_set_frameless(my_window, true);
 	webinix_show_wv(my_window, html);
 	webinix_wait();
 	return 0;

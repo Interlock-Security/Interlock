@@ -2540,10 +2540,10 @@ void webinix_set_config(webinix_config option, bool status) {
     }
 }
 
-void webinix_wv_set_frameless(size_t window, bool status) {
+void webinix_set_frameless(size_t window, bool status) {
 
     #ifdef WEBUI_LOG
-    printf("[User] webinix_wv_set_frameless([%zu], [%d])\n", window, status);
+    printf("[User] webinix_set_frameless([%zu], [%d])\n", window, status);
     #endif
 
     // Initialization
