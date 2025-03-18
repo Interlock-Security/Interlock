@@ -41,7 +41,7 @@ const char* html =
 "      .button:hover { filter: brightness(120%); }"
 "      #content {"
 "        height: calc(100% - 40px);"
-"        background: linear-gradient(135deg, #8e2de2, #4a00e0);"
+"        background: rgba(0, 0, 0, 0.5);"
 "        display: flex;"
 "        align-items: center;"
 "        justify-content: center;"
@@ -82,12 +82,18 @@ void close_win(webinix_event_t* e) {
 }
 
 int main() {
+
 	size_t my_window = webinix_new_window();
+
 	webinix_bind(my_window, "minimize", minimize);
 	webinix_bind(my_window, "maximize", maximize);
 	webinix_bind(my_window, "close_win", close_win);
-	webinix_set_position(my_window, 100, 100);
+
 	webinix_set_frameless(my_window, true);
+	webinix_set_transparent(my_window, true);
+	webinix_set_resizable(my_window, true);
+	webinix_set_center(my_window);
+	
 	webinix_show_wv(my_window, html);
 	webinix_wait();
 	return 0;
