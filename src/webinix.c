@@ -11310,21 +11310,25 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
                 break;
             }
             case WM_EXITSIZEMOVE: {
-                if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_GET_STATUS)) {
-                    RECT rect;
-                    GetClientRect(hwnd, &rect);
-                    WINDOWPLACEMENT wp;
-                    wp.length = sizeof(WINDOWPLACEMENT);
-                    GetWindowPlacement(hwnd, &wp);
-                    // Send new positions and dimensions
-                    char buffer[512] = {0x00};
-                    WEBUI_SN_PRINTF_STATIC(buffer, sizeof(buffer), "%ld,%ld,%ld,%ld",
-                    wp.rcNormalPosition.left, wp.rcNormalPosition.top, rect.right, rect.bottom);
-                    // Packet Protocol Format:
-                    // [...]
-                    // [CMD]
-                    // Send the packet
-                    _webinix_send_all(win, 0, WEBUI_CMD_WIN_RESIZED, buffer, _webinix_strlen(buffer));
+                if (win) {
+                    // Update drag positions and dimensions
+                    if (_webinix_mutex_is_connected(win, WEBUI_MUTEX_GET_STATUS)) {
+                        RECT rect;
+                        GetClientRect(hwnd, &rect);
+                        WINDOWPLACEMENT wp;
+                        wp.length = sizeof(WINDOWPLACEMENT);
+                        GetWindowPlacement(hwnd, &wp);
+                        // Send new positions and dimensions
+                        char buffer[512] = {0x00};
+                        WEBUI_SN_PRINTF_STATIC(buffer, sizeof(buffer), "%ld,%ld,%ld,%ld",
+                        wp.rcNormalPosition.left, wp.rcNormalPosition.top, rect.right, rect.bottom);
+                        // Packet Protocol Format:
+                        // [...]
+                        // [CMD]
+                        // [x,y,width,height]
+                        // Send the packet
+                        _webinix_send_all(win, 0, WEBUI_CMD_WIN_RESIZED, buffer, _webinix_strlen(buffer));
+                    }
                 }
                 break;
             }            
