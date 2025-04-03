@@ -1192,6 +1192,20 @@ WEBUI_EXPORT void webinix_return_string(webinix_event_t* e, const char* s);
  */
 WEBUI_EXPORT void webinix_return_bool(webinix_event_t* e, bool b);
 
+/**
+ * @brief Get the last Webinix error code.
+ *
+ * @example int error_num = webinix_get_last_error_number();
+ */
+WEBUI_EXPORT size_t webinix_get_last_error_number();
+
+/**
+ * @brief Get the last Webinix error message.
+ *
+ * @example const char* error_msg = webinix_get_last_error_message();
+ */
+WEBUI_EXPORT const char* webinix_get_last_error_message();
+
 // -- Wrapper's Interface -------------
 
 /**

@@ -2269,6 +2269,26 @@ void webinix_return_string(webinix_event_t* e, const char* s) {
     }
 }
 
+size_t webinix_get_last_error_number() {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_get_last_error_number()\n");
+    #endif
+
+    // TODO: Add error code.
+    return 0;
+}
+
+const char* webinix_get_last_error_message() {
+
+    #ifdef WEBUI_LOG
+    printf("[User] webinix_get_last_error_message()\n");
+    #endif
+
+    // TODO: Add error message.
+    return "Unknown error.";
+}
+
 void webinix_return_bool(webinix_event_t* e, bool b) {
 
     #ifdef WEBUI_LOG
