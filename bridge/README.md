@@ -14,7 +14,7 @@ The Webinix Bridge connects the UI (_Web Browser_) with the backend application 
 ### Windows PowerShell
 
 - cd `webinix\bridge`
-- `./build.ps1`
+- `build.bat`
 - If you get _running scripts is disabled on this
   system_ error. Then run `Set-ExecutionPolicy RemoteSigned` to enable script execution. After done, you can roll back by running `Set-ExecutionPolicy Restricted`
 
