@@ -39,6 +39,10 @@ else()
     target_compile_definitions(webinix PUBLIC NO_SSL)
 endif()
 
+if (WIN32)
+    target_link_libraries(webinix PRIVATE ws2_32 user32 shell32 ole32)
+endif ()
+
 set_target_properties(webinix PROPERTIES
     OUTPUT_NAME ${WEBUI_OUT_LIB_NAME}
     PREFIX "")
