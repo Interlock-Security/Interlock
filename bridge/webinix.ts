@@ -164,7 +164,7 @@ class WebuiBridge {
 		});
 		// Frameless Dragging
 		document.addEventListener("mousemove", (e) => {
-			// Webinix `-webkit-app-region: drag;` custom implementation
+			// Webinix Webkit App-Region Custom Implementation
 			if (e.buttons !== 1) {
 				this.#isDragging = false;
 				return;
@@ -173,12 +173,8 @@ class WebuiBridge {
 				let target = e.target;
 				while (target) {
 					let computedStyle = window.getComputedStyle(target);
-
 					let webkitComputed = computedStyle.getPropertyValue("-webkit-app-region").trim();
-
-					/* Compatibility for platforms without `-webkit-app-region` */
 					let webinixComputed = computedStyle.getPropertyValue("--webinix-app-region").trim();
-
 					if (webkitComputed === "drag" || webinixComputed === "drag") {
 						this.#initialMouseX = e.screenX;
 						this.#initialMouseY = e.screenY;
