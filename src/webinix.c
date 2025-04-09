@@ -2847,7 +2847,7 @@ void webinix_maximize(size_t window) {
     _webinix_window_t* win = _webinix.wins[window];
 
     if(win->webView) {
-        _webinix_wv_minimize(win->webView);
+        _webinix_wv_maximize(win->webView);
     }
 }
 
