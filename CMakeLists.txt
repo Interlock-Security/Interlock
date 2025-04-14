@@ -54,7 +54,8 @@ install(FILES include/webinix.h include/webinix.hpp DESTINATION include)
 install(TARGETS webinix
     EXPORT webinix
     ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib)
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
 
 install(EXPORT webinix
     FILE webinix-config.cmake
