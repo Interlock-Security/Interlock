@@ -1975,7 +1975,7 @@ const char* webinix_get_string_at(webinix_event_t* e, size_t index) {
         return NULL;
 
     if (event_inf->event_data[index] != NULL) {
-        size_t len = _webinix_strlen(event_inf->event_data[index]);
+        size_t len = _event_inf->event_size[index];
         if (len > 0 && len <= WEBUI_MAX_BUF)
             return (const char*)event_inf->event_data[index];
     }
