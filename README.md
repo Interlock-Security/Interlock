@@ -4,19 +4,10 @@
 
 # Webinix v2.5.0-beta.4
 
-[build-status]: https://img.shields.io/github/actions/workflow/status/webinix-dev/webinix/ci.yml?branch=main&style=for-the-badge&logo=githubactions&labelColor=414868&logoColor=C0CAF5
-[last-commit]: https://img.shields.io/github/last-commit/webinix-dev/webinix?style=for-the-badge&logo=github&logoColor=C0CAF5&labelColor=414868
-[release-version]: https://img.shields.io/github/v/tag/webinix-dev/webinix?style=for-the-badge&logo=webtrees&logoColor=C0CAF5&labelColor=414868&color=7664C6
-[license]: https://img.shields.io/github/license/webinix-dev/webinix?style=for-the-badge&logo=opensourcehardware&label=License&logoColor=C0CAF5&labelColor=414868&color=8c73cc
-
-[![][build-status]](https://github.com/webinix-dev/webinix/actions?query=branch%3Amain)
-[![][last-commit]](https://github.com/webinix-dev/webinix/pulse)
-[![][release-version]](https://github.com/webinix-dev/webinix/releases/latest)
-[![][license]](https://github.com/webinix-dev/webinix/blob/main/LICENSE)
 
 > Use any web browser or WebView as GUI, with your preferred language in the backend and modern web technologies in the frontend, all in a lightweight portable library.
 
-![Screenshot](https://raw.githubusercontent.com/webinix-dev/webinix-logo/main/screenshot.png)
+![Screenshot](https://github.com/user-attachments/assets/5b706693-0cc8-4710-b706-cac2de58478f)
 
 </div>
 
@@ -49,12 +40,6 @@
 
 ## UI & The Web Technologies
 
-[Borislav Stanimirov](https://ibob.bg/) discusses using HTML5 in the web browser as GUI at the [C++ Conference 2019 (_YouTube_)](https://www.youtube.com/watch?v=bbbcZd4cuxg).
-
-<div align="center">
-
-![CPPCon](https://github.com/webinix-dev/webinix/assets/34311583/4e830caa-4ca0-44ff-825f-7cd6d94083c8)
-
 </div>
 
 Web application UI design is not just about how a product looks but how it works. Using web technologies in your UI makes your product modern and professional, And a well-designed web application will help you make a solid first impression on potential customers. Great web application design also assists you in nurturing leads and increasing conversions. In addition, it makes navigating and using your web app easier for your users.
@@ -67,7 +52,7 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 
 <div align="center">
 
-![Diagram](https://github.com/ttytm/webinix/assets/34311583/dbde3573-3161-421e-925c-392a39f45ab3)
+![Diagram](https://github.com/user-attachments/assets/f63694ec-44c1-474b-931f-4a0ce3d5c74f)
 
 </div>
 
