@@ -1,7 +1,5 @@
 <div align="center">
 
-![Logo](https://raw.githubusercontent.com/webinix-dev/webinix-logo/14fd595844f57ce751dfc751297b1468b10de77a/webinix_120.svg)
-
 # Webinix v2.5.0-beta.4
 
 
@@ -10,11 +8,6 @@
 ![Screenshot](https://github.com/user-attachments/assets/5b706693-0cc8-4710-b706-cac2de58478f)
 
 </div>
-
-## Download
-
-- [Latest Stable Release](https://github.com/webinix-dev/webinix/releases)
-- [Nightly Build](https://github.com/webinix-dev/webinix/releases/tag/nightly)
 
 ## Contents
 
