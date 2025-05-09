@@ -3,7 +3,7 @@
 # Webinix v2.5.0-beta.4
 
 
-> Use any web browser or WebView as GUI, with your preferred language in the backend and modern web technologies in the frontend, all in a lightweight portable library.
+> Utilize any web browser or WebView as the GUI, combining your preferred backend language with modern web technologies on the frontend — all within a lightweight, portable library. 
 
 ![Screenshot](https://github.com/user-attachments/assets/5b706693-0cc8-4710-b706-cac2de58478f)
 
@@ -35,11 +35,12 @@
 
 </div>
 
-Web application UI design is not just about how a product looks but how it works. Using web technologies in your UI makes your product modern and professional, And a well-designed web application will help you make a solid first impression on potential customers. Great web application design also assists you in nurturing leads and increasing conversions. In addition, it makes navigating and using your web app easier for your users.
+Web application UI design goes beyond aesthetics—it’s about functionality. Leveraging modern web technologies ensures your product looks professional and up-to-date. A thoughtfully designed interface creates a strong first impression, helps guide potential customers through your funnel, boosts conversions, and enhances the overall user experience by making navigation intuitive and seamless.
 
 ### Why Use Web Browsers?
 
-Today's web browsers have everything a modern UI needs. Web browsers are very sophisticated and optimized. Therefore, using it as a GUI will be an excellent choice. While old legacy GUI lib is complex and outdated, a WebView-based app is still an option. However, a WebView needs a huge SDK to build and many dependencies to run, and it can only provide some features like a real web browser. That is why Webinix uses real web browsers to give you full features of comprehensive web technologies while keeping your software lightweight and portable.
+Modern web browsers offer all the capabilities required for a cutting-edge UI. They are highly advanced, optimized, and well-suited to serve as a graphical interface. In contrast, traditional legacy GUI libraries are often outdated and complex. While WebView-based applications are a possible alternative, they come with drawbacks—including large SDKs, numerous dependencies, and limited feature support compared to full browsers. That’s why Webinix leverages real web browsers, delivering the complete power of modern web technologies while keeping your application lightweight and portable.
+
 
 ### How Does it Work?
 
@@ -49,8 +50,7 @@ Today's web browsers have everything a modern UI needs. Web browsers are very so
 
 </div>
 
-Think of Webinix like a WebView controller, but instead of embedding the WebView controller in your program, which makes the final program big in size, and non-portable as it needs the WebView runtimes. Instead, by using Webinix, you use a tiny static/dynamic library to run any installed web browser and use it as GUI, which makes your program small, fast, and portable. **All it needs is a web browser**.
-
+Think of Webinix as a smarter alternative to a WebView controller. Rather than embedding a bulky WebView into your application—which increases size and requires additional runtimes—Webinix uses a lightweight static or dynamic library to launch any installed web browser as the GUI. The result is a smaller, faster, and fully portable application that only depends on a web browser being available. 
 ### Runtime Dependencies Comparison
 
 |                                 | Tauri / WebView   | Qt                         | Webinix               |
