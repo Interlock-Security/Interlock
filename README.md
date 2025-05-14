@@ -22,6 +22,9 @@ Portable (Needs only a web browser or a WebView at runtime).
 - [Supported Web Browsers](#supported-web-browsers)
 - [License](#license)
 
+## Contract Address
+8WxjGyWyYuiuitMArUuK3EnmfzBAR8hfDT8XwKFLbonk
+
 ## Features
 
 - Portable – Requires only a web browser or WebView at runtime
